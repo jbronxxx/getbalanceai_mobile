@@ -145,9 +145,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       valueListenable: CurrencyFormatter.currencyNotifier,
       builder: (context, currentCurrency, child) {
         final isSelected = currentCurrency == currency;
-        final currencyNameKey = '${currency.code.toLowerCase()}_name';
-        final label =
-            '${currency.localizedSymbol} — ${LanguageManager.t(currencyNameKey)}';
+        final label = '${currency.localizedSymbol} — ${currency.localizedName}';
         return ListTile(
           title: Text(
             label,
@@ -547,27 +545,29 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
   Widget _buildSyncCard(
       Color primaryColor, bool isAuthenticated, SyncStatus status) {
-    String syncStatusKey = 'sync_synced';
+    String syncStatusText;
     IconData syncIcon = Icons.cloud_done;
     Color syncColor = primaryColor;
     bool isSyncing = status == SyncStatus.syncing;
 
     if (status == SyncStatus.noInternet) {
-      syncStatusKey = 'sync_no_internet';
+      syncStatusText = context.l10n.sync_no_internet;
       syncIcon = Icons.cloud_off;
       syncColor = Colors.grey;
     } else if (status == SyncStatus.syncing) {
-      syncStatusKey = 'syncing';
+      syncStatusText = context.l10n.syncing;
       syncIcon = Icons.sync;
       syncColor = Colors.orange;
     } else if (status == SyncStatus.error) {
-      syncStatusKey = 'sync_error';
+      syncStatusText = context.l10n.sync_error;
       syncIcon = Icons.error_outline;
       syncColor = Colors.red;
     } else if (status == SyncStatus.success) {
-      syncStatusKey = 'sync_updated_just_now';
+      syncStatusText = context.l10n.sync_updated_just_now;
       syncIcon = Icons.cloud_done;
       syncColor = primaryColor;
+    } else {
+      syncStatusText = context.l10n.sync_synced;
     }
 
     return Material(
@@ -613,7 +613,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text(
                       isAuthenticated
-                          ? LanguageManager.t(syncStatusKey)
+                          ? syncStatusText
                           : context.l10n.cloud_not_connected,
                       style:
                           TextStyle(color: Colors.grey.shade600, fontSize: 13),
@@ -681,9 +681,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                        LanguageManager.t(
-                            '${currency.code.toLowerCase()}_name'),
+                    Text(currency.localizedName,
                         style: TextStyle(
                             color: primaryColor,
                             fontWeight: FontWeight.bold,

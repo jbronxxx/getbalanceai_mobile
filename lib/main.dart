@@ -13,8 +13,6 @@ import 'screens/service_unavailable_screen.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'config/environment.dart';
-import 'utils/app_logger.dart';
-import 'services/crashlytics_service.dart';
 
 /// Точка входа в приложение.
 void main() async {
@@ -26,15 +24,12 @@ void main() async {
     if (!kReleaseMode) {
       talker.handle(details.exception, details.stack, 'UI Error');
     }
-    CrashlyticsService.recordError(details.exception, details.stack,
-        fatal: false);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
     if (!kReleaseMode) {
       talker.handle(error, stack, 'Async Error');
     }
-    CrashlyticsService.recordError(error, stack, fatal: true);
     return true;
   };
 
@@ -42,12 +37,11 @@ void main() async {
     try {
       await dotenv.load(fileName: '.env');
     } catch (e) {
-      logger.w('[Config] .env not loaded: $e');
+      AppLogger.w('[Config] .env not loaded: $e');
     }
   }
 
   await EnvironmentConfig.init();
-  await CrashlyticsService.init();
 
   await LocalDbService.init();
   await PendingDeletionsStore.init();

@@ -1,8 +1,8 @@
 import 'package:getbalanceai_mobile/models/models.dart';
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../objectbox.g.dart'; // Генерируется автоматически: `dart run build_runner build`
+import '../objectbox.g.dart';
+import '../utils/app_logger.dart';
 
 /// Локальное хранилище приложения на базе ObjectBox.
 ///
@@ -32,7 +32,7 @@ class LocalDbService {
   static Future<void> init() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, "obx-finance");
-    if (kDebugMode) debugPrint('[LocalDbService] Opening store at $dbPath');
+    AppLogger.d('[LocalDbService] Opening store at $dbPath');
     final store = await openStore(directory: dbPath);
     instance = LocalDbService._create(store);
   }
@@ -114,9 +114,7 @@ class LocalDbService {
   void saveTransaction(Transaction transaction) {
     _linkToExistingTransaction(transaction);
     final id = _transactionBox.put(transaction);
-    if (kDebugMode) {
-      debugPrint('[LocalDbService] Saved transaction localId: $id');
-    }
+    AppLogger.d('[LocalDbService] Saved transaction localId: $id');
   }
 
   /// Переносит на приехавшую с сервера транзакцию `localId` уже существующей
@@ -195,9 +193,7 @@ class LocalDbService {
   /// была найдена и удалена.
   bool deleteTransaction(int id) {
     final removed = _transactionBox.remove(id);
-    if (kDebugMode) {
-      debugPrint('[LocalDbService] Removed transaction $id: $removed');
-    }
+    AppLogger.d('[LocalDbService] Removed transaction $id: $removed');
     return removed;
   }
 
@@ -310,7 +306,7 @@ class LocalDbService {
   void saveBudget(Budget budget) {
     _linkToExistingBudget(budget);
     final id = _budgetBox.put(budget);
-    if (kDebugMode) debugPrint('[LocalDbService] Saved budget localId: $id');
+    AppLogger.d('[LocalDbService] Saved budget localId: $id');
   }
 
   /// Ищет локальную строку, которую должен обновить этот лимит.
@@ -420,7 +416,7 @@ class LocalDbService {
   /// была найдена и удалена.
   bool deleteBudget(int id) {
     final removed = _budgetBox.remove(id);
-    if (kDebugMode) debugPrint('[LocalDbService] Removed budget $id: $removed');
+    AppLogger.d('[LocalDbService] Removed budget $id: $removed');
     return removed;
   }
 

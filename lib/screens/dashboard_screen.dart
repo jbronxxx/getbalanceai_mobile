@@ -5,7 +5,6 @@ import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/screens/profile_screen.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
@@ -167,9 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     try {
-      if (kDebugMode) {
-        debugPrint('[Dashboard] Forced pull-to-refresh transactions sync');
-      }
+      AppLogger.d('[Dashboard] Forced pull-to-refresh transactions sync');
 
       // 1. Выгружаем отложенные удаления
       final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
@@ -180,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             await ApiService.instance.deleteTransaction(serverId);
             done.add(serverId);
           } catch (e) {
-            if (kDebugMode) debugPrint('[Dashboard] Pending delete failed: $e');
+            AppLogger.w('[Dashboard] Pending delete failed: $e');
           }
         }
         await PendingDeletionsStore.instance.removeTransactions(done);
@@ -194,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         AppAlerts.success(context, context.l10n.sync_success);
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[Dashboard] Sync error: $e');
+      AppLogger.e('[Dashboard] Sync error: $e');
       if (mounted) {
         AppErrorHandler.show(context, e, title: context.l10n.cloud);
       }

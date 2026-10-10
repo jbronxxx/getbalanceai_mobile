@@ -1,65 +1,58 @@
-import 'package:getbalanceai_mobile/models/models.dart';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:talker_dio_logger/talker_dio_logger.dart';
 import '../config/api_config.dart';
 import '../config/environment.dart';
-import 'local_db_service.dart';
-import 'pending_deletions_store.dart';
-import 'tracing_interceptor.dart';
-import 'dart:async';
-import 'package:talker_dio_logger/talker_dio_logger.dart';
+import '../models/models.dart';
 import '../utils/app_logger.dart';
+import 'auth_api_service.dart';
+import 'budget_api_service.dart';
+import 'sync_service.dart';
+import 'tracing_interceptor.dart';
+import 'transaction_api_service.dart';
 
-/// Клиент для работы с API бэкенда.
+/// Единый сетевой клиент приложения (Facade), объединяющий доменные сервисы:
+/// [AuthApiService], [TransactionApiService], [BudgetApiService] и [SyncService].
 class ApiService {
   static const String _kRetriedKey = 'retried';
 
-  final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-  );
-  final StreamController<bool> _authStream = StreamController.broadcast();
-  Stream<bool> get authStream => _authStream.stream;
+  final Dio _dio;
+  late final AuthApiService _authService;
+  late final TransactionApiService _transactionApiService;
+  late final BudgetApiService _budgetApiService;
+  late final SyncService _syncService;
 
-  Future<void> _handleSessionExpired() async {
-    await clearAllUserData();
-    _authStream.add(false);
-  }
+  static final ApiService instance = ApiService._internal();
 
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: ApiConfig.baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  ));
+  ApiService._internal()
+      : _dio = Dio(BaseOptions(
+          baseUrl: ApiConfig.baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        )) {
+    _authService = AuthApiService(dio: _dio);
+    _transactionApiService = TransactionApiService(
+      dio: _dio,
+      authOptions: _authService.authOptions,
+      isAuthenticated: () => _authService.isAuthenticated,
+    );
+    _budgetApiService = BudgetApiService(
+      dio: _dio,
+      authOptions: _authService.authOptions,
+      isAuthenticated: () => _authService.isAuthenticated,
+    );
+    _syncService = SyncService(
+      dio: _dio,
+      authOptions: _authService.authOptions,
+      tokenProvider: () => _authService.token,
+      transactionApiService: _transactionApiService,
+      budgetApiService: _budgetApiService,
+    );
 
-  @visibleForTesting
-  Dio get dio => _dio;
-
-  void updateBaseUrl(String newBaseUrl) {
-    _dio.options.baseUrl = newBaseUrl;
-  }
-
-  Future<void> onEnvironmentChanged() async {
-    updateBaseUrl(ApiConfig.baseUrl);
-    await clearAllUserData();
-  }
-
-  static bool _isAuthExcludedPath(String path) {
-    final cleanPath = path.split('?').first;
-    return cleanPath == ApiConfig.refreshToken ||
-        cleanPath == ApiConfig.login ||
-        cleanPath == ApiConfig.register ||
-        cleanPath == ApiConfig.loginGoogle ||
-        cleanPath == ApiConfig.loginApple;
-  }
-
-  ApiService._internal() {
     EnvironmentConfig.addEnvironmentListener((_) async {
       await onEnvironmentChanged();
     });
@@ -67,7 +60,7 @@ class ApiService {
     _dio.interceptors.add(TracingInterceptor());
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
-        final token = _token;
+        final token = _authService.token;
         if (token != null &&
             !options.headers.containsKey('Authorization') &&
             !_isAuthExcludedPath(options.path)) {
@@ -84,11 +77,11 @@ class ApiService {
             !_isAuthExcludedPath(e.requestOptions.path)) {
           final currentAuth = e.requestOptions.headers['Authorization'];
 
-          if (_token != null &&
+          if (_authService.token != null &&
               currentAuth != null &&
-              currentAuth != 'Bearer $_token') {
+              currentAuth != 'Bearer ${_authService.token}') {
             final options = e.requestOptions;
-            options.headers['Authorization'] = 'Bearer $_token';
+            options.headers['Authorization'] = 'Bearer ${_authService.token}';
             options.extra[_kRetriedKey] = true;
             try {
               final response = await _dio.fetch(options);
@@ -101,7 +94,7 @@ class ApiService {
             }
           }
 
-          final newAccessToken = await _performTokenRefresh();
+          final newAccessToken = await _authService.performTokenRefresh();
           if (newAccessToken != null && newAccessToken.isNotEmpty) {
             final options = e.requestOptions;
             options.headers['Authorization'] = 'Bearer $newAccessToken';
@@ -137,522 +130,158 @@ class ApiService {
     }
   }
 
-  /// Пути, чьи тела запросов/ответов содержат пароли и токены.
+  static bool _isAuthExcludedPath(String path) {
+    final cleanPath = path.split('?').first;
+    return cleanPath == ApiConfig.refreshToken ||
+        cleanPath == ApiConfig.login ||
+        cleanPath == ApiConfig.register ||
+        cleanPath == ApiConfig.loginGoogle ||
+        cleanPath == ApiConfig.loginApple;
+  }
+
   static bool _isAuthPath(String path) => path.startsWith('/auth/');
 
-  static final ApiService instance = ApiService._internal();
+  @visibleForTesting
+  Dio get dio => _dio;
 
-  String? _token;
-  String? _refreshToken;
-  Completer<String?>? _refreshCompleter;
-  String? _userName;
-  String? _email;
-  String? _avatarUrl;
-  String? _transactionsEtag;
-  String? _budgetsEtag;
+  AuthApiService get auth => _authService;
+  TransactionApiService get transactions => _transactionApiService;
+  BudgetApiService get budgets => _budgetApiService;
+  SyncService get sync => _syncService;
 
-  String? get userName => _userName;
-  String? get email => _email;
-  String? get avatarUrl => _avatarUrl;
+  Stream<bool> get authStream => _authService.authStream;
+  String? get userName => _authService.userName;
+  String? get email => _authService.email;
+  String? get avatarUrl => _authService.avatarUrl;
+  bool get isAuthenticated => _authService.isAuthenticated;
+
+  void updateBaseUrl(String newBaseUrl) {
+    _dio.options.baseUrl = newBaseUrl;
+  }
+
+  Future<void> onEnvironmentChanged() async {
+    updateBaseUrl(ApiConfig.baseUrl);
+    await clearAllUserData();
+  }
 
   Future<void> init() async {
-    _token = await _storage.read(key: 'auth_token');
-    _refreshToken = await _storage.read(key: 'refresh_token');
-    _userName = await _storage.read(key: 'auth_user');
-    _email = await _storage.read(key: 'auth_email');
-    _avatarUrl = await _storage.read(key: 'auth_avatar_url');
-    _transactionsEtag = await _storage.read(key: 'transactions_etag');
-    _budgetsEtag = await _storage.read(key: 'budgets_etag');
+    await _authService.init();
+    await _syncService.init();
   }
 
-  /// Сохраняет токены авторизации.
-  Future<void> setTokens(String? token, String? refresh) async {
-    _token = token;
-    _refreshToken = refresh;
+  Future<void> setTokens(String? token, String? refresh) =>
+      _authService.setTokens(token, refresh);
 
-    if (token != null) {
-      await _storage.write(key: 'auth_token', value: token);
-      await _storage.write(key: 'refresh_token', value: refresh);
-    } else {
-      await _storage.delete(key: 'auth_token');
-      await _storage.delete(key: 'refresh_token');
-    }
-  }
+  Future<void> setUserName(String? userName) =>
+      _authService.setUserName(userName);
 
-  Future<void> setUserName(String? userName) async {
-    if (userName != null) {
-      _userName = userName;
-      await _storage.write(key: 'auth_user', value: userName);
-    }
-  }
+  Future<void> setAvatarUrl(String? avatarUrl) =>
+      _authService.setAvatarUrl(avatarUrl);
 
-  Future<void> setAvatarUrl(String? avatarUrl) async {
-    _avatarUrl = avatarUrl;
-    if (avatarUrl != null) {
-      await _storage.write(key: 'auth_avatar_url', value: avatarUrl);
-    } else {
-      await _storage.delete(key: 'auth_avatar_url');
-    }
-  }
+  Future<void> setUserEmail(String? email) => _authService.setUserEmail(email);
 
-  Future<void> setUserEmail(String? email) async {
-    if (email != null) {
-      _email = email;
-      await _storage.write(key: 'auth_email', value: email);
-    }
-  }
-
-  /// Очищает все пользовательские данные авторизации.
   Future<void> clearAllUserData() async {
-    await _storage.delete(key: 'auth_token');
-    await _storage.delete(key: 'refresh_token');
-    await _storage.delete(key: 'auth_user');
-    await _storage.delete(key: 'auth_email');
-    await _storage.delete(key: 'auth_avatar_url');
-    await _storage.delete(key: 'transactions_etag');
-    await _storage.delete(key: 'budgets_etag');
-
-    try {
-      await GoogleSignIn.instance.signOut();
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Google signOut error: $e');
-    }
-
-    _token = null;
-    _refreshToken = null;
-    _userName = null;
-    _email = null;
-    _avatarUrl = null;
-    _transactionsEtag = null;
-    _budgetsEtag = null;
+    await _authService.clearAllUserData();
+    await _syncService.clearEtags();
   }
 
-  bool get isAuthenticated => _token != null;
-
-  Options _authOptions([String? token]) {
-    final effectiveToken = token ?? _token;
-
-    return Options(
-      headers: {
-        if (effectiveToken != null) 'Authorization': 'Bearer $effectiveToken',
-      },
-    );
-  }
-
-  /// Регистрация нового пользователя.
   Future<RegisterModel> register({
     required String email,
     required String password,
     required String name,
-  }) async {
-    final RegisterModel registerResponse;
+  }) =>
+      _authService.register(email: email, password: password, name: name);
 
-    try {
-      final response = await _dio.post(
-        ApiConfig.register,
-        data: {
-          'email': email,
-          'password': password,
-          'name': name,
-        },
-      );
-
-      registerResponse = RegisterModel.fromJson(response.data);
-      await setUserName(registerResponse.name);
-      await setUserEmail(registerResponse.email);
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Register error: ${e.response?.data ?? e.message}');
-      }
-      rethrow;
-    }
-
-    try {
-      await login(email: registerResponse.email, password: password);
-
-      return registerResponse;
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Login after register error: $e');
-      rethrow;
-    }
-  }
-
-  /// Вход пользователя.
   Future<LoginResponseModel> login({
     required String email,
     required String password,
-  }) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.login,
-        data: {
-          'email': email,
-          'password': password,
-        },
-      );
+  }) =>
+      _authService.login(email: email, password: password);
 
-      final data = response.data['data'];
-      final token = data?['access_token'] as String?;
-      final refreshToken = data?['refresh_token'] as String?;
+  Future<LoginResponseModel> loginWithGoogle(String idToken) =>
+      _authService.loginWithGoogle(idToken);
 
-      if (token == null || refreshToken == null) {
-        throw Exception('Сервер не вернул токены');
-      }
+  Future<LoginResponseModel> loginWithApple(String identityToken) =>
+      _authService.loginWithApple(identityToken);
 
-      await setTokens(token, refreshToken);
-      await setUserEmail(email);
-      await fetchAndSaveUserProfile();
+  Future<void> fetchAndSaveUserProfile() =>
+      _authService.fetchAndSaveUserProfile();
 
-      _authStream.add(true); // Уведомляем об успешном входе
+  Future<void> deleteAccount() => _authService.deleteAccount();
 
-      return LoginResponseModel.fromJson(response.data);
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Login error: ${e.response?.data ?? e.message}');
-      }
-      rethrow;
-    }
-  }
+  Future<LogoutResponseModel> logout() => _authService.logout();
 
-  Future<LoginResponseModel> loginWithGoogle(String idToken) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.loginGoogle,
-        data: {'id_token': idToken},
-      );
+  Future<void> performLogout() => _authService.performLogout();
 
-      return _handleLoginResponse(response.data);
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Google login error: ${e.response?.data ?? e.message}');
-      }
-      rethrow;
-    }
-  }
+  Future<bool> refreshAuthTokens() => _authService.refreshAuthTokens();
 
-  Future<LoginResponseModel> loginWithApple(String identityToken) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.loginApple,
-        data: {'identity_token': identityToken},
-      );
-
-      return _handleLoginResponse(response.data);
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Apple login error: ${e.response?.data ?? e.message}');
-      }
-      rethrow;
-    }
-  }
-
-  Future<LoginResponseModel> _handleLoginResponse(dynamic responseData) async {
-    final data = responseData['data'];
-    final token = data?['access_token'] as String?;
-    final refreshToken = data?['refresh_token'] as String?;
-
-    if (token == null || refreshToken == null) {
-      throw Exception('Сервер не вернул токены');
-    }
-
-    await setTokens(token, refreshToken);
-    await fetchAndSaveUserProfile();
-
-    _authStream.add(true);
-
-    return LoginResponseModel.fromJson(responseData);
-  }
-
-  /// Получение и сохранение профиля текущего пользователя.
-  Future<void> fetchAndSaveUserProfile() async {
-    try {
-      final response = await _dio.get(
-        ApiConfig.me,
-        options: _authOptions(),
-      );
-
-      final userProfile = AuthMeResponseModel.fromJson(response.data);
-
-      await setUserName(userProfile.userName);
-      await setUserEmail(userProfile.userEmail);
-      await setAvatarUrl(userProfile.avatarUrl);
-
-      if (kDebugMode) {
-        debugPrint('[ApiService] Profile updated for: ${userProfile.userName}');
-      }
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Fetch profile error: ${e.response?.data ?? e.message}');
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Profile parse error: $e');
-    }
-  }
-
-  /// Удаление аккаунта пользователя с сервера и очистка локальных данных.
-  Future<void> deleteAccount() async {
-    try {
-      await _dio.delete(
-        ApiConfig.me,
-        options: _authOptions(),
-      );
-
-      // Полная очистка локальной БД и очереди удалений, так как аккаунт уничтожен.
-      // Гостевой режим начнется с чистого листа.
-      await LocalDbService.instance.clearAllData();
-      await PendingDeletionsStore.instance.clear();
-
-      await _handleSessionExpired();
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Delete account error: $e');
-      rethrow;
-    }
-  }
-
-  /// Выход из аккаунта.
-  Future<LogoutResponseModel> logout() async {
-    if (_token == null) {
-      if (kDebugMode) debugPrint('[ApiService] Logout attempted without token');
-      return LogoutResponseModel(status: 'error', message: 'Не авторизован');
-    }
-
-    try {
-      final response = await _dio.post(
-        ApiConfig.logout,
-        options: _authOptions(),
-      );
-
-      final logoutResponse = LogoutResponseModel.fromJson(response.data);
-
-      if (kDebugMode) {
-        debugPrint('[ApiService] Logout success: ${logoutResponse.message}');
-      }
-      return logoutResponse;
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Logout error: ${e.response?.data ?? e.message}');
-      }
-      rethrow;
-    } finally {
-      await clearAllUserData();
-    }
-  }
-
-  Future<void> performLogout() async {
-    await clearAllUserData();
-    _authStream.add(false);
-  }
-
-  /// Запрашивает список транзакций с бэкенда с поддержкой пагинации и фильтрации по дате.
-  /// Ограничивает `limit` диапазоном от 1 до 100.
+  // Transactions
   Future<PaginatedResponse<TransactionModel>> getTransactions({
     int limit = 50,
     String? cursor,
     DateTime? since,
-  }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'limit': limit.clamp(1, 100),
-        if (cursor != null) 'cursor': cursor,
-        if (since != null) 'since': since.toUtc().toIso8601String(),
-      };
+  }) =>
+      _transactionApiService.getTransactions(
+          limit: limit, cursor: cursor, since: since);
 
-      final response = await _dio.get(
-        ApiConfig.transactions,
-        queryParameters: queryParams,
-        options: _authOptions(),
-      );
+  Future<TransactionModel> createTransaction(Map<String, dynamic> data) =>
+      _transactionApiService.createTransaction(data);
 
-      final dynamic data =
-          response.data is Map ? response.data['data'] : response.data;
-      if (data is Map) {
-        return PaginatedResponse<TransactionModel>.fromJson(
-          Map<String, dynamic>.from(data),
-          (item) => TransactionModel.fromJson(
-            Map<String, dynamic>.from(item as Map),
-          ),
-        );
-      } else if (data is List) {
-        final items = data
-            .whereType<Map>()
-            .map((json) =>
-                TransactionModel.fromJson(Map<String, dynamic>.from(json)))
-            .toList();
-        return PaginatedResponse<TransactionModel>(
-          items: items,
-          hasMore: false,
-          limit: limit,
-        );
-      }
+  Future<void> deleteTransaction(String id, [String? token]) =>
+      _transactionApiService.deleteTransaction(id, token);
 
-      return PaginatedResponse<TransactionModel>(
-        items: const [],
-        hasMore: false,
-        limit: limit,
-      );
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Get transactions error: $e');
-      rethrow;
-    }
-  }
+  Future<void> deleteTransactionEverywhere(Transaction transaction) =>
+      _transactionApiService.deleteTransactionEverywhere(transaction);
 
-  /// Создать транзакцию.
-  Future<TransactionModel> createTransaction(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.transactions,
-        data: data,
-        options: _authOptions(),
-      );
+  // Budgets
+  Future<List<BudgetModel>> getBudgets({int? month, int? year}) =>
+      _budgetApiService.getBudgets(month: month, year: year);
 
-      return TransactionModel.fromJson(response.data['data']);
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Create transaction error: $e');
-      rethrow;
-    }
-  }
+  Future<BudgetModel> createBudget(Map<String, dynamic> data) =>
+      _budgetApiService.createBudget(data);
 
-  /// Удалить транзакцию с сервера.
-  Future<void> deleteTransaction(String id, [String? token]) async {
-    try {
-      await _dio.delete(
-        '${ApiConfig.transactions}$id',
-        options: _authOptions(token),
-      );
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Delete transaction error: $e');
-      rethrow;
-    }
-  }
+  Future<BudgetModel> updateBudget(Map<String, dynamic> data) =>
+      _budgetApiService.updateBudget(data);
 
-  /// Удаляет транзакцию локально и на сервере.
-  Future<void> deleteTransactionEverywhere(Transaction transaction) async {
-    final serverId = transaction.serverId;
-    LocalDbService.instance.deleteTransaction(transaction.localId);
+  Future<void> deleteBudget(String id, [String? token]) =>
+      _budgetApiService.deleteBudget(id, token);
 
-    if (serverId == null) return;
-
-    if (!isAuthenticated) {
-      await PendingDeletionsStore.instance.addTransaction(serverId);
-      return;
-    }
-
-    try {
-      await deleteTransaction(serverId);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ApiService] Server delete failed, deferring: $e');
-      }
-      await PendingDeletionsStore.instance.addTransaction(serverId);
-    }
-  }
-
-  /// Получить бюджеты.
-  Future<List<BudgetModel>> getBudgets({int? month, int? year}) async {
-    try {
-      final response = await _dio.get(
-        ApiConfig.budgets,
-        queryParameters: {
-          if (month != null) 'month': month,
-          if (year != null) 'year': year,
-        },
-        options: _authOptions(),
-      );
-
-      final List<dynamic> list = response.data['data'];
-      return list.map((json) => BudgetModel.fromJson(json)).toList();
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Get budgets error: $e');
-      rethrow;
-    }
-  }
-
-  /// Создать бюджет.
-  Future<BudgetModel> createBudget(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.budgets,
-        data: data,
-        options: _authOptions(),
-      );
-
-      return BudgetModel.fromJson(response.data['data']);
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Create budget error: $e');
-      rethrow;
-    }
-  }
-
-  /// Обновить или создать бюджет.
-  Future<BudgetModel> updateBudget(Map<String, dynamic> data) async {
-    // В данном API создание и обновление бюджета происходит через один и тот же POST эндпоинт.
-    return createBudget(data);
-  }
-
-  /// Удалить бюджет с сервера по ID.
-  Future<void> deleteBudget(String id, [String? token]) async {
-    try {
-      await _dio.delete(
-        '${ApiConfig.budgets}$id',
-        options: _authOptions(token),
-      );
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Delete budget error: $e');
-      rethrow;
-    }
-  }
-
-  /// Удалить бюджет по категории и периоду.
   Future<void> deleteBudgetByPeriod(
     String category,
     int month,
     int year, [
     String? token,
-  ]) async {
-    try {
-      await _dio.delete(
-        '${ApiConfig.budgets}category/$category/$month/$year',
-        options: _authOptions(token),
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ApiService] Delete budget by period error: $e');
-      }
-      rethrow;
-    }
-  }
+  ]) =>
+      _budgetApiService.deleteBudgetByPeriod(category, month, year, token);
 
-  /// Удаляет бюджет локально и на сервере.
-  Future<void> deleteBudgetEverywhere(Budget budget) async {
-    final serverId = budget.serverId;
-    LocalDbService.instance.deleteBudget(budget.localId);
+  Future<void> deleteBudgetEverywhere(Budget budget) =>
+      _budgetApiService.deleteBudgetEverywhere(budget);
 
-    if (serverId == null) return;
+  // Sync
+  Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) =>
+      _syncService.syncLocalDataToBackend(token);
 
-    if (!isAuthenticated) {
-      await PendingDeletionsStore.instance.addBudget(serverId);
-      return;
-    }
+  Future<Map<String, dynamic>> syncBackendDataToLocal([
+    String? token,
+    void Function(int count, int page)? onTransactionProgress,
+    int maxPages = 100,
+  ]) =>
+      _syncService.syncBackendDataToLocal(
+          token, onTransactionProgress, maxPages);
 
-    try {
-      await deleteBudget(serverId);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ApiService] Server budget delete failed, deferring: $e');
-      }
-      await PendingDeletionsStore.instance.addBudget(serverId);
-    }
-  }
+  Future<Map<String, dynamic>> syncAll([
+    String? token,
+    void Function(int count, int page)? onTransactionProgress,
+    int maxPages = 100,
+  ]) =>
+      _syncService.syncAll(token, onTransactionProgress, maxPages);
 
-  /// Получить AI-инсайты.
-  Future<Map<String, dynamic>> getInsights(
-      {String? currency, String? locale, CancelToken? cancelToken}) async {
+  // Insights & Health
+  Future<Map<String, dynamic>> getInsights({
+    String? currency,
+    String? locale,
+    CancelToken? cancelToken,
+  }) async {
     try {
       final response = await _dio.get(
         ApiConfig.insights,
@@ -669,12 +298,11 @@ class ApiService {
 
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Get insights error: $e');
+      AppLogger.e('[ApiService] Get insights error', e);
       rethrow;
     }
   }
 
-  /// Проверка состояния сервера (/health).
   Future<Map<String, dynamic>> checkHealth() async {
     try {
       final response = await _dio.get(ApiConfig.health);
@@ -682,594 +310,8 @@ class ApiService {
           ? (response.data as Map).cast<String, dynamic>()
           : {'status': 'ok'};
     } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Health check error: $e');
+      AppLogger.e('[ApiService] Health check error', e);
       rethrow;
     }
-  }
-
-  /// Выполняет обновление access и refresh токенов.
-  ///
-  /// Предотвращает состояние гонки (Race Condition): если несколько запросов
-  /// одновременно получают 401, запрос на /auth/refresh выполняется ровно один раз,
-  /// а все параллельные вызовы ожидают его завершения.
-  Future<String?> _performTokenRefresh() async {
-    if (_refreshCompleter != null) {
-      return _refreshCompleter!.future;
-    }
-
-    final completer = Completer<String?>();
-    _refreshCompleter = completer;
-
-    try {
-      final currentRefresh =
-          _refreshToken ?? await _storage.read(key: 'refresh_token');
-      if (currentRefresh == null || currentRefresh.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('[ApiService] No refresh token available');
-        }
-        await _handleSessionExpired();
-        completer.complete(null);
-        return null;
-      }
-
-      if (kDebugMode) {
-        debugPrint('[ApiService] Token expired (401), attempting refresh...');
-      }
-
-      final response = await _dio.post(
-        ApiConfig.refreshToken,
-        data: {'refresh_token': currentRefresh},
-      );
-
-      final resData = response.data is Map
-          ? (response.data['data'] is Map
-              ? response.data['data'] as Map<String, dynamic>
-              : response.data as Map<String, dynamic>)
-          : <String, dynamic>{};
-
-      final newAccess = resData['access_token'] as String?;
-      final newRefresh = resData['refresh_token'] as String? ?? currentRefresh;
-
-      if (newAccess != null && newAccess.isNotEmpty) {
-        await setTokens(newAccess, newRefresh);
-        if (kDebugMode) {
-          debugPrint('[ApiService] Token refreshed successfully');
-        }
-        completer.complete(newAccess);
-        return newAccess;
-      } else {
-        throw Exception('Empty access token returned on refresh');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ApiService] Token refresh failed: $e');
-      }
-      completer.complete(null);
-
-      bool isNetworkError = false;
-      if (e is DioException) {
-        isNetworkError = e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.sendTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.connectionError ||
-            e.type == DioExceptionType.unknown;
-      }
-      if (!isNetworkError) {
-        await _handleSessionExpired();
-      }
-      return null;
-    } finally {
-      _refreshCompleter = null;
-    }
-  }
-
-  /// Обновление пары JWT-токенов через POST /api/v1/auth/refresh.
-  Future<bool> refreshAuthTokens() async {
-    final newAccess = await _performTokenRefresh();
-    return newAccess != null && newAccess.isNotEmpty;
-  }
-
-  /// Выгружает локальные транзакции и бюджеты на сервер (включая удаленные офлайн бюджеты).
-  Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) async {
-    final jwtToken = token ?? _token;
-    if (jwtToken == null) throw Exception('Не авторизован');
-
-    try {
-      final localTransactions =
-          LocalDbService.instance.getUnsyncedTransactions();
-      final localBudgets = LocalDbService.instance.getUnsyncedBudgets();
-      final pendingBudgets = PendingDeletionsStore.instance.budgetIds.toList();
-      final pendingTransactions =
-          PendingDeletionsStore.instance.transactionIds.toList();
-
-      if (localTransactions.isEmpty &&
-          localBudgets.isEmpty &&
-          pendingBudgets.isEmpty &&
-          pendingTransactions.isEmpty) {
-        return {'message': 'Нет данных для синхронизации'};
-      }
-
-      // Формируем список бюджетов с поддержкой флага is_deleted: true для удаленных офлайн
-      final budgetsPayload = <Map<String, dynamic>>[];
-      for (final b in localBudgets) {
-        budgetsPayload.add(b.toJson());
-      }
-      for (final budgetId in pendingBudgets) {
-        budgetsPayload.add({
-          'id': budgetId,
-          'is_deleted': true,
-        });
-      }
-
-      final payload = SyncModel(
-        transactions: localTransactions.map((t) => t.toJson()).toList(),
-        budgets: budgetsPayload,
-        deletedBudgetIds: pendingBudgets.isNotEmpty ? pendingBudgets : null,
-        deletedTransactionIds:
-            pendingTransactions.isNotEmpty ? pendingTransactions : null,
-      );
-
-      final response = await _dio.post(
-        ApiConfig.sync,
-        data: payload.toJson(),
-        options: _authOptions(jwtToken),
-      );
-
-      final data = response.data['data'];
-
-      if (data is Map) {
-        _assignTransactionIds(localTransactions, data['synced_transactions']);
-        _assignBudgetIds(localBudgets, data['synced_budgets']);
-      }
-
-      if (pendingBudgets.isNotEmpty) {
-        await PendingDeletionsStore.instance.removeBudgets(pendingBudgets);
-      }
-      if (pendingTransactions.isNotEmpty) {
-        await PendingDeletionsStore.instance
-            .removeTransactions(pendingTransactions);
-      }
-
-      if (kDebugMode) debugPrint('[ApiService] Sync local -> backend success');
-      return data is Map ? data.cast<String, dynamic>() : response.data;
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ApiService] Sync error: ${e.response?.statusCode}');
-      }
-      throw Exception('Ошибка синхронизации: ${e.response?.statusCode}');
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Sync unexpected error: $e');
-      rethrow;
-    }
-  }
-
-  /// Загружает транзакции и бюджеты пользователя с сервера в локальную базу.
-  Future<Map<String, dynamic>> syncBackendDataToLocal([
-    String? token,
-    void Function(int count, int page)? onTransactionProgress,
-    int maxPages = 100,
-  ]) async {
-    final jwtToken = token ?? _token;
-    if (jwtToken == null) throw Exception('Не авторизован');
-
-    try {
-      final remoteTransactions = await _fetchRemoteTransactions(
-        jwtToken,
-        onProgress: onTransactionProgress,
-        maxPages: maxPages,
-      );
-      final remoteBudgets = await _fetchRemoteBudgets(jwtToken);
-
-      int removedTransactions = 0;
-      int transLength = 0;
-      if (remoteTransactions != null) {
-        removedTransactions =
-            LocalDbService.instance.reconcileTransactions(remoteTransactions);
-        transLength = remoteTransactions.length;
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-              '[ApiService] Transactions not modified (304). Skipping reconciliation.');
-        }
-        transLength = LocalDbService.instance.getAllTransactions().length;
-      }
-
-      int removedBudgets = 0;
-      int budgetsLength = 0;
-      if (remoteBudgets != null) {
-        removedBudgets =
-            LocalDbService.instance.reconcileBudgets(remoteBudgets);
-        budgetsLength = remoteBudgets.length;
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-              '[ApiService] Budgets not modified (304). Skipping reconciliation.');
-        }
-        budgetsLength = LocalDbService.instance.getAllBudgets().length;
-      }
-
-      if (kDebugMode) {
-        debugPrint('[ApiService] Sync backend -> local: '
-            'T($transLength), B($budgetsLength); '
-            'Removed: T($removedTransactions), B($removedBudgets)');
-      }
-
-      return {
-        'transactions': transLength,
-        'budgets': budgetsLength,
-        'removed_transactions': removedTransactions,
-        'removed_budgets': removedBudgets,
-      };
-    } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ApiService] Load error: ${e.response?.statusCode}');
-      }
-      throw Exception('Ошибка загрузки данных: ${e.response?.statusCode}');
-    } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Load unexpected error: $e');
-      rethrow;
-    }
-  }
-
-  /// Полная двусторонняя синхронизация.
-  Future<Map<String, dynamic>> syncAll([
-    String? token,
-    void Function(int count, int page)? onTransactionProgress,
-    int maxPages = 100,
-  ]) async {
-    final jwtToken = token ?? _token;
-    if (jwtToken == null) throw Exception('Не авторизован');
-
-    final deleted = await _flushPendingDeletions(jwtToken);
-    final pushed = await syncLocalDataToBackend(jwtToken);
-    final pulled = await syncBackendDataToLocal(
-      jwtToken,
-      onTransactionProgress,
-      maxPages,
-    );
-
-    return {'deleted': deleted, 'pushed': pushed, 'pulled': pulled};
-  }
-
-  Future<int> _flushPendingDeletions(String token) async {
-    final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
-    final pendingBudgets = PendingDeletionsStore.instance.budgetIds;
-
-    if (pendingTransactions.isEmpty && pendingBudgets.isEmpty) return 0;
-
-    int totalDone = 0;
-
-    if (pendingTransactions.isNotEmpty) {
-      final done = <String>[];
-      for (final serverId in pendingTransactions) {
-        try {
-          await deleteTransaction(serverId, token);
-          done.add(serverId);
-        } on DioException catch (e) {
-          if (e.response?.statusCode == 404) {
-            done.add(serverId);
-          } else {
-            if (kDebugMode) {
-              debugPrint(
-                  '[ApiService] Flush delete transaction $serverId failed: ${e.response?.statusCode}');
-            }
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint(
-                '[ApiService] Flush delete transaction $serverId failed: $e');
-          }
-        }
-      }
-      await PendingDeletionsStore.instance.removeTransactions(done);
-      totalDone += done.length;
-    }
-
-    if (pendingBudgets.isNotEmpty) {
-      final done = <String>[];
-      for (final serverId in pendingBudgets) {
-        try {
-          await deleteBudget(serverId, token);
-          done.add(serverId);
-        } on DioException catch (e) {
-          if (e.response?.statusCode == 404) {
-            done.add(serverId);
-          } else {
-            if (kDebugMode) {
-              debugPrint(
-                  '[ApiService] Flush delete budget $serverId failed: ${e.response?.statusCode}');
-            }
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('[ApiService] Flush delete budget $serverId failed: $e');
-          }
-        }
-      }
-      await PendingDeletionsStore.instance.removeBudgets(done);
-      totalDone += done.length;
-    }
-
-    if (kDebugMode && totalDone > 0) {
-      debugPrint('[ApiService] Flushed pending deletions: $totalDone');
-    }
-
-    return totalDone;
-  }
-
-  Future<List<Transaction>?> _fetchRemoteTransactions(
-    String token, {
-    DateTime? since,
-    void Function(int count, int page)? onProgress,
-    int maxPages = 100,
-  }) async {
-    final options = _authOptions(token);
-    options.validateStatus = (status) =>
-        status != null && ((status >= 200 && status < 300) || status == 304);
-    if (_transactionsEtag != null) {
-      options.headers?['If-None-Match'] = _transactionsEtag;
-    }
-
-    const pageSize = 100;
-    String? currentCursor;
-    final allTransactions = <Transaction>[];
-
-    final firstResponse = await _dio.get(
-      ApiConfig.transactions,
-      queryParameters: {
-        'limit': pageSize,
-        if (since != null) 'since': since.toUtc().toIso8601String(),
-      },
-      options: options,
-    );
-
-    if (firstResponse.statusCode == 304) {
-      return null;
-    }
-
-    final newEtag = firstResponse.headers.value('etag');
-    if (newEtag != null) {
-      _transactionsEtag = newEtag;
-      await _storage.write(key: 'transactions_etag', value: newEtag);
-    }
-
-    final firstData =
-        firstResponse.data is Map ? firstResponse.data['data'] : null;
-    final firstItems = _asJsonList(firstData);
-    allTransactions.addAll(firstItems.map(Transaction.fromJson));
-    onProgress?.call(allTransactions.length, 1);
-
-    if (firstData is Map) {
-      bool hasMore = firstData['has_more'] == true;
-      currentCursor = firstData['next_cursor'] as String?;
-      int page = 1;
-
-      while (hasMore && currentCursor != null && page < maxPages) {
-        page++;
-        final nextResponse = await _dio.get(
-          ApiConfig.transactions,
-          queryParameters: {
-            'limit': pageSize,
-            'cursor': currentCursor,
-            if (since != null) 'since': since.toUtc().toIso8601String(),
-          },
-          options: _authOptions(token),
-        );
-
-        final nextData =
-            nextResponse.data is Map ? nextResponse.data['data'] : null;
-        final nextItems = _asJsonList(nextData);
-        if (nextItems.isEmpty) break;
-
-        allTransactions.addAll(nextItems.map(Transaction.fromJson));
-        onProgress?.call(allTransactions.length, page);
-
-        if (nextData is Map) {
-          hasMore = nextData['has_more'] == true;
-          currentCursor = nextData['next_cursor'] as String?;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      if (page >= maxPages && hasMore) {
-        if (kDebugMode) {
-          debugPrint(
-              '[ApiService] Transaction pagination limit ($maxPages pages) reached.');
-        }
-      }
-    }
-
-    return allTransactions;
-  }
-
-  Future<List<Budget>?> _fetchRemoteBudgets(String token) async {
-    final options = _authOptions(token);
-    options.validateStatus = (status) =>
-        status != null && ((status >= 200 && status < 300) || status == 304);
-
-    if (_budgetsEtag != null) {
-      options.headers?['If-None-Match'] = _budgetsEtag;
-    }
-
-    final response = await _dio.get(
-      ApiConfig.budgets,
-      options: options,
-    );
-
-    if (response.statusCode == 304) {
-      return null;
-    }
-
-    final newEtag = response.headers.value('etag');
-    if (newEtag != null) {
-      _budgetsEtag = newEtag;
-      await _storage.write(key: 'budgets_etag', value: newEtag);
-    }
-
-    return _asJsonList(response.data['data'])
-        .map(Budget.fromJson)
-        .where((b) => b.isValidPeriod)
-        .toList();
-  }
-
-  void _assignTransactionIds(List<Transaction> sent, dynamic remote) {
-    final remoteItems = _asJsonList(remote);
-    if (remoteItems.isEmpty) {
-      final synced = <Transaction>[];
-      for (final local in sent) {
-        if (local.isModified) {
-          local.isModified = false;
-          synced.add(local);
-        }
-      }
-      if (synced.isNotEmpty) {
-        LocalDbService.instance.putTransactions(synced);
-      }
-      return;
-    }
-
-    final synced = <Transaction>[];
-
-    if (remoteItems.length == sent.length) {
-      for (var i = 0; i < sent.length; i++) {
-        final id = remoteItems[i]['id'];
-
-        if (id is String) {
-          sent[i].serverId = id;
-          sent[i].isModified = false;
-          synced.add(sent[i]);
-        }
-      }
-    } else {
-      final byId = <String, Map<String, dynamic>>{};
-      final byKey = <String, Map<String, dynamic>>{};
-
-      for (final json in remoteItems) {
-        final id = json['id'];
-        if (id is String) {
-          byId[id] = json;
-        }
-        byKey[_remoteTransactionKey(json)] = json;
-      }
-      for (final local in sent) {
-        if (local.serverId != null && byId.containsKey(local.serverId)) {
-          local.isModified = false;
-          synced.add(local);
-        } else {
-          final matchedJson = byKey[_localTransactionKey(local)];
-          final id = matchedJson?['id'];
-
-          if (id is String) {
-            local.serverId = id;
-            local.isModified = false;
-            synced.add(local);
-          } else if (local.serverId != null) {
-            local.isModified = false;
-            synced.add(local);
-          }
-        }
-      }
-    }
-
-    LocalDbService.instance.putTransactions(synced);
-    if (kDebugMode) {
-      debugPrint(
-          '[ApiService] Assigned transaction IDs: ${synced.length}/${sent.length}');
-    }
-  }
-
-  void _assignBudgetIds(List<Budget> sent, dynamic remote) {
-    final remoteItems = _asJsonList(remote);
-    if (remoteItems.isEmpty) {
-      final synced = <Budget>[];
-      for (final local in sent) {
-        if (local.isModified) {
-          local.isModified = false;
-          synced.add(local);
-        }
-      }
-      if (synced.isNotEmpty) {
-        LocalDbService.instance.putBudgets(synced);
-      }
-      return;
-    }
-
-    final synced = <Budget>[];
-
-    if (remoteItems.length == sent.length) {
-      for (var i = 0; i < sent.length; i++) {
-        final id = remoteItems[i]['id'];
-
-        if (id is String) {
-          sent[i].serverId = id;
-          sent[i].isModified = false;
-          synced.add(sent[i]);
-        }
-      }
-    } else {
-      final byId = <String, Map<String, dynamic>>{};
-      final byKey = <String, Map<String, dynamic>>{};
-
-      for (final json in remoteItems) {
-        final id = json['id'];
-        if (id is String) {
-          byId[id] = json;
-        }
-        byKey['${json['category']}|${json['month']}|${json['year']}'] = json;
-      }
-      for (final local in sent) {
-        if (local.serverId != null && byId.containsKey(local.serverId)) {
-          local.isModified = false;
-          synced.add(local);
-        } else {
-          final matchedJson =
-              byKey['${local.category.name}|${local.month}|${local.year}'];
-          final id = matchedJson?['id'];
-
-          if (id is String) {
-            local.serverId = id;
-            local.isModified = false;
-            synced.add(local);
-          } else if (local.serverId != null) {
-            local.isModified = false;
-            synced.add(local);
-          }
-        }
-      }
-    }
-
-    LocalDbService.instance.putBudgets(synced);
-    if (kDebugMode) {
-      debugPrint(
-          '[ApiService] Assigned budget IDs: ${synced.length}/${sent.length}');
-    }
-  }
-
-  List<Map<String, dynamic>> _asJsonList(dynamic value) {
-    if (value is Map && value['items'] is List) {
-      return (value['items'] as List)
-          .whereType<Map>()
-          .map((e) => e.cast<String, dynamic>())
-          .toList();
-    }
-    if (value is! List) return const [];
-    return value
-        .whereType<Map>()
-        .map((e) => e.cast<String, dynamic>())
-        .toList();
-  }
-
-  String _remoteTransactionKey(Map<String, dynamic> json) {
-    final date = parseServerDate(json['date']) ??
-        DateTime.parse(json['date'] as String).toLocal();
-
-    return '${parseAmount(json['amount'])}|${json['category']}|'
-        '${json['type']}|${date.millisecondsSinceEpoch}';
-  }
-
-  String _localTransactionKey(Transaction t) {
-    return '${t.amount}|${t.category.name}|${t.type.name}|'
-        '${t.date.millisecondsSinceEpoch}';
   }
 }

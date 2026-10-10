@@ -43,9 +43,7 @@ class InsightsCubit extends Cubit<InsightsState> {
     emit(InsightsLoading());
 
     try {
-      if (kDebugMode) {
-        debugPrint('[Insights] Loading insights');
-      }
+      AppLogger.d('[Insights] Loading insights');
       final data = await _api.getInsights(
         currency: CurrencyFormatter.currentCurrency.code,
         locale: LanguageManager.code,
