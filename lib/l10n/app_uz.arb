@@ -193,11 +193,64 @@
   "privacy_policy_link": "Maxfiylik siyosati",
   "terms_of_use_suffix": "ga rozilik bildirasiz.",
   "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vS1GL9UupJ4IdHRYnSxCeMGlJUU4hroaxGvedGgGaWN_DxNDXBtvmv2ZKvp-z-0B0OclsaANRJO2a8j/pub",
-  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vS1GL9UupJ4IdHRYnSxCeMGlJUU4hroaxGvedGgGaWN_DxNDXBtvmv2ZKvp-z-0B0OclsaANRJO2a8j/pub",
   "privacy_policy_url": "https://docs.google.com/document/d/e/2PACX-1vTjCzniRnHNU9vIhYT9PuU_AHC1ZLyimUAh51f4Rz4NGGewztaY0hiynkfpWG-nKKeBPPh8hbjqMMPY/pub",
   "login_with_google": "Google orqali kirish",
   "login_with_apple": "Apple orqali kirish",
   "continue_with_google": "Google orqali davom eting.",
   "continue_with_apple": "Apple ID orqali davom eting.",
-  "auth_social_error": "Avtorizatsiya bekor qilindi yoki xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring."
+  "auth_social_error": "Avtorizatsiya bekor qilindi yoki xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.",
+  "delete_account_title": "Hisobni o'chirish",
+  "delete_account_confirm": "Haqiqatan ham hisobingizni va barcha bog'liq ma'lumotlarni butunlay o'chirib tashlamoqchimisiz? Ushbu amalni bekor qilib bo'lmaydi.",
+  "delete_account_confirm_btn": "Butunlay o'chirish",
+  "delete_account_btn": "Hisobni o'chirish",
+  "delete_account_error": "Hisobni o'chirishda xatolik",
+  "logging_out": "Chiqilmoqda...",
+  "deleting": "O'chirilmoqda...",
+  "debug_menu_title": "Nosozliklarni tuzatish menyusi",
+  "debug_environment": "Muhit",
+  "debug_environment_changed": "Muhit {env} ga o'zgartirildi. Sessiya qayta tiklandi.",
+  "@debug_environment_changed": {
+    "placeholders": {
+      "env": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_app_info": "Ilova ma'lumotlari",
+  "debug_version": "Versiya: {version}",
+  "@debug_version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_base_url": "Asosiy URL: {url}",
+  "@debug_base_url": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_tools": "Asboblar",
+  "debug_open_logs": "Jurnallarni ochish (Talker)",
+  "debug_clear_cache": "Kesh va tokenlarni tozalash",
+  "debug_cache_cleared": "Kesh va tokenlar tozalandi",
+  "version_label": "Versiya {version}",
+  "@version_label": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_tap_hint": "Nosozliklarni tuzatish menyusini ochish uchun yana {count} marta bosing",
+  "@debug_tap_hint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

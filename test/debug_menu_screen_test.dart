@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,21 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:getbalanceai_mobile/screens/debug_menu_screen.dart';
 import 'package:getbalanceai_mobile/services/app_info_service.dart';
+import 'package:getbalanceai_mobile/utils/language_manager.dart';
+
+Widget _buildTestApp() {
+  return const MaterialApp(
+    locale: Locale('en'),
+    supportedLocales: [Locale('en'), Locale('ru'), Locale('uz')],
+    localizationsDelegates: [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    home: DebugMenuScreen(),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,11 +57,7 @@ API_BASE_URL=http://localhost:8000/api/v1
   testWidgets(
       'DebugMenuScreen renders titles, environment, version and buttons',
       (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: DebugMenuScreen(),
-      ),
-    );
+    await tester.pumpWidget(_buildTestApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Debug Menu'), findsOneWidget);
@@ -61,11 +73,7 @@ API_BASE_URL=http://localhost:8000/api/v1
 
   testWidgets('DebugMenuScreen changes environment via dropdown',
       (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: DebugMenuScreen(),
-      ),
-    );
+    await tester.pumpWidget(_buildTestApp());
     await tester.pumpAndSettle();
 
     // Открываем DropdownButton
@@ -84,11 +92,7 @@ API_BASE_URL=http://localhost:8000/api/v1
 
   testWidgets('DebugMenuScreen clears cache and tokens on button press',
       (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: DebugMenuScreen(),
-      ),
-    );
+    await tester.pumpWidget(_buildTestApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Clear Cache & Tokens'));
@@ -100,11 +104,7 @@ API_BASE_URL=http://localhost:8000/api/v1
 
   testWidgets('DebugMenuScreen opens TalkerScreen on button press',
       (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: DebugMenuScreen(),
-      ),
-    );
+    await tester.pumpWidget(_buildTestApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Open Logs (Talker)'));

@@ -1,5 +1,6 @@
-import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../utils/utils.dart';
 
 /// Экран отображения временной недоступности сервиса (HTTP 503 / Технические работы).
 class ServiceUnavailableScreen extends StatelessWidget {
@@ -14,17 +15,18 @@ class ServiceUnavailableScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryTeal = Color(0xFF0F766E);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Navigator.canPop(context)
             ? IconButton(
-                icon: Icon(Icons.arrow_back,
-                    color: Theme.of(context).colorScheme.onSurface),
+                icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
                 onPressed: () => Navigator.of(context).pop(),
               )
             : null,
@@ -40,11 +42,11 @@ class ServiceUnavailableScreen extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: colorScheme.surfaceContainerHighest,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFD97706).withValues(alpha: 0.15),
+                        color: colorScheme.shadow.withValues(alpha: 0.1),
                         blurRadius: 24,
                         offset: const Offset(0, 8),
                       ),
@@ -54,7 +56,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
                     child: Icon(
                       Icons.engineering_rounded,
                       size: 52,
-                      color: Color(0xFFD97706),
+                      color: AppTheme.warningAmber,
                     ),
                   ),
                 ),
@@ -62,10 +64,9 @@ class ServiceUnavailableScreen extends StatelessWidget {
                 Text(
                   context.l10n.service_unavailable_title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
+                  style: textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -73,9 +74,8 @@ class ServiceUnavailableScreen extends StatelessWidget {
                 Text(
                   customMessage ?? context.l10n.service_unavailable_desc,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                 ),
@@ -86,8 +86,8 @@ class ServiceUnavailableScreen extends StatelessWidget {
                     height: 52,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryTeal,
-                        foregroundColor: Colors.white,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -97,9 +97,9 @@ class ServiceUnavailableScreen extends StatelessWidget {
                       icon: const Icon(Icons.refresh_rounded, size: 20),
                       label: Text(
                         context.l10n.service_unavailable_retry,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: colorScheme.onPrimary,
                         ),
                       ),
                     ),

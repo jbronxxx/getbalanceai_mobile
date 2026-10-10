@@ -23,10 +23,13 @@
 
 ```
 lib/
-├── main.dart                    # Точка входа: .env -> локальная БД -> ApiService.init -> runApp
+├── main.dart                    # Точка входа: .env -> локальная БД -> ApiService.init -> runApp (адаптивная ориентация, AppTheme)
 ├── config/
 │   ├── api_config.dart          # Пути эндпоинтов; ApiConfig.baseUrl делегирует в EnvironmentConfig
 │   └── environment.dart         # Окружения prod/dev/local, выбор в debug (SharedPreferences), в release всегда prod
+├── theme/
+│   ├── app_theme.dart           # Конфигурация светлой и тёмной тем (Material 3, ColorScheme, палитра)
+│   └── theme.dart               # Barrel-файл экспорта темы
 ├── models/
 │   ├── auth_model.dart          # DTO для авторизации (Login, Register, Me)
 │   ├── budget_model.dart        # DTO для бюджетов
@@ -49,6 +52,11 @@ lib/
 │   ├── auth/                    # AuthCubit: глобальное состояние авторизации
 │   ├── insights/                # InsightsCubit: загрузка AI-инсайтов, отмена запросов, реакция на смену валюты/языка
 │   └── profile/                 # ProfileCubit: статус авторизации, облачная синхронизация, выход
+├── widgets/
+│   ├── dashboard/               # Декомпозированные виджеты экрана дашборда (баннер гостя, тайлы, группы)
+│   ├── budgets/                 # Декомпозированные виджеты экрана бюджетов (селектор периода, карточка, лист)
+│   ├── profile/                 # Декомпозированные виджеты профиля (шапка, синк, настройки, версия с таймером)
+│   └── welcome_language_sheet.dart # Выбор стартового языка приложения
 └── screens/
     ├── main_shell.dart            # Каркас с навигацией и слушателем сессии
     ├── dashboard_screen.dart      # Баланс и список операций
@@ -57,6 +65,7 @@ lib/
     ├── insights_screen.dart       # AI-инсайты
     ├── profile_screen.dart        # Профиль пользователя и настройки приложения
     ├── auth_screen.dart           # Вход и регистрация
+    ├── debug_menu_screen.dart     # Скрытое меню отладки (локализовано, токены Material 3)
     └── service_unavailable_screen.dart # Экран технических работ (HTTP 503)
 ```
 
@@ -126,6 +135,31 @@ main.dart`. Это было исправлено переносом состоя
   - При получении HTTP 429 или кода `RATE_LIMIT_EXCEEDED`, `AppErrorHandler` перехватывает ошибку, считывает заголовок `Retry-After` и открывает модальное окно `AppAlerts.showRateLimitDialog` с динамическим таймером обратного отсчета до возможности повторного запроса.
 
 - **Обработка HTTP 503 (Service Unavailable)**: При получении статуса HTTP 503 или кода ошибки `SERVICE_UNAVAILABLE` (например, при технических работах или недоступности бэкенда/эндпоинта `/health`), `AppErrorHandler` перехватывает ошибку и отображает модальный диалог `AppAlerts.showServiceUnavailableDialog` либо перенаправляет на экран `ServiceUnavailableScreen` с поддержкой повтора запроса (`onRetry`) и полной мультиязычностью (RU, UZ, EN).
+
+## Пользовательский интерфейс, темы и верстка (UI & Design System)
+
+- **Дизайн-система и темы (`lib/theme/app_theme.dart`)**:
+  - Все цвета и параметры тем вынесены из `main.dart` в единый класс `AppTheme`.
+  - Поддерживаются `AppTheme.lightTheme` и `AppTheme.darkTheme` на базе Material 3 с палитрами `colorScheme` (основной цвет — `primaryTeal` `#0D9488`, фоны `#F8FAFC` и `#0F172A`, карточки `#FFFFFF` и `#1E293B`, границы `#E2E8F0` и `#334155`).
+  - Во всех экранах и виджетах устранены прямые константы цветов (`Colors.grey/red/orange/...`); стилизация выполняется строго через `Theme.of(context).colorScheme` и `Theme.of(context).textTheme`.
+
+- **Декомпозиция крупных экранов**:
+  - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget`, `DashboardPeriodPickerSheet` (директория `lib/widgets/dashboard/`).
+  - `BudgetsScreen`: декомпозирован на `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
+  - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
+  - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
+
+- **Жизненный цикл провайдеров в `main.dart`**:
+  - `BlocProvider<AuthCubit>` вынесен на самый верхний уровень над `ValueListenableBuilder` темы и языка, исключая пересоздание `AuthCubit` и сброс его подписок при динамическом переключении настроек пользователем.
+
+- **Адаптивная ориентация устройств**:
+  - В `main.dart` перед установкой `SystemChrome.setPreferredOrientations` проверяется размер экрана: для планшетов и iPad (`shortestSide >= 600`) разрешены все 4 ориентации (`portraitUp`, `portraitDown`, `landscapeLeft`, `landscapeRight`) для соответствия гайдлайнам App Store/Google Play, в то время как телефоны работают в портретном режиме.
+
+- **Скрытое Debug-меню (`DebugMenuScreen`)**:
+  - Активируется 5 тапами по плашке версии приложения в профиле (`ProfileAppVersion`).
+  - Добавлен `Timer` на 2 секунды для сброса счётчика тапов при паузе.
+  - При 2–4 тапах отображается всплывающее уведомление (SnackBar) с подсказкой об оставшемся числе тапов.
+  - Тексты и элементы меню отладки полностью интернационализированы (`AppLocalizations`) на русском, узбекском и английском языках, цвета синхронизированы с текущей темой.
 
 
 

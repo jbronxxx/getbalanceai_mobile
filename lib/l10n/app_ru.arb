@@ -193,11 +193,64 @@
   "privacy_policy_link": "Политикой конфиденциальности",
   "terms_of_use_suffix": ".",
   "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vSEWTRgAZeAZEAbwQ8Cc7Pk9mfN8mBECvhYRyfTuDvIuJM-_i4hDl2mvUuboYx5W-6UOV9q3yjpMHRn/pub",
-  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vSEWTRgAZeAZEAbwQ8Cc7Pk9mfN8mBECvhYRyfTuDvIuJM-_i4hDl2mvUuboYx5W-6UOV9q3yjpMHRn/pub",
   "privacy_policy_url": "https://docs.google.com/document/d/e/2PACX-1vS5Bk9fuP4iI8yVeQ41aRkstdsY_tvH2GFJYyZixEGR5QzxTmNIZVZrSX_SfSBs6j-YkyTHxkwxWEpU/pub",
   "login_with_google": "Войти с помощью Google",
   "login_with_apple": "Войти с помощью Apple",
   "continue_with_google": "Продолжите с помощью Google.",
   "continue_with_apple": "Продолжите с помощью Apple ID.",
-  "auth_social_error": "Авторизация прервана или произошла ошибка. Пожалуйста, попробуйте снова."
+  "auth_social_error": "Авторизация прервана или произошла ошибка. Пожалуйста, попробуйте снова.",
+  "delete_account_title": "Удаление аккаунта",
+  "delete_account_confirm": "Вы уверены, что хотите навсегда удалить свой аккаунт и все связанные с ним данные? Это действие невозможно отменить.",
+  "delete_account_confirm_btn": "Удалить навсегда",
+  "delete_account_btn": "Удалить аккаунт",
+  "delete_account_error": "Ошибка удаления аккаунта",
+  "logging_out": "Выход...",
+  "deleting": "Удаление...",
+  "debug_menu_title": "Меню отладки",
+  "debug_environment": "Окружение",
+  "debug_environment_changed": "Окружение изменено на {env}. Сессия сброшена.",
+  "@debug_environment_changed": {
+    "placeholders": {
+      "env": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_app_info": "Информация о приложении",
+  "debug_version": "Версия: {version}",
+  "@debug_version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_base_url": "Базовый URL: {url}",
+  "@debug_base_url": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_tools": "Инструменты",
+  "debug_open_logs": "Открыть логи (Talker)",
+  "debug_clear_cache": "Очистить кеш и токены",
+  "debug_cache_cleared": "Кеш и токены очищены",
+  "version_label": "Версия {version}",
+  "@version_label": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_tap_hint": "Осталось нажать {count} раз(а) для открытия меню отладки",
+  "@debug_tap_hint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import '../config/environment.dart';
 import '../utils/app_logger.dart';
+import '../utils/language_manager.dart';
 import '../services/services.dart';
 
+/// Экран меню отладки для разработчиков и QA-тестирования.
 class DebugMenuScreen extends StatefulWidget {
   const DebugMenuScreen({super.key});
 
@@ -30,13 +32,23 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Debug Menu')),
+      appBar: AppBar(title: Text(l10n.debug_menu_title)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Environment',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(
+            l10n.debug_environment,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
           const SizedBox(height: 8),
           DropdownButton<Environment>(
             value: EnvironmentConfig.current,
@@ -55,21 +67,39 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                        'Environment changed to ${val.name.toUpperCase()}. Session reset.'),
+                      l10n.debug_environment_changed(val.name.toUpperCase()),
+                    ),
                   ),
                 );
               }
             },
           ),
           const Divider(height: 32),
-          const Text('App Info',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(
+            l10n.debug_app_info,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Version: $_appVersion'),
-          Text('Base URL: ${EnvironmentConfig.baseUrl}'),
+          Text(
+            l10n.debug_version(_appVersion),
+            style: textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.debug_base_url(EnvironmentConfig.baseUrl),
+            style: textTheme.bodyMedium,
+          ),
           const Divider(height: 32),
-          const Text('Tools',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(
+            l10n.debug_tools,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () {
@@ -80,17 +110,18 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
                 ),
               );
             },
-            child: const Text('Open Logs (Talker)'),
+            child: Text(l10n.debug_open_logs),
           ),
+          const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () async {
               await ApiService.instance.clearAllUserData();
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cache & Tokens cleared')),
+                SnackBar(content: Text(l10n.debug_cache_cleared)),
               );
             },
-            child: const Text('Clear Cache & Tokens'),
+            child: Text(l10n.debug_clear_cache),
           ),
         ],
       ),
