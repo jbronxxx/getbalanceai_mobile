@@ -1,13 +1,13 @@
-import 'package:getbalanceai_mobile/utils/utils.dart';
-import 'package:getbalanceai_mobile/services/services.dart';
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dashboard_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubits/auth/auth_cubit.dart';
+import '../services/services.dart';
+import '../utils/utils.dart';
+import '../widgets/widgets.dart';
 import 'budgets_screen.dart';
+import 'dashboard_screen.dart';
 import 'insights_screen.dart';
 import 'profile_screen.dart';
-import '../cubits/auth/auth_cubit.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Каркас приложения с нижней навигацией.
 class MainShell extends StatefulWidget {
@@ -23,7 +23,6 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    // Проверяем первый запуск приложения для выбора языка
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstRunLanguageSelection();
     });
@@ -32,160 +31,14 @@ class _MainShellState extends State<MainShell> {
   Future<void> _checkFirstRunLanguageSelection() async {
     final savedLang = await PreferencesService.instance.getLanguage();
     if (savedLang == null && mounted) {
-      _showWelcomeLanguageSheet();
+      WelcomeLanguageSheet.show(context);
     }
   }
 
-  void _showWelcomeLanguageSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Material(
-        type: MaterialType.transparency,
-        child: PopScope(
-          canPop: false, // Запрещаем закрывать по кнопке Назад без выбора
-          child: Container(
-            padding: EdgeInsets.only(
-                top: 10,
-                left: 24,
-                right: 24,
-                bottom: 32 + MediaQuery.of(context).padding.bottom),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(32)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 80,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    context.l10n.welcome_lang_title,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.l10n.welcome_lang_subtitle,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 24),
-                  StatefulBuilder(
-                    builder: (context, setModalState) {
-                      return Column(
-                        children: [
-                          ...AppLanguage.values.map((lang) {
-                            final isSelected =
-                                LanguageManager.currentLanguage == lang;
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xFF0F766E)
-                                        .withValues(alpha: 0.05)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? const Color(0xFF0F766E)
-                                      : Theme.of(context)
-                                          .dividerColor
-                                          .withValues(alpha: 0.1),
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: ListTile(
-                                title: Text(
-                                  '${lang.flag}   ${lang.displayName}',
-                                  style: TextStyle(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? const Color(0xFF0F766E)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                  ),
-                                ),
-                                trailing: isSelected
-                                    ? const Icon(Icons.check_circle,
-                                        color: Color(0xFF0F766E))
-                                    : const Icon(Icons.circle_outlined,
-                                        color: Colors.grey),
-                                onTap: () {
-                                  LanguageManager.setLanguage(lang);
-                                  setModalState(() {});
-                                  setState(() {}); // Перерисовываем оболочку
-                                },
-                              ),
-                            );
-                          }),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F766E),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16)),
-                              ),
-                              onPressed: () {
-                                PreferencesService.instance.saveLanguage(
-                                    LanguageManager.currentLanguage.code);
-                                Navigator.pop(context);
-                              },
-                              child: Text(
-                                context.l10n.continue_btn,
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  /// Переключение на вкладку профиля (индекс 3).
   void _openProfileTab() {
     setState(() {
       _currentIndex = 3;
     });
-  }
-
-  void _onAuthenticated(String email, String name) {
-    // AuthCubit автоматически обновит состояние
   }
 
   void _logout() {
@@ -194,7 +47,7 @@ class _MainShellState extends State<MainShell> {
 
   List<Widget> _getScreens(String email, String name) => [
         DashboardScreen(
-          onAuthenticated: _onAuthenticated,
+          onAuthenticated: (_, __) {},
           onOpenProfile: _openProfileTab,
         ),
         const BudgetsScreen(),
@@ -208,9 +61,9 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryTeal = Color(0xFF0F766E);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    // Слушаем изменение валюты, чтобы мгновенно обновить всё приложение
     return ValueListenableBuilder<Currency>(
       valueListenable: CurrencyFormatter.currencyNotifier,
       builder: (context, currency, child) {
@@ -239,28 +92,30 @@ class _MainShellState extends State<MainShell> {
                     _currentIndex = index;
                   });
                 },
-                indicatorColor: primaryTeal.withValues(alpha: 0.2),
+                indicatorColor: colorScheme.primary.withValues(alpha: 0.15),
                 destinations: [
                   NavigationDestination(
                     icon: const Icon(Icons.wallet_outlined),
-                    selectedIcon: const Icon(Icons.wallet, color: primaryTeal),
+                    selectedIcon:
+                        Icon(Icons.wallet, color: colorScheme.primary),
                     label: context.l10n.balance,
                   ),
                   NavigationDestination(
                     icon: const Icon(Icons.pie_chart_outline),
                     selectedIcon:
-                        const Icon(Icons.pie_chart, color: primaryTeal),
+                        Icon(Icons.pie_chart, color: colorScheme.primary),
                     label: context.l10n.limits,
                   ),
                   NavigationDestination(
                     icon: const Icon(Icons.lightbulb_outline),
                     selectedIcon:
-                        const Icon(Icons.lightbulb, color: primaryTeal),
+                        Icon(Icons.lightbulb, color: colorScheme.primary),
                     label: context.l10n.insights,
                   ),
                   NavigationDestination(
                     icon: const Icon(Icons.person_outline),
-                    selectedIcon: const Icon(Icons.person, color: primaryTeal),
+                    selectedIcon:
+                        Icon(Icons.person, color: colorScheme.primary),
                     label: context.l10n.profile,
                   ),
                 ],

@@ -155,7 +155,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
         Container(
           color: widget.backgroundColor == const Color(0xFFF1F5F9)
               ? (Theme.of(context).brightness == Brightness.dark
-                  ? Colors.black
+                  ? Theme.of(context).colorScheme.surface
                   : widget.backgroundColor)
               : widget.backgroundColor,
           width: double.infinity,
@@ -208,7 +208,10 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
               boxShadow: [
                 if (_dragOffset > 0)
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .shadow
+                        .withValues(alpha: 0.1),
                     blurRadius: 10,
                     spreadRadius: 1,
                     offset: const Offset(0, -2),

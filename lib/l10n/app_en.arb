@@ -193,11 +193,64 @@
   "privacy_policy_link": "Privacy Policy",
   "terms_of_use_suffix": ".",
   "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vR9j3ZRVg7VwMccxRF5D3j96b5MCtRGrQoTx08-zfxpZn6Fp8JKM9bRtVZ6yE4J3g3Vcz7eO9MmDXJk/pub",
-  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vR9j3ZRVg7VwMccxRF5D3j96b5MCtRGrQoTx08-zfxpZn6Fp8JKM9bRtVZ6yE4J3g3Vcz7eO9MmDXJk/pub",
   "privacy_policy_url": "https://docs.google.com/document/d/e/2PACX-1vSRtpUKdUDUgGYNF9LH-mrxYdKtjF_c92oj289iWza_VE6kFLIdZxGBlXmK4_oT2sZJztid8VSXITKv/pub",
   "login_with_google": "Continue with Google",
   "login_with_apple": "Continue with Apple",
   "continue_with_google": "Continue with Google.",
   "continue_with_apple": "Continue with Apple ID.",
-  "auth_social_error": "Authentication failed or was cancelled. Please try again."
+  "auth_social_error": "Authentication failed or was cancelled. Please try again.",
+  "delete_account_title": "Delete Account",
+  "delete_account_confirm": "Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.",
+  "delete_account_confirm_btn": "Delete Permanently",
+  "delete_account_btn": "Delete Account",
+  "delete_account_error": "Failed to delete account",
+  "logging_out": "Logging out...",
+  "deleting": "Deleting...",
+  "debug_menu_title": "Debug Menu",
+  "debug_environment": "Environment",
+  "debug_environment_changed": "Environment changed to {env}. Session reset.",
+  "@debug_environment_changed": {
+    "placeholders": {
+      "env": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_app_info": "App Info",
+  "debug_version": "Version: {version}",
+  "@debug_version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_base_url": "Base URL: {url}",
+  "@debug_base_url": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_tools": "Tools",
+  "debug_open_logs": "Open Logs (Talker)",
+  "debug_clear_cache": "Clear Cache & Tokens",
+  "debug_cache_cleared": "Cache & Tokens cleared",
+  "version_label": "Version {version}",
+  "@version_label": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_tap_hint": "Tap {count} more times to open Debug Menu",
+  "@debug_tap_hint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

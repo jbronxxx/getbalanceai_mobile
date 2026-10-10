@@ -95,8 +95,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final isIOS = theme.platform == TargetPlatform.iOS;
+    final isDark = theme.brightness == Brightness.dark;
 
     final googleButton = _SocialButton(
       icon: Image.asset(
@@ -105,29 +108,29 @@ class _AuthScreenState extends State<AuthScreen> {
         height: 24,
       ),
       text: context.l10n.login_with_google,
-      backgroundColor: isDark ? const Color(0xFF131314) : Colors.white,
-      textColor: isDark ? const Color(0xFFE3E3E3) : Colors.black87,
-      borderColor: isDark ? const Color(0xFF8E918F) : Colors.grey.shade300,
+      backgroundColor:
+          isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+      textColor: colorScheme.onSurface,
+      borderColor: colorScheme.outline,
       onPressed: () => _handleSocialLogin('google'),
     );
 
     final appleButton = _SocialButton(
       icon: FaIcon(FontAwesomeIcons.apple,
-          size: 24, color: Theme.of(context).colorScheme.onPrimary),
+          size: 24, color: colorScheme.onPrimary),
       text: context.l10n.login_with_apple,
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      textColor: Theme.of(context).colorScheme.onPrimary,
-      borderColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: colorScheme.primary,
+      textColor: colorScheme.onPrimary,
+      borderColor: colorScheme.primary,
       onPressed: () => _handleSocialLogin('apple'),
     );
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme:
-            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: SafeArea(
         child: Padding(
@@ -136,15 +139,14 @@ class _AuthScreenState extends State<AuthScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              Icon(Icons.account_circle,
-                  size: 80, color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.account_circle, size: 80, color: colorScheme.primary),
               const SizedBox(height: 24),
               Text(
                 context.l10n.login_or_register,
-                style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface),
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -152,12 +154,14 @@ class _AuthScreenState extends State<AuthScreen> {
                 isIOS
                     ? context.l10n.continue_with_apple
                     : context.l10n.continue_with_google,
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
               if (_isLoading)
-                const CircularProgressIndicator()
+                CircularProgressIndicator(color: colorScheme.primary)
               else if (isIOS)
                 appleButton
               else
@@ -167,7 +171,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text.rich(
                   TextSpan(
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     children: [
                       TextSpan(text: context.l10n.terms_of_use_prefix),
                       WidgetSpan(
@@ -178,9 +184,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               Uri.parse(context.l10n.terms_of_use_url)),
                           child: Text(
                             context.l10n.terms_of_use_link,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.primary,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.primary,
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -195,9 +200,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               Uri.parse(context.l10n.privacy_policy_url)),
                           child: Text(
                             context.l10n.privacy_policy_link,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.primary,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.primary,
                               decoration: TextDecoration.underline,
                             ),
                           ),

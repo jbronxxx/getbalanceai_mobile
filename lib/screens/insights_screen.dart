@@ -1,8 +1,8 @@
-import 'package:getbalanceai_mobile/utils/utils.dart';
-import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
+import '../utils/utils.dart';
+import '../widgets/widgets.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatelessWidget {
@@ -20,7 +20,11 @@ class InsightsScreen extends StatelessWidget {
 class _InsightsScreenView extends StatelessWidget {
   const _InsightsScreenView();
 
-  Widget _buildNoNetworkPlaceholder() {
+  Widget _buildNoNetworkPlaceholder(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -30,14 +34,15 @@ class _InsightsScreenView extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.wifi_off, size: 64, color: Colors.grey[400]),
+                Icon(Icons.wifi_off, size: 64, color: colorScheme.outline),
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.no_network_title,
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface),
+                  style: textTheme.titleMedium?.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Padding(
@@ -45,11 +50,9 @@ class _InsightsScreenView extends StatelessWidget {
                   child: Text(
                     context.l10n.no_network_desc,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.6)),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -60,15 +63,56 @@ class _InsightsScreenView extends StatelessWidget {
     );
   }
 
+  Widget _buildInsightCard(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.auto_awesome, color: colorScheme.primary, size: 24),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const primaryTeal = Color(0xFF0F766E);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(context.l10n.insights_header_title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(
+          context.l10n.insights_header_title,
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -83,8 +127,8 @@ class _InsightsScreenView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                  gradient: LinearGradient(
+                    colors: [colorScheme.primary, colorScheme.secondary],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -92,15 +136,19 @@ class _InsightsScreenView extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.lightbulb, color: Colors.white, size: 36),
+                    Icon(
+                      Icons.lightbulb,
+                      color: colorScheme.onPrimary,
+                      size: 36,
+                    ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         context.l10n.insights_header_subtitle,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500),
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -109,10 +157,11 @@ class _InsightsScreenView extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 context.l10n.personal_recs_title,
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface),
+                style: textTheme.titleMedium?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
               BlocBuilder<InsightsCubit, InsightsState>(
                 builder: (context, state) {
@@ -121,15 +170,17 @@ class _InsightsScreenView extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6),
                       child: Row(
                         children: [
-                          Icon(Icons.schedule,
-                              size: 14, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             '${context.l10n.insights_updated_prefix}: ${LanguageManager.formatDate(state.generatedAt!)}',
                             key: const Key('insights_updated_at'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -155,30 +206,27 @@ class _InsightsScreenView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 7),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                            color: Theme.of(context)
-                                .dividerColor
-                                .withValues(alpha: 0.1)),
+                          color: theme.dividerColor.withValues(alpha: 0.1),
+                        ),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info_outline,
-                              size: 15, color: Colors.blueGrey.shade500),
+                          Icon(
+                            Icons.info_outline,
+                            size: 15,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               context.l10n.insights_cache_hint,
                               key: const Key('insights_cache_hint'),
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                                 height: 1.3,
                               ),
                             ),
@@ -195,14 +243,22 @@ class _InsightsScreenView extends StatelessWidget {
                 child: BlocBuilder<InsightsCubit, InsightsState>(
                   builder: (context, state) {
                     if (state is InsightsLoading || state is InsightsInitial) {
-                      return const Center(
-                          child: CircularProgressIndicator(color: primaryTeal));
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: colorScheme.primary,
+                        ),
+                      );
                     } else if (state is InsightsNetworkError) {
-                      return _buildNoNetworkPlaceholder();
+                      return _buildNoNetworkPlaceholder(context);
                     } else if (state is InsightsError) {
                       return Center(
-                          child: Text(state.message,
-                              style: const TextStyle(color: Colors.red)));
+                        child: Text(
+                          state.message,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
+                      );
                     } else if (state is InsightsUnauthenticated) {
                       return ListView.builder(
                         physics: const ClampingScrollPhysics(
@@ -210,8 +266,7 @@ class _InsightsScreenView extends StatelessWidget {
                         ),
                         itemCount: 1,
                         itemBuilder: (context, index) {
-                          return _buildInsightCard(
-                              context, state.hint, primaryTeal);
+                          return _buildInsightCard(context, state.hint);
                         },
                       );
                     } else if (state is InsightsLoaded) {
@@ -222,7 +277,7 @@ class _InsightsScreenView extends StatelessWidget {
                         itemCount: state.insights.length,
                         itemBuilder: (context, index) {
                           return _buildInsightCard(
-                              context, state.insights[index], primaryTeal);
+                              context, state.insights[index]);
                         },
                       );
                     }
@@ -233,36 +288,6 @@ class _InsightsScreenView extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInsightCard(
-      BuildContext context, String text, Color primaryTeal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.auto_awesome, color: primaryTeal, size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  height: 1.4),
-            ),
-          ),
-        ],
       ),
     );
   }

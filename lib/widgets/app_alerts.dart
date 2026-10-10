@@ -1,4 +1,5 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import '../theme/app_theme.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -56,7 +57,8 @@ class AppAlerts {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color:
+                  Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -195,7 +197,7 @@ class AppAlerts {
                   message,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
@@ -206,8 +208,8 @@ class AppAlerts {
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEF4444),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -279,7 +281,7 @@ class AppAlerts {
                   message ?? context.l10n.service_unavailable_desc,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
@@ -291,8 +293,9 @@ class AppAlerts {
                     height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F766E),
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -313,7 +316,9 @@ class AppAlerts {
                     onPressed: () => Navigator.of(dialogContext).pop(),
                     child: Text(
                       context.l10n.dialog_ok,
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                   ),
                 ] else ...[
@@ -322,8 +327,9 @@ class AppAlerts {
                     height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F766E),
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -463,7 +469,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
           widget.message,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.5,
           ),
           textAlign: TextAlign.center,
@@ -474,9 +480,11 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFBEB),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFDE68A)),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -486,17 +494,17 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
                       ? Icons.timer_outlined
                       : Icons.check_circle_outline,
                   size: 18,
-                  color: const Color(0xFFD97706),
+                  color: AppTheme.warningAmber,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _secondsLeft > 0
                       ? '${context.l10n.rate_limit_countdown_prefix} $_secondsLeft ${context.l10n.uzs_symbol == 'сум' ? 'сек.' : 'sec'}'
                       : context.l10n.rate_limit_ready,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF92400E),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -510,8 +518,8 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
             height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F766E),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -532,7 +540,9 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               context.l10n.dialog_ok,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
           ),
         ] else ...[
@@ -541,8 +551,8 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
             height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F766E),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

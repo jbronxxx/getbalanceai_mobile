@@ -96,8 +96,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryTeal = Color(0xFF0F766E);
     final isEditing = widget.transactionToEdit != null;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Container(
       margin: EdgeInsets.only(
@@ -110,7 +112,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         bottom: 24 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
@@ -123,7 +125,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -135,8 +137,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 isEditing
                     ? context.l10n.edit_transaction
                     : context.l10n.new_transaction,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -148,9 +152,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey.shade800
-                  : Colors.grey.shade100,
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -168,25 +170,27 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _type == TransactionType.expense
-                            ? Theme.of(context).cardColor
+                            ? theme.cardColor
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _type == TransactionType.expense
                             ? [
                                 BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2))
+                                  color: colorScheme.shadow
+                                      .withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
                               ]
                             : [],
                       ),
                       child: Text(
                         context.l10n.expense_title,
-                        style: TextStyle(
+                        style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.expense
-                              ? Theme.of(context).colorScheme.onSurface
-                              : Colors.grey,
+                              ? colorScheme.onSurface
+                              : colorScheme.outline,
                         ),
                       ),
                     ),
@@ -205,25 +209,27 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _type == TransactionType.income
-                            ? Theme.of(context).cardColor
+                            ? theme.cardColor
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _type == TransactionType.income
                             ? [
                                 BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2))
+                                  color: colorScheme.shadow
+                                      .withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
                               ]
                             : [],
                       ),
                       child: Text(
                         context.l10n.income_title,
-                        style: TextStyle(
+                        style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.income
-                              ? primaryTeal
-                              : Colors.grey,
+                              ? colorScheme.primary
+                              : colorScheme.outline,
                         ),
                       ),
                     ),
@@ -247,15 +253,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           ),
           const SizedBox(height: 16),
           Theme(
-            data: Theme.of(context).copyWith(
-              shadowColor: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : Colors.black.withValues(alpha: 0.2),
+            data: theme.copyWith(
+              shadowColor: colorScheme.shadow,
             ),
             child: DropdownButtonFormField<Category>(
               value: _category,
               borderRadius: BorderRadius.circular(24),
-              dropdownColor: Theme.of(context).cardColor,
+              dropdownColor: theme.cardColor,
               elevation: 16,
               alignment: Alignment.centerLeft,
               decoration: InputDecoration(
@@ -292,8 +296,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             height: 54,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryTeal,
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
               ),
@@ -302,8 +306,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 isEditing
                     ? context.l10n.save_changes_btn
                     : context.l10n.add_btn,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onPrimary,
+                ),
               ),
             ),
           ),
