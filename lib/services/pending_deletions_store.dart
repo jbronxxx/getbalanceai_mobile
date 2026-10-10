@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../utils/app_logger.dart';
 
 /// Очередь удалений, которые ещё не доехали до сервера («надгробия»).
 ///
@@ -59,7 +59,7 @@ class PendingDeletionsStore {
         }
       }
     } catch (e) {
-      debugPrint('Не удалось прочитать очередь удалений: $e');
+      AppLogger.w('Не удалось прочитать очередь удалений: $e');
     }
 
     instance = PendingDeletionsStore._(file, transactionIds, budgetIds);
@@ -107,7 +107,7 @@ class PendingDeletionsStore {
       // Запись не удалась — очередь останется только в памяти и будет
       // потеряна при перезапуске. Это лучше, чем упасть в момент удаления
       // транзакции, но знать об этом в логах полезно.
-      debugPrint('Не удалось сохранить очередь удалений: $e');
+      AppLogger.w('Не удалось сохранить очередь удалений: $e');
     }
   }
 

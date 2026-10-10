@@ -1,7 +1,6 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
 /// Кастомный виджет Pull-to-Refresh с эффектом «протягивания» всего контента
@@ -107,7 +106,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
   }
 
   Future<void> _startRefresh() async {
-    if (kDebugMode) debugPrint('[CustomPullToRefresh] Starting refresh...');
+    AppLogger.d('[CustomPullToRefresh] Starting refresh...');
     setState(() {
       _isRefreshing = true;
       _canRefresh = false;

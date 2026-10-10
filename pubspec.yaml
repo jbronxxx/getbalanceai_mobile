@@ -27,7 +27,6 @@ dependencies:
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^7.0.1
   url_launcher: ^6.3.2
-  logger: ^2.8.0
   shared_preferences: ^2.5.3
   package_info_plus: ^9.0.1
   talker_flutter: ^5.1.16

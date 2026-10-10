@@ -64,7 +64,7 @@ class _AuthScreenState extends State<AuthScreen> {
       try {
         await ApiService.instance.syncAll();
       } catch (e) {
-        debugPrint('Синхронизация после входа не удалась: $e');
+        AppLogger.w('Синхронизация после входа не удалась: $e');
       }
 
       if (!mounted) return;
@@ -140,7 +140,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   size: 80, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 24),
               Text(
-                LanguageManager.t('login_or_register'),
+                context.l10n.login_or_register,
                 style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,

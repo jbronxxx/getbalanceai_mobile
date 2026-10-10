@@ -35,10 +35,15 @@ lib/
 │   ├── sync_model.dart          # Модель для пакетной синхронизации
 │   └── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
 ├── services/
-│   ├── local_db_service.dart    # Доступ к ObjectBox (singleton)
-│   ├── api_service.dart          # Клиент API (Dio, JWT, Refresh Token, Sync)
+│   ├── api_service.dart          # Единый сетевой фасад (делегирует в Auth/Transaction/Budget/Sync)
+│   ├── auth_api_service.dart     # Сервис аутентификации, сессий и токенов
+│   ├── transaction_api_service.dart # Сервис API транзакций
+│   ├── budget_api_service.dart   # Сервис API бюджетов
+│   ├── sync_service.dart         # Двусторонняя синхронизация с бэкендом
+│   ├── local_db_service.dart     # Доступ к ObjectBox (singleton)
 │   ├── app_info_service.dart     # Кеширование метаданных приложения (версия, сборка)
-│   ├── tracing_interceptor.dart # Сквозная трассировка сетевых запросов (X-Request-ID)
+│   ├── preferences_service.dart  # Настройки (тема, язык, валюта)
+│   ├── tracing_interceptor.dart  # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
 │   ├── auth/                    # AuthCubit: глобальное состояние авторизации
@@ -113,8 +118,8 @@ main.dart`. Это было исправлено переносом состоя
 
 ## Наблюдаемость и обработка сбоев (Observability & Error Handling)
 
-- **Логирование и отладка**: `lib/utils/app_logger.dart` содержит `logger` (package `logger`) и `talker` (Talker, активен только в debug). HTTP-трафик в debug пишет `TalkerDioLogger`. Скрытое Debug-меню (`DebugMenuScreen`, не работает в release) позволяет сменить окружение, посмотреть логи Talker и очистить кеш/токены. `CrashlyticsService` — заглушка, пишущая ошибки в лог.
-- **Сквозная трассировка (X-Request-ID)**: В сетевом клиенте Dio зарегистрирован `TracingInterceptor`. Для каждого исходящего запроса генерируется UUID v4 (или сохраняется существующий заголовок `X-Request-ID`). При сбоях или ответах идентификатор запроса извлекается из заголовков ответа (`x-request-id`) или запроса и передается в логи (`developer.log` / `debugPrint`) для упрощения диагностики и корреляции с бэкендом.
+- **Логирование и отладка**: Единый логгер `AppLogger` (`lib/utils/app_logger.dart`) направляет все сообщения в `talker` (Talker, активен только в debug). Зависимость `package:logger` удалена, устранено дублирование. HTTP-трафик в debug пишет `TalkerDioLogger`. Скрытое Debug-меню (`DebugMenuScreen`, не работает в release) позволяет сменить окружение, просматривать логи Talker и очистить кеш/токены.
+- **Сквозная трассировка (X-Request-ID)**: В сетевом клиенте Dio зарегистрирован `TracingInterceptor`. Для каждого исходящего запроса генерируется UUID v4 (или сохраняется существующий заголовок `X-Request-ID`). При сбоях или ответах идентификатор запроса извлекается из заголовков ответа (`x-request-id`) или запроса и передается в `AppLogger` для упрощения диагностики и корреляции с бэкендом.
 - **Ограничение частоты запросов (Rate Limiting HTTP 429 / RATE_LIMIT_EXCEEDED)**:
   - Эндпоинты аутентификации (`/api/v1/auth/login`, `/api/v1/auth/register`) ограничены лимитом 5 запросов в минуту на IP.
   - Эндпоинт аналитики (`/api/v1/insights/`) ограничен лимитом 10 запросов в минуту.

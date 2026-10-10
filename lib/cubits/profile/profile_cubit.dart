@@ -1,4 +1,5 @@
 import 'package:getbalanceai_mobile/services/services.dart';
+import 'package:getbalanceai_mobile/utils/app_logger.dart';
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -45,7 +46,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     try {
       await _api.logout();
     } catch (e) {
-      if (kDebugMode) debugPrint('[ProfileCubit] Server logout failed: $e');
+      AppLogger.w('[ProfileCubit] Server logout failed: $e');
     }
   }
 }

@@ -3,7 +3,6 @@ import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 /// Экран лимитов бюджета: показывает установленные лимиты по категориям за
@@ -65,9 +64,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
 
     try {
-      if (kDebugMode) {
-        debugPrint('[Budgets] Starting syncAll via pull-to-refresh');
-      }
+      AppLogger.d('[Budgets] Starting syncAll via pull-to-refresh');
       await ApiService.instance.syncAll();
       _loadBudgets();
       if (mounted) {

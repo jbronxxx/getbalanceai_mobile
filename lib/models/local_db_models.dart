@@ -61,7 +61,13 @@ enum TransactionType {
 
   /// Возвращает локализованное название типа транзакции.
   String getLocalizedName([BuildContext? context]) {
-    return LanguageManager.t('type_$name');
+    final l = context != null ? context.l10n : LanguageManager.l10n;
+    switch (this) {
+      case TransactionType.income:
+        return l.type_income;
+      case TransactionType.expense:
+        return l.type_expense;
+    }
   }
 }
 
@@ -115,7 +121,35 @@ enum Category {
 
   /// Возвращает локализованное название категории.
   String getLocalizedName([BuildContext? context]) {
-    return LanguageManager.t('category_$name');
+    final l = context != null ? context.l10n : LanguageManager.l10n;
+    switch (this) {
+      case Category.food:
+        return l.category_food;
+      case Category.transport:
+        return l.category_transport;
+      case Category.entertainment:
+        return l.category_entertainment;
+      case Category.health:
+        return l.category_health;
+      case Category.subscriptions:
+        return l.category_subscriptions;
+      case Category.shopping:
+        return l.category_shopping;
+      case Category.salary:
+        return l.category_salary;
+      case Category.freelance:
+        return l.category_freelance;
+      case Category.investments:
+        return l.category_investments;
+      case Category.transfers:
+        return l.category_transfers;
+      case Category.cashback:
+        return l.category_cashback;
+      case Category.sales:
+        return l.category_sales;
+      case Category.other:
+        return l.category_other;
+    }
   }
 }
 
