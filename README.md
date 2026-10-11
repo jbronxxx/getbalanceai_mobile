@@ -82,6 +82,24 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 стабильные ID полей между миграциями схемы базы, его нельзя добавлять в
 `.gitignore` и нельзя удалять вручную.
 
+## Иконка и экран запуска (Launcher Icons & Splash Screen)
+
+* **Иконка приложения**:
+  * Мастер-ассет: `assets/images/app_icon.png` (1024×1024).
+  * Конфигурация в `pubspec.yaml` (`flutter_launcher_icons`).
+  * Генерация иконок для iOS и Android:
+    ```bash
+    fvm flutter pub run flutter_launcher_icons
+    ```
+
+* **Экран запуска (Native Splash Screen)**:
+  * Ассеты логотипов: `assets/images/splash_logo.png` (светлая тема) и `assets/images/splash_logo_dark.png` (темная тема).
+  * Конфигурация в `pubspec.yaml` (`flutter_native_splash`).
+  * Генерация нативных сплеш-экранов под iOS и Android (включая Android 12+ Splash API):
+    ```bash
+    fvm flutter pub run flutter_native_splash:create
+    ```
+
 ## Запуск в режиме разработки
 
 ```bash

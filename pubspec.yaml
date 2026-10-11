@@ -31,6 +31,7 @@ dependencies:
   package_info_plus: ^9.0.1
   talker_flutter: ^5.1.16
   talker_dio_logger: ^5.1.20
+  flutter_native_splash: ^2.4.4
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +41,29 @@ dev_dependencies:
   objectbox_generator: any
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/splash_logo.png"
+  color_dark: "#000000"
+  image_dark: "assets/images/splash_logo_dark.png"
+  android_12:
+    color: "#FFFFFF"
+    image: "assets/images/splash_logo.png"
+    color_dark: "#000000"
+    image_dark: "assets/images/splash_logo_dark.png"
+  fullscreen: true
+  android: true
+  ios: true
 
 flutter:
   uses-material-design: true
@@ -48,3 +72,4 @@ flutter:
     - .env
     - assets/google_fonts/
     - assets/images/
+
