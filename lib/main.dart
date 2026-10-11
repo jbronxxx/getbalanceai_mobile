@@ -12,13 +12,16 @@ import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'config/environment.dart';
 
 import 'theme/theme.dart';
 
 /// Точка входа в приложение.
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // Удержание нативного сплеш-экрана на время асинхронной инициализации сервисов
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   GoogleFonts.config.allowRuntimeFetching = false;
 
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -72,6 +75,8 @@ void main() async {
   }
 
   runApp(const FinanceApp());
+  // Скрытие нативного сплеш-экрана после передачи управления корневому виджету
+  FlutterNativeSplash.remove();
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
