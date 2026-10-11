@@ -84,7 +84,7 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${LanguageManager.currentLanguage.flag} ${LanguageManager.currentLanguage.displayName}',
+                  LanguageManager.currentLanguage.displayName,
                   style: textTheme.bodyMedium?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -137,12 +137,6 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: colorScheme.onSurface,
-              ),
-            ),
-            subtitle: Text(
-              l10n.limits_and_budgets,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
               ),
             ),
             value: _notificationsEnabled,

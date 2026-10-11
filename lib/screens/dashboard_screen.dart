@@ -46,10 +46,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadTransactions();
     _checkSwipeHint();
     _scrollController.addListener(_onScroll);
+    CurrencyFormatter.currencyNotifier.addListener(_onCurrencyChanged);
+  }
+
+  void _onCurrencyChanged() {
+    if (mounted) {
+      _loadTransactions();
+    }
   }
 
   @override
   void dispose() {
+    CurrencyFormatter.currencyNotifier.removeListener(_onCurrencyChanged);
     _swipeHintDismissTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
@@ -281,16 +289,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 130),
-                      child: Text(
-                        context.l10n.login_or_register,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
+                    child: Text(
+                      context.l10n.login_btn_short,
+                      maxLines: 1,
+                      style: textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
                       ),
                     ),
                   ),
@@ -313,8 +317,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (!ApiService.instance.isAuthenticated)
-                        const GuestModeBanner(),
                       BalanceCard(
                         balance: _totalBalance,
                         income: _totalIncome,

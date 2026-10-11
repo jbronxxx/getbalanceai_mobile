@@ -61,7 +61,7 @@
     },
     {
       "id": "2:4394803372386859630",
-      "lastPropertyId": "9:3156196231427403429",
+      "lastPropertyId": "12:7791215221864576812",
       "name": "Transaction",
       "properties": [
         {
@@ -111,6 +111,21 @@
           "id": "9:3156196231427403429",
           "name": "isModified",
           "type": 1
+        },
+        {
+          "id": "10:4748144081005625759",
+          "name": "currencyCode",
+          "type": 9
+        },
+        {
+          "id": "11:3750571858293975154",
+          "name": "exchangeRate",
+          "type": 8
+        },
+        {
+          "id": "12:7791215221864576812",
+          "name": "baseAmount",
+          "type": 8
         }
       ],
       "relations": []

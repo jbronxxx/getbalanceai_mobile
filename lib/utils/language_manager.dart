@@ -35,11 +35,13 @@ class LanguageManager {
   static final ValueNotifier<AppLanguage> languageNotifier =
       ValueNotifier(AppLanguage.ru);
 
-  static void setLanguage(AppLanguage language) {
+  static void setLanguage(AppLanguage language, {bool save = true}) {
     _currentLanguage = language;
     _l10n = lookupAppLocalizations(Locale(language.code));
     languageNotifier.value = language;
-    PreferencesService.instance.saveLanguage(language.code);
+    if (save) {
+      PreferencesService.instance.saveLanguage(language.code);
+    }
   }
 
   static Future<void> loadSavedLanguage() async {
@@ -172,6 +174,29 @@ class LanguageManager {
       return formatDateTime(date);
     }
     return formatDayMonth(date);
+  }
+
+  /// Форматирует количество операций с грамматически корректным склонением для текущего языка.
+  static String formatOperationsCount(int count) {
+    switch (_currentLanguage) {
+      case AppLanguage.ru:
+        final mod10 = count % 10;
+        final mod100 = count % 100;
+        if (mod100 >= 11 && mod100 <= 14) {
+          return '$count операций';
+        }
+        if (mod10 == 1) {
+          return '$count операция';
+        }
+        if (mod10 >= 2 && mod10 <= 4) {
+          return '$count операции';
+        }
+        return '$count операций';
+      case AppLanguage.uz:
+        return '$count ta operatsiya';
+      case AppLanguage.en:
+        return count == 1 ? '1 transaction' : '$count transactions';
+    }
   }
 }
 

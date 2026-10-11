@@ -1,16 +1,40 @@
 import 'package:flutter/material.dart';
+import '../../services/services.dart';
 import '../../utils/utils.dart';
 
-/// Модальный лист выбора рабочей валюты.
+/// Модальный лист выбора валюты.
 class CurrencyPickerSheet extends StatelessWidget {
-  const CurrencyPickerSheet({super.key});
+  final Currency? selectedCurrency;
+  final ValueChanged<Currency>? onCurrencySelected;
+  final bool updateGlobalCurrency;
 
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
+  const CurrencyPickerSheet({
+    super.key,
+    this.selectedCurrency,
+    this.onCurrencySelected,
+    this.updateGlobalCurrency = true,
+  });
+
+  /// Открывает лист выбора валюты.
+  ///
+  /// Если [updateGlobalCurrency] равен true (по умолчанию для настроек профиля),
+  /// выбранная валюта сохраняется в [CurrencyFormatter] как базовая валюта приложения.
+  /// Для локального выбора (например, валюты конкретной операции) передается `updateGlobalCurrency: false`.
+  static Future<Currency?> show(
+    BuildContext context, {
+    Currency? selectedCurrency,
+    ValueChanged<Currency>? onCurrencySelected,
+    bool updateGlobalCurrency = true,
+  }) {
+    return showModalBottomSheet<Currency>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const CurrencyPickerSheet(),
+      builder: (_) => CurrencyPickerSheet(
+        selectedCurrency: selectedCurrency,
+        onCurrencySelected: onCurrencySelected,
+        updateGlobalCurrency: updateGlobalCurrency,
+      ),
     );
   }
 
@@ -56,33 +80,36 @@ class CurrencyPickerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ...Currency.values.map((currency) {
-              return ValueListenableBuilder<Currency>(
-                valueListenable: CurrencyFormatter.currencyNotifier,
-                builder: (context, currentCurrency, child) {
-                  final isSelected = currentCurrency == currency;
-                  final label =
-                      '${currency.localizedSymbol} — ${currency.localizedName}';
+              final activeCurrency =
+                  selectedCurrency ?? CurrencyFormatter.currentCurrency;
+              final isSelected = activeCurrency == currency;
+              final label = currency.localizedName;
 
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      label,
-                      style: textTheme.bodyLarge?.copyWith(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(Icons.check, color: colorScheme.primary)
-                        : null,
-                    onTap: () {
-                      CurrencyFormatter.setCurrency(currency);
-                      Navigator.pop(context);
-                    },
-                  );
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  label,
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
+                  ),
+                ),
+                trailing: isSelected
+                    ? Icon(Icons.check, color: colorScheme.primary)
+                    : null,
+                onTap: () {
+                  if (updateGlobalCurrency) {
+                    CurrencyFormatter.setCurrency(currency);
+                    ApiService.instance
+                        .updateUserProfile(baseCurrency: currency.code);
+                  }
+                  if (onCurrencySelected != null) {
+                    onCurrencySelected!(currency);
+                  }
+                  Navigator.pop(context, currency);
                 },
               );
             }),

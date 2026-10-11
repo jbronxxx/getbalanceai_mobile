@@ -3,6 +3,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../objectbox.g.dart';
 import '../utils/app_logger.dart';
+import '../utils/currency_formatter.dart';
+import 'currency_exchange_service.dart';
 
 /// Локальное хранилище приложения на базе ObjectBox.
 ///
@@ -15,7 +17,17 @@ import '../utils/app_logger.dart';
 /// входа пользователя эти данные синхронизируются с бэкендом через
 /// [ApiService].
 class LocalDbService {
-  static late final LocalDbService instance;
+  static LocalDbService? _instance;
+  static LocalDbService get instance {
+    if (_instance == null) {
+      throw StateError(
+          'LocalDbService has not been initialized. Call init() first.');
+    }
+    return _instance!;
+  }
+
+  static set instance(LocalDbService value) => _instance = value;
+  static bool get isInitialized => _instance != null;
 
   late final Store _store;
   late final Box<Transaction> _transactionBox;
@@ -24,6 +36,39 @@ class LocalDbService {
   LocalDbService._create(this._store) {
     _transactionBox = Box<Transaction>(_store);
     _budgetBox = Box<Budget>(_store);
+    _migrateLegacyTransactions();
+  }
+
+  /// Мигрирует старые транзакции, созданные до внедрения мультивалютности.
+  /// Если baseAmount равен 0, заполняет его на основе amount и текущей валюты.
+  void _migrateLegacyTransactions() {
+    try {
+      final legacyQuery = _transactionBox
+          .query(Transaction_.baseAmount
+              .lessOrEqual(0.0)
+              .and(Transaction_.amount.greaterThan(0.0)))
+          .build();
+      final legacy = legacyQuery.find();
+      legacyQuery.close();
+
+      if (legacy.isNotEmpty) {
+        final updated = <Transaction>[];
+        for (final tx in legacy) {
+          tx.baseAmount = tx.amount;
+          tx.exchangeRate = 1.0;
+          if (tx.currencyCode.isEmpty) {
+            tx.currencyCode = 'RUB';
+          }
+          updated.add(tx);
+        }
+        _transactionBox.putMany(updated);
+        AppLogger.i(
+          '[LocalDbService] Migrated ${updated.length} legacy transactions with baseAmount',
+        );
+      }
+    } catch (e) {
+      AppLogger.w('[LocalDbService] Legacy transactions migration skipped: $e');
+    }
   }
 
   /// Открывает (или создаёт) файл базы данных в директории документов
@@ -63,33 +108,28 @@ class LocalDbService {
     return results;
   }
 
-  /// Считает общие итоги (доход и расход) за выбранный месяц.
-  /// Использует эффективные агрегатные функции ObjectBox.
-  Map<String, double> getMonthTotals(int month, int year) {
-    final startOfMonth = DateTime(year, month, 1).millisecondsSinceEpoch;
-    final endOfMonth = DateTime(year, month + 1, 1)
-        .subtract(const Duration(milliseconds: 1))
-        .millisecondsSinceEpoch;
+  /// Считает общие итоги (доход и расход) за выбранный месяц с динамической
+  /// конвертацией всех операций в текущую валюту аккаунта.
+  Map<String, double> getMonthTotals(int month, int year,
+      [Currency? targetCurrency]) {
+    final transactions = getTransactionsForPeriod(month, year);
+    final currency = targetCurrency ?? CurrencyFormatter.currentCurrency;
+    final exchange = CurrencyExchangeService.instance;
 
-    final incomeQuery = _transactionBox
-        .query(
-          Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
-              Transaction_.dbType.equals(TransactionType.income.name),
-        )
-        .build();
+    double income = 0;
+    double expense = 0;
 
-    final expenseQuery = _transactionBox
-        .query(
-          Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
-              Transaction_.dbType.equals(TransactionType.expense.name),
-        )
-        .build();
+    for (final t in transactions) {
+      final converted = t.currency == currency
+          ? t.amount
+          : exchange.convert(t.amount, from: t.currency, to: currency);
 
-    final income = incomeQuery.property(Transaction_.amount).sum();
-    final expense = expenseQuery.property(Transaction_.amount).sum();
-
-    incomeQuery.close();
-    expenseQuery.close();
+      if (t.type == TransactionType.income) {
+        income += converted;
+      } else {
+        expense += converted;
+      }
+    }
 
     return {'income': income, 'expense': expense};
   }
@@ -104,14 +144,27 @@ class LocalDbService {
     return results;
   }
 
+  void _ensureBaseAmount(Transaction transaction) {
+    if (transaction.baseAmount <= 0.0 && transaction.amount > 0.0) {
+      final rate =
+          transaction.exchangeRate > 0.0 ? transaction.exchangeRate : 1.0;
+      transaction.baseAmount = transaction.amount * rate;
+    }
+    if (transaction.currencyCode.isEmpty) {
+      transaction.currencyCode = 'RUB';
+    }
+  }
+
   /// Добавляет новую транзакцию (доход или расход) и возвращает её локальный ID.
   int addTransaction(Transaction transaction) {
+    _ensureBaseAmount(transaction);
     return _transactionBox.put(transaction);
   }
 
   /// Сохраняет транзакцию: если `localId` уже существует — обновляет запись,
   /// иначе создаёт новую (поведение ObjectBox `Box.put`).
   void saveTransaction(Transaction transaction) {
+    _ensureBaseAmount(transaction);
     _linkToExistingTransaction(transaction);
     final id = _transactionBox.put(transaction);
     AppLogger.d('[LocalDbService] Saved transaction localId: $id');
@@ -420,24 +473,22 @@ class LocalDbService {
     return removed;
   }
 
-  /// Считает сумму расходов по конкретной категории за месяц и год.
-  double getSpentForCategory(int month, int year, String categoryName) {
-    final startOfMonth = DateTime(year, month, 1);
-    final nextMonth = month == 12 ? 1 : month + 1;
-    final nextYear = month == 12 ? year + 1 : year;
-    final endOfMonth = DateTime(nextYear, nextMonth, 1)
-        .subtract(const Duration(milliseconds: 1));
+  /// Считает сумму расходов по конкретной категории за месяц и год с динамической
+  /// конвертацией в текущую валюту аккаунта.
+  double getSpentForCategory(int month, int year, String categoryName,
+      [Currency? targetCurrency]) {
+    final transactions = getTransactionsForPeriod(month, year);
+    final currency = targetCurrency ?? CurrencyFormatter.currentCurrency;
+    final exchange = CurrencyExchangeService.instance;
 
-    final query = _transactionBox
-        .query(Transaction_.dbCategory.equals(categoryName) &
-            Transaction_.dbType.equals(TransactionType.expense.name) &
-            Transaction_.dateMilliseconds.between(
-                startOfMonth.millisecondsSinceEpoch,
-                endOfMonth.millisecondsSinceEpoch))
-        .build();
-
-    final totalSpent = query.property(Transaction_.amount).sum();
-    query.close();
+    double totalSpent = 0;
+    for (final t in transactions) {
+      if (t.dbCategory == categoryName && t.type == TransactionType.expense) {
+        totalSpent += t.currency == currency
+            ? t.amount
+            : exchange.convert(t.amount, from: t.currency, to: currency);
+      }
+    }
     return totalSpent;
   }
 

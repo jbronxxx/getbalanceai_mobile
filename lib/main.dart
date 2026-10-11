@@ -1,5 +1,6 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -52,6 +53,8 @@ void main() async {
   await PendingDeletionsStore.init();
   await ApiService.instance.init();
   await CurrencyFormatter.loadSavedCurrency();
+  await CurrencyExchangeService.instance.init();
+  unawaited(CurrencyExchangeService.instance.fetchLatestRates());
   await LanguageManager.loadSavedLanguage();
   LanguageManager.initFallback();
   await PreferencesService.instance.loadSavedDarkMode();

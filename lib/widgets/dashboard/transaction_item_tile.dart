@@ -56,19 +56,39 @@ class TransactionItemTile extends StatelessWidget {
             ),
           ),
           trailing: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 120),
-            child: CurrencyFormatter.formatText(
-              isExpense ? -transaction.amount : transaction.amount,
-              textAlign: TextAlign.end,
-              showSign: true,
-              showSymbol: false,
-              useFittedBox: true,
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isExpense
-                    ? colorScheme.onSurfaceVariant
-                    : colorScheme.primary,
-              ),
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                CurrencyFormatter.formatText(
+                  isExpense ? -transaction.amount : transaction.amount,
+                  currency: transaction.currency,
+                  textAlign: TextAlign.end,
+                  showSign: true,
+                  showSymbol: true,
+                  useFittedBox: true,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isExpense
+                        ? colorScheme.onSurfaceVariant
+                        : colorScheme.primary,
+                  ),
+                ),
+                if (transaction.currency !=
+                    CurrencyFormatter.currentCurrency) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '≈ ${CurrencyFormatter.format(isExpense ? -transaction.effectiveBaseAmount : transaction.effectiveBaseAmount, showSign: false)}',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.outline,
+                      fontSize: 10,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
         ),

@@ -23,6 +23,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   late Category _category;
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
+  late Currency _selectedCurrency;
 
   @override
   void initState() {
@@ -31,19 +32,39 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _type = t?.type ?? TransactionType.expense;
     _category = t?.category ??
         (_type == TransactionType.income ? Category.salary : Category.food);
+    _selectedCurrency = t?.currency ?? CurrencyFormatter.currentCurrency;
     _amountController = TextEditingController(
       text: t != null
           ? CurrencyFormatter.format(t.amount, showSymbol: false)
           : '',
     );
+    _amountController.addListener(_onAmountChanged);
     _descriptionController = TextEditingController(text: t?.description ?? '');
+  }
+
+  void _onAmountChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showCurrencyPicker() async {
+    final picked = await CurrencyPickerSheet.show(
+      context,
+      selectedCurrency: _selectedCurrency,
+      updateGlobalCurrency: false,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedCurrency = picked;
+      });
+    }
   }
 
   /// Валидирует сумму (принимает и запятую, и точку как десятичный
@@ -56,11 +77,21 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       return;
     }
 
-    if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
+    if (amount > _selectedCurrency.maxAmount) {
       AppAlerts.warning(context,
-          '${context.l10n.alert_amount_too_large} ${CurrencyFormatter.currentCurrency.code}');
+          '${context.l10n.alert_amount_too_large} ${_selectedCurrency.code}');
       return;
     }
+
+    final rate = CurrencyExchangeService.instance.getRate(
+      from: _selectedCurrency,
+      to: CurrencyFormatter.currentCurrency,
+    );
+    final baseAmount = CurrencyExchangeService.instance.convert(
+      amount,
+      from: _selectedCurrency,
+      to: CurrencyFormatter.currentCurrency,
+    );
 
     if (widget.transactionToEdit != null) {
       final t = widget.transactionToEdit!;
@@ -73,6 +104,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         dbType: _type.name,
         dbCategory: _category.name,
         amount: amount,
+        currencyCode: _selectedCurrency.code,
+        exchangeRate: rate,
+        baseAmount: baseAmount,
         dateMilliseconds: t.date.millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
         dateCreatedMilliseconds: t.dateCreatedMilliseconds,
@@ -84,6 +118,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         dbType: _type.name,
         dbCategory: _category.name,
         amount: amount,
+        currencyCode: _selectedCurrency.code,
+        exchangeRate: rate,
+        baseAmount: baseAmount,
         dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
         dateCreatedMilliseconds: 0,
@@ -236,18 +273,98 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _amountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [CurrencyInputFormatter()],
-                  autofocus: false,
-                  decoration: InputDecoration(
-                    labelText:
-                        '${context.l10n.amount_label} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final enteredAmount =
+                        CurrencyFormatter.parseInput(_amountController.text) ??
+                            0.0;
+                    final isDifferentCurrency =
+                        _selectedCurrency != CurrencyFormatter.currentCurrency;
+                    final approxBase = CurrencyExchangeService.instance.convert(
+                      enteredAmount,
+                      from: _selectedCurrency,
+                      to: CurrencyFormatter.currentCurrency,
+                    );
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [CurrencyInputFormatter()],
+                          autofocus: false,
+                          decoration: InputDecoration(
+                            labelText:
+                                '${context.l10n.amount_label} (${_selectedCurrency.localizedName})',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: UnconstrainedBox(
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(10),
+                                  onTap: _showCurrencyPicker,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _selectedCurrency.code,
+                                          style: textTheme.labelLarge?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.keyboard_arrow_down,
+                                          size: 18,
+                                          color: colorScheme.primary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isDifferentCurrency && enteredAmount > 0) ...[
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.currency_exchange,
+                                    size: 14, color: colorScheme.outline),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    '≈ ${CurrencyFormatter.format(approxBase)} (${CurrencyExchangeService.instance.formatRateDescription(from: _selectedCurrency, to: CurrencyFormatter.currentCurrency)})',
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.outline,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 Theme(

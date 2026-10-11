@@ -20,8 +20,35 @@ class PreferencesService {
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
   static const _keyCurrency = 'selected_currency';
   static const _keyLanguage = 'selected_language';
+  static const _keyOnboardingCompleted = 'onboarding_setup_completed';
   static const _keyNotifications = 'settings_notifications';
   static const _keyDarkMode = 'settings_dark_mode';
+  static const _keyExchangeRates = 'cached_exchange_rates';
+  static const _keyExchangeRatesUpdated = 'cached_exchange_rates_updated';
+
+  /// Сохраняет кэшированные курсы валют в формате JSON.
+  Future<void> saveExchangeRates(String ratesJson) async {
+    await _storage.write(key: _keyExchangeRates, value: ratesJson);
+  }
+
+  /// Получает кэшированные курсы валют.
+  Future<String?> getExchangeRates() async {
+    return await _storage.read(key: _keyExchangeRates);
+  }
+
+  /// Сохраняет временную метку последнего обновления курсов (миллисекунды).
+  Future<void> saveExchangeRatesUpdated(int timestampMs) async {
+    await _storage.write(
+      key: _keyExchangeRatesUpdated,
+      value: timestampMs.toString(),
+    );
+  }
+
+  /// Получает временную метку последнего обновления курсов.
+  Future<int?> getExchangeRatesUpdated() async {
+    final val = await _storage.read(key: _keyExchangeRatesUpdated);
+    return val != null ? int.tryParse(val) : null;
+  }
 
   /// Сохраняет выбранную валюту.
   Future<void> saveCurrency(String currencyCode) async {
@@ -41,6 +68,17 @@ class PreferencesService {
   /// Получает сохраненный язык.
   Future<String?> getLanguage() async {
     return await _storage.read(key: _keyLanguage);
+  }
+
+  /// Проверяет, был ли полностью завершен первоначальный онбординг.
+  Future<bool> isOnboardingCompleted() async {
+    final val = await _storage.read(key: _keyOnboardingCompleted);
+    return val == 'true';
+  }
+
+  /// Фиксирует успешное завершение первоначального онбординга.
+  Future<void> setOnboardingCompleted() async {
+    await _storage.write(key: _keyOnboardingCompleted, value: 'true');
   }
 
   Future<void> saveNotificationsEnabled(bool enabled) async {

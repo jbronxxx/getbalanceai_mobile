@@ -60,7 +60,9 @@ class ProfileSyncCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: isAuthenticated && !isSyncing ? onSyncPressed : null,
+        onTap: isAuthenticated
+            ? (!isSyncing ? onSyncPressed : null)
+            : () => Navigator.of(context).pushNamed('/login'),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Row(
@@ -81,7 +83,7 @@ class ProfileSyncCard extends StatelessWidget {
                         ),
                       )
                     : Icon(
-                        isAuthenticated ? syncIcon : Icons.cloud_off,
+                        isAuthenticated ? syncIcon : Icons.cloud_outlined,
                         color: activeColor,
                         size: 20,
                       ),
@@ -102,7 +104,7 @@ class ProfileSyncCard extends StatelessWidget {
                     Text(
                       isAuthenticated
                           ? syncStatusText
-                          : l10n.cloud_not_connected,
+                          : l10n.cloud_backup_prompt,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -111,7 +113,9 @@ class ProfileSyncCard extends StatelessWidget {
                 ),
               ),
               if (isAuthenticated)
-                Icon(Icons.sync, color: colorScheme.primary, size: 20),
+                Icon(Icons.sync, color: colorScheme.primary, size: 20)
+              else
+                Icon(Icons.chevron_right, color: colorScheme.outline, size: 20),
             ],
           ),
         ),
