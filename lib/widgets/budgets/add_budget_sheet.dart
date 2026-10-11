@@ -183,7 +183,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
               autofocus: false,
               decoration: InputDecoration(
                 labelText:
-                    '${context.l10n.budget_amount_hint} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
+                    '${context.l10n.budget_amount_hint} (${CurrencyFormatter.currentCurrency.localizedName})',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

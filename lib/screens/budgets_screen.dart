@@ -27,6 +27,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     super.initState();
     _loadBudgets();
     _checkSwipeHint();
+    CurrencyFormatter.currencyNotifier.addListener(_onCurrencyChanged);
+  }
+
+  void _onCurrencyChanged() {
+    if (mounted) {
+      _loadBudgets();
+    }
+  }
+
+  @override
+  void dispose() {
+    CurrencyFormatter.currencyNotifier.removeListener(_onCurrencyChanged);
+    super.dispose();
   }
 
   void _checkSwipeHint() async {

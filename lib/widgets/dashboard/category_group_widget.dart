@@ -4,7 +4,7 @@ import '../../utils/utils.dart';
 import 'transaction_item_tile.dart';
 
 /// Виджет группы транзакций по категории с раскрывающимся списком (ExpansionTile).
-class CategoryGroupWidget extends StatelessWidget {
+class CategoryGroupWidget extends StatefulWidget {
   final Category category;
   final List<Transaction> transactions;
   final bool showHintOnFirstTransaction;
@@ -85,17 +85,75 @@ class CategoryGroupWidget extends StatelessWidget {
   }
 
   @override
+  State<CategoryGroupWidget> createState() => _CategoryGroupWidgetState();
+}
+
+class _CategoryGroupWidgetState extends State<CategoryGroupWidget> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.showHintOnFirstTransaction;
+  }
+
+  @override
+  void didUpdateWidget(CategoryGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showHintOnFirstTransaction !=
+            oldWidget.showHintOnFirstTransaction &&
+        widget.showHintOnFirstTransaction) {
+      _isExpanded = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final total = transactions.fold<double>(0, (sum, t) {
-      return t.type == TransactionType.income ? sum + t.amount : sum - t.amount;
+    // Суммируем транзакции строго в базовой валюте, чтобы итог категории
+    // полностью сходился с верхним общим балансом и расходом
+    final totalBase = widget.transactions.fold<double>(0, (sum, t) {
+      final baseAmt = t.effectiveBaseAmount;
+      return t.type == TransactionType.income ? sum + baseAmt : sum - baseAmt;
     });
 
-    final categoryIcon = getCategoryIcon(category);
-    final categoryColor = getCategoryColor(category);
+    final baseCurrency = CurrencyFormatter.currentCurrency;
+    final foreignTransactions =
+        widget.transactions.where((t) => t.currency != baseCurrency).toList();
+
+    String? foreignSubtitle;
+    if (foreignTransactions.isNotEmpty) {
+      final firstForeignCurrency = foreignTransactions.first.currency;
+      final isSingleForeignCurrency =
+          widget.transactions.every((t) => t.currency == firstForeignCurrency);
+
+      if (isSingleForeignCurrency) {
+        // Если все транзакции в категории совершены в одной иностранной валюте,
+        // показываем сумму в этой валюте
+        final foreignTotal = widget.transactions.fold<double>(0, (sum, t) {
+          return t.type == TransactionType.income
+              ? sum + t.amount
+              : sum - t.amount;
+        });
+        foreignSubtitle = CurrencyFormatter.format(
+          foreignTotal,
+          currency: firstForeignCurrency,
+          showSign: true,
+          showSymbol: true,
+        );
+      } else {
+        // Если в категории операции в разных валютах, перечисляем уникальные коды
+        final uniqueCodes =
+            widget.transactions.map((t) => t.currency.code).toSet().join(' • ');
+        foreignSubtitle = uniqueCodes;
+      }
+    }
+
+    final categoryIcon = CategoryGroupWidget.getCategoryIcon(widget.category);
+    final categoryColor = CategoryGroupWidget.getCategoryColor(widget.category);
     final bgColor = categoryColor.withValues(alpha: 0.12);
 
     return Container(
@@ -109,8 +167,14 @@ class CategoryGroupWidget extends StatelessWidget {
         ),
       ),
       child: ExpansionTile(
-        key: Key('expansion_${category.name}_$showHintOnFirstTransaction'),
-        initiallyExpanded: showHintOnFirstTransaction,
+        key: Key(
+            'expansion_${widget.category.name}_${widget.showHintOnFirstTransaction}'),
+        initiallyExpanded: widget.showHintOnFirstTransaction,
+        onExpansionChanged: (expanded) {
+          setState(() {
+            _isExpanded = expanded;
+          });
+        },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         collapsedShape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -125,35 +189,79 @@ class CategoryGroupWidget extends StatelessWidget {
           child: Icon(categoryIcon, color: categoryColor, size: 20),
         ),
         title: Text(
-          category.getLocalizedName(context),
+          widget.category.getLocalizedName(context),
           style: textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
           ),
         ),
-        trailing: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 140),
-          child: CurrencyFormatter.formatText(
-            total,
-            textAlign: TextAlign.end,
-            showSign: true,
-            showSymbol: false,
-            useFittedBox: true,
-            style: textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: total >= 0 ? colorScheme.primary : colorScheme.onSurface,
-            ),
+        subtitle: Text(
+          LanguageManager.formatOperationsCount(widget.transactions.length),
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.outline,
+            fontSize: 11,
           ),
         ),
-        children: transactions.asMap().entries.map((entry) {
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  CurrencyFormatter.formatText(
+                    totalBase,
+                    textAlign: TextAlign.end,
+                    showSign: true,
+                    showSymbol: true,
+                    useFittedBox: true,
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: totalBase >= 0
+                          ? colorScheme.primary
+                          : colorScheme.onSurface,
+                    ),
+                  ),
+                  if (foreignSubtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      foreignSubtitle,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.outline,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            AnimatedRotation(
+              turns: _isExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: colorScheme.outline,
+                size: 22,
+              ),
+            ),
+          ],
+        ),
+        children: widget.transactions.asMap().entries.map((entry) {
           final isFirst = entry.key == 0;
           return TransactionItemTile(
             transaction: entry.value,
             isFirst: isFirst,
-            showHint: showHintOnFirstTransaction && isFirst,
-            onTap: () => onTransactionTap(entry.value),
-            onDelete: () => onTransactionDelete(entry.value),
-            onHintShown: isFirst ? onHintShown : null,
+            showHint: widget.showHintOnFirstTransaction && isFirst,
+            onTap: () => widget.onTransactionTap(entry.value),
+            onDelete: () => widget.onTransactionDelete(entry.value),
+            onHintShown: isFirst ? widget.onHintShown : null,
           );
         }).toList(),
       ),

@@ -3,11 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/auth/auth_cubit.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
-import '../widgets/widgets.dart';
 import 'budgets_screen.dart';
 import 'dashboard_screen.dart';
 import 'insights_screen.dart';
 import 'profile_screen.dart';
+
+import 'welcome_setup_screen.dart';
 
 /// Каркас приложения с нижней навигацией.
 class MainShell extends StatefulWidget {
@@ -29,9 +30,10 @@ class _MainShellState extends State<MainShell> {
   }
 
   Future<void> _checkFirstRunLanguageSelection() async {
-    final savedLang = await PreferencesService.instance.getLanguage();
-    if (savedLang == null && mounted) {
-      WelcomeLanguageSheet.show(context);
+    final isCompleted =
+        await PreferencesService.instance.isOnboardingCompleted();
+    if (!isCompleted && mounted) {
+      WelcomeSetupScreen.show(context);
     }
   }
 

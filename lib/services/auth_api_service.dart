@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../config/api_config.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
+import '../utils/currency_formatter.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
 
@@ -247,6 +248,14 @@ class AuthApiService {
       await setUserName(userProfile.userName);
       await setUserEmail(userProfile.userEmail);
       await setAvatarUrl(userProfile.avatarUrl);
+      if (userProfile.baseCurrency != null) {
+        final currency = Currency.values.firstWhere(
+          (c) =>
+              c.code.toUpperCase() == userProfile.baseCurrency!.toUpperCase(),
+          orElse: () => CurrencyFormatter.currentCurrency,
+        );
+        await CurrencyFormatter.setCurrency(currency);
+      }
       AppLogger.i(
           '[AuthApiService] Profile updated for: ${userProfile.userName}');
     } on DioException catch (e) {
@@ -254,6 +263,37 @@ class AuthApiService {
           '[AuthApiService] Fetch profile error: ${e.response?.data ?? e.message}');
     } catch (e) {
       AppLogger.w('[AuthApiService] Profile parse error: $e');
+    }
+  }
+
+  /// Обновляет профиль пользователя на сервере (имя, аватар, базовая валюта).
+  Future<void> updateUserProfile({
+    String? name,
+    String? avatarUrl,
+    String? baseCurrency,
+  }) async {
+    if (!isAuthenticated) return;
+    try {
+      final data = <String, dynamic>{};
+      if (name != null) data['name'] = name;
+      if (avatarUrl != null) data['avatar_url'] = avatarUrl;
+      if (baseCurrency != null) data['base_currency'] = baseCurrency;
+
+      if (data.isEmpty) return;
+
+      await _dio.patch(
+        ApiConfig.me,
+        data: data,
+        options: authOptions(),
+      );
+      if (name != null) await setUserName(name);
+      if (avatarUrl != null) await setAvatarUrl(avatarUrl);
+      AppLogger.i('[AuthApiService] Remote user profile updated: $data');
+    } on DioException catch (e) {
+      AppLogger.w(
+          '[AuthApiService] Update profile error: ${e.response?.data ?? e.message}');
+    } catch (e) {
+      AppLogger.w('[AuthApiService] Update profile unexpected error: $e');
     }
   }
 

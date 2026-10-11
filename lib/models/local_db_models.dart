@@ -1,6 +1,7 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:objectbox/objectbox.dart';
+import '../services/currency_exchange_service.dart';
 
 /// Разбирает дату из ответа бэкенда, возвращая `null` вместо исключения.
 ///
@@ -178,6 +179,10 @@ class Transaction {
   final int dateCreatedMilliseconds;
   bool isModified;
 
+  String currencyCode;
+  double exchangeRate;
+  double baseAmount;
+
   Transaction({
     this.localId = 0,
     this.serverId,
@@ -188,6 +193,9 @@ class Transaction {
     required this.dateMilliseconds,
     required this.dateCreatedMilliseconds,
     this.isModified = false,
+    this.currencyCode = 'RUB',
+    this.exchangeRate = 1.0,
+    this.baseAmount = 0.0,
   });
 
   @Transient()
@@ -198,6 +206,37 @@ class Transaction {
 
   @Transient()
   DateTime get date => DateTime.fromMillisecondsSinceEpoch(dateMilliseconds);
+
+  @Transient()
+  Currency get currency => Currency.values.firstWhere(
+        (c) => c.code.toUpperCase() == currencyCode.toUpperCase(),
+        orElse: () => CurrencyFormatter.currentCurrency,
+      );
+
+  @Transient()
+  double get effectiveBaseAmount {
+    final currentBase = CurrencyFormatter.currentCurrency;
+    if (currency == currentBase) {
+      return amount;
+    }
+    return CurrencyExchangeService.instance.convert(
+      amount,
+      from: currency,
+      to: currentBase,
+    );
+  }
+
+  @Transient()
+  double get effectiveExchangeRate {
+    final currentBase = CurrencyFormatter.currentCurrency;
+    if (currency == currentBase) {
+      return 1.0;
+    }
+    return CurrencyExchangeService.instance.getRate(
+      from: currency,
+      to: currentBase,
+    );
+  }
 
   /// Разбирает ответ бэкенда (FastAPI) в локальную модель.
   ///
@@ -210,10 +249,20 @@ class Transaction {
   /// отсутствии берём дату самой операции.
   factory Transaction.fromJson(Map<String, dynamic> json) {
     final date = parseServerDate(json['date']) ?? DateTime.now();
+    final parsedAmount = parseAmount(json['amount']);
+    final parsedCurrency = (json['currency'] as String?) ??
+        (json['currency_code'] as String?) ??
+        CurrencyFormatter.currentCurrency.code;
+    final parsedRate = json['exchange_rate'] != null
+        ? parseAmount(json['exchange_rate'], 1.0)
+        : 1.0;
+    final parsedBaseAmount = json['base_amount'] != null
+        ? parseAmount(json['base_amount'], parsedAmount * parsedRate)
+        : (parsedAmount * parsedRate);
 
     return Transaction(
       serverId: json['id'] as String?,
-      amount: parseAmount(json['amount']),
+      amount: parsedAmount,
       description: json['description'] as String? ?? '',
       dbCategory: json['category'] as String? ?? Category.other.name,
       dbType: json['type'] as String? ?? TransactionType.expense.name,
@@ -223,6 +272,9 @@ class Transaction {
               date)
           .millisecondsSinceEpoch,
       isModified: false,
+      currencyCode: parsedCurrency,
+      exchangeRate: parsedRate,
+      baseAmount: parsedBaseAmount,
     );
   }
 
@@ -231,6 +283,9 @@ class Transaction {
     return {
       if (serverId != null) 'id': serverId,
       'amount': amount,
+      'currency': currencyCode,
+      'exchange_rate': exchangeRate,
+      'base_amount': baseAmount,
       'description': description,
       'category': category.name,
       'type': type.name,

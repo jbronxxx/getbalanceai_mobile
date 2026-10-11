@@ -48,12 +48,16 @@ class CurrencyFormatter {
   static final ValueNotifier<Currency> currencyNotifier =
       ValueNotifier(Currency.rub);
 
-  /// Устанавливает текущую валюту и уведомляет UI.
-  static void setCurrency(Currency currency) {
+  /// Устанавливает текущую базовую валюту аккаунта и уведомляет слушателей.
+  /// Все экраны и виджеты динамически пересчитывают отображение на лету без мутации БД.
+  static Future<void> setCurrency(Currency currency) async {
+    if (_currentCurrency == currency) return;
     _currentCurrency = currency;
-    currencyNotifier.value = currency;
+
     // Сохраняем выбор в постоянное хранилище
-    PreferencesService.instance.saveCurrency(currency.code);
+    await PreferencesService.instance.saveCurrency(currency.code);
+
+    currencyNotifier.value = currency;
   }
 
   /// Загружает сохраненную валюту из хранилища.
@@ -97,9 +101,15 @@ class CurrencyFormatter {
 
   /// Основной метод форматирования суммы в строку.
   /// Добавляет разделители тысяч (пробелы) и символ валюты.
-  static String format(double amount,
-      {bool showSymbol = true, int? decimalDigits, bool showSign = false}) {
-    final digits = decimalDigits ?? _currentCurrency.defaultDecimalDigits;
+  static String format(
+    double amount, {
+    bool showSymbol = true,
+    int? decimalDigits,
+    bool showSign = false,
+    Currency? currency,
+  }) {
+    final targetCurrency = currency ?? _currentCurrency;
+    final digits = decimalDigits ?? targetCurrency.defaultDecimalDigits;
     String sign = '';
 
     // Добавление знака + или - если требуется
@@ -120,10 +130,10 @@ class CurrencyFormatter {
     if (!showSymbol) return '$sign$formatted';
 
     // Позиционирование символа валюты
-    if (_currentCurrency.symbolBefore) {
-      return '$sign${_currentCurrency.localizedSymbol}$formatted';
+    if (targetCurrency.symbolBefore) {
+      return '$sign${targetCurrency.localizedSymbol}$formatted';
     } else {
-      return '$sign$formatted ${_currentCurrency.localizedSymbol}';
+      return '$sign$formatted ${targetCurrency.localizedSymbol}';
     }
   }
 
@@ -137,12 +147,16 @@ class CurrencyFormatter {
     bool useFittedBox = false,
     TextAlign textAlign = TextAlign.start,
     bool showSign = false,
+    Currency? currency,
   }) {
     final text = Text(
-      format(amount,
-          showSymbol: showSymbol,
-          decimalDigits: decimalDigits,
-          showSign: showSign),
+      format(
+        amount,
+        showSymbol: showSymbol,
+        decimalDigits: decimalDigits,
+        showSign: showSign,
+        currency: currency,
+      ),
       style: style,
       textAlign: textAlign,
       maxLines: 1,

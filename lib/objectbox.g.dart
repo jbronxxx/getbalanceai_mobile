@@ -87,7 +87,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(2, 4394803372386859630),
     name: 'Transaction',
-    lastPropertyId: const obx_int.IdUid(9, 3156196231427403429),
+    lastPropertyId: const obx_int.IdUid(12, 7791215221864576812),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -143,6 +143,24 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(9, 3156196231427403429),
         name: 'isModified',
         type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 4748144081005625759),
+        name: 'currencyCode',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 3750571858293975154),
+        name: 'exchangeRate',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 7791215221864576812),
+        name: 'baseAmount',
+        type: 8,
         flags: 0,
       ),
     ],
@@ -308,7 +326,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final descriptionOffset = fbb.writeString(object.description);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         final dbTypeOffset = fbb.writeString(object.dbType);
-        fbb.startTable(10);
+        final currencyCodeOffset = fbb.writeString(object.currencyCode);
+        fbb.startTable(13);
         fbb.addInt64(0, object.localId);
         fbb.addOffset(1, serverIdOffset);
         fbb.addFloat64(2, object.amount);
@@ -318,6 +337,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(6, object.dateMilliseconds);
         fbb.addInt64(7, object.dateCreatedMilliseconds);
         fbb.addBool(8, object.isModified);
+        fbb.addOffset(9, currencyCodeOffset);
+        fbb.addFloat64(10, object.exchangeRate);
+        fbb.addFloat64(11, object.baseAmount);
         fbb.finish(fbb.endTable());
         return object.localId;
       },
@@ -366,6 +388,21 @@ obx_int.ModelDefinition getObjectBoxModel() {
           20,
           false,
         );
+        final currencyCodeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 22, '');
+        final exchangeRateParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          24,
+          0,
+        );
+        final baseAmountParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          0,
+        );
         final object = Transaction(
           localId: localIdParam,
           serverId: serverIdParam,
@@ -376,6 +413,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           dateMilliseconds: dateMillisecondsParam,
           dateCreatedMilliseconds: dateCreatedMillisecondsParam,
           isModified: isModifiedParam,
+          currencyCode: currencyCodeParam,
+          exchangeRate: exchangeRateParam,
+          baseAmount: baseAmountParam,
         );
 
         return object;
@@ -479,5 +519,20 @@ class Transaction_ {
   /// See [Transaction.isModified].
   static final isModified = obx.QueryBooleanProperty<Transaction>(
     _entities[1].properties[8],
+  );
+
+  /// See [Transaction.currencyCode].
+  static final currencyCode = obx.QueryStringProperty<Transaction>(
+    _entities[1].properties[9],
+  );
+
+  /// See [Transaction.exchangeRate].
+  static final exchangeRate = obx.QueryDoubleProperty<Transaction>(
+    _entities[1].properties[10],
+  );
+
+  /// See [Transaction.baseAmount].
+  static final baseAmount = obx.QueryDoubleProperty<Transaction>(
+    _entities[1].properties[11],
   );
 }

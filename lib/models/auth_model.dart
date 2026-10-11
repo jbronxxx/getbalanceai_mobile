@@ -96,6 +96,7 @@ class AuthMeResponseModel {
   final String userName;
   final DateTime? createdAt;
   final String? avatarUrl;
+  final String? baseCurrency;
 
   AuthMeResponseModel({
     required this.id,
@@ -103,6 +104,7 @@ class AuthMeResponseModel {
     required this.userName,
     required this.createdAt,
     this.avatarUrl,
+    this.baseCurrency,
   });
 
   factory AuthMeResponseModel.fromJson(Map<String, dynamic> json) {
@@ -116,6 +118,7 @@ class AuthMeResponseModel {
           ? DateTime.parse(data['created_at'] as String).toLocal()
           : null,
       avatarUrl: data['avatar_url'] as String?,
+      baseCurrency: data['base_currency'] as String?,
     );
   }
 }

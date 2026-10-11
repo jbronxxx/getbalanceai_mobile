@@ -307,9 +307,9 @@ API_BASE_URL=http://localhost:8000/api/v1
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('🇷🇺   Русский'), findsOneWidget);
-      expect(find.text('🇺🇿   O\'zbekcha'), findsOneWidget);
-      expect(find.text('🇬🇧   English'), findsOneWidget);
+      expect(find.text('Русский'), findsOneWidget);
+      expect(find.text('O\'zbekcha'), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
       expect(find.byType(ElevatedButton), findsOneWidget);
     });
   });

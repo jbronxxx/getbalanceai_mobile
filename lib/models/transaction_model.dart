@@ -8,6 +8,9 @@ class TransactionModel {
   final String type;
   final DateTime date;
   final DateTime? createdAt;
+  final String currency;
+  final double exchangeRate;
+  final double baseAmount;
 
   TransactionModel({
     required this.id,
@@ -17,6 +20,9 @@ class TransactionModel {
     required this.type,
     required this.date,
     this.createdAt,
+    this.currency = 'RUB',
+    this.exchangeRate = 1.0,
+    this.baseAmount = 0.0,
   });
 
   /// Разбирает транзакцию из ответа бэкенда REST API.
@@ -28,15 +34,28 @@ class TransactionModel {
         DateTime.parse(json['date'] as String).toLocal();
     final parsedCreatedAt = parseServerDate(json['created_at']) ??
         parseServerDate(json['date_created']);
+    final parsedAmount = parseAmount(json['amount']);
+    final parsedCurrency = (json['currency'] as String?) ??
+        (json['currency_code'] as String?) ??
+        'RUB';
+    final parsedRate = json['exchange_rate'] != null
+        ? parseAmount(json['exchange_rate'], 1.0)
+        : 1.0;
+    final parsedBaseAmount = json['base_amount'] != null
+        ? parseAmount(json['base_amount'], parsedAmount * parsedRate)
+        : (parsedAmount * parsedRate);
 
     return TransactionModel(
       id: json['id'] as String,
-      amount: parseAmount(json['amount']),
+      amount: parsedAmount,
       description: json['description'] as String? ?? '',
       category: json['category'] as String? ?? Category.other.name,
       type: json['type'] as String? ?? TransactionType.expense.name,
       date: parsedDate,
       createdAt: parsedCreatedAt,
+      currency: parsedCurrency,
+      exchangeRate: parsedRate,
+      baseAmount: parsedBaseAmount,
     );
   }
 
@@ -44,6 +63,9 @@ class TransactionModel {
     return {
       'id': id,
       'amount': amount,
+      'currency': currency,
+      'exchange_rate': exchangeRate,
+      'base_amount': baseAmount,
       'description': description,
       'category': category,
       'type': type,

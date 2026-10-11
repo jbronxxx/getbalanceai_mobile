@@ -63,7 +63,7 @@ class LanguagePickerSheet extends StatelessWidget {
             const SizedBox(height: 16),
             ...AppLanguage.values.map((lang) {
               final isSelected = LanguageManager.currentLanguage == lang;
-              final label = '${lang.flag}   ${lang.displayName}';
+              final label = lang.displayName;
 
               return ListTile(
                 contentPadding: EdgeInsets.zero,

@@ -46,6 +46,9 @@ lib/
 │   ├── local_db_service.dart     # Доступ к ObjectBox (singleton)
 │   ├── app_info_service.dart     # Кеширование метаданных приложения (версия, сборка)
 │   ├── preferences_service.dart  # Настройки (тема, язык, валюта)
+│   ├── currency_exchange_service.dart # Конвертация и актуализация курсов валют (офлайн fallback).
+│   │                                 # При смене базовой валюты Presentation-слой динамически пересчитывает суммы
+│   │                                 # в представлении (on-the-fly) без мутации исторической базы и без ложных флагов isModified.
 │   ├── tracing_interceptor.dart  # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
@@ -145,6 +148,7 @@ main.dart`. Это было исправлено переносом состоя
 
 - **Декомпозиция крупных экранов**:
   - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget`, `DashboardPeriodPickerSheet` (директория `lib/widgets/dashboard/`).
+    - `CategoryGroupWidget` суммирует итог категории строго в базовой валюте пользователя (`effectiveBaseAmount`) со знаком валюты, обеспечивая 100% сходимость с общим балансом дашборда. При наличии мультивалютных трат выводит подстроку с оригинальной валютой чека, счетчик операций с корректным склонением (`LanguageManager.formatOperationsCount`) и анимированный шеврон раскрытия аккордеона (`AnimatedRotation`).
   - `BudgetsScreen`: декомпозирован на `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
@@ -161,6 +165,8 @@ main.dart`. Это было исправлено переносом состоя
   - При 2–4 тапах отображается всплывающее уведомление (SnackBar) с подсказкой об оставшемся числе тапов.
   - Тексты и элементы меню отладки полностью интернационализированы (`AppLocalizations`) на русском, узбекском и английском языках, цвета синхронизированы с текущей темой.
 
-
-
-
+- **Мультивалютная архитектура (Clean Multi-Currency Architecture)**:
+  - **Принцип неизменяемости фактов (Fact Immutability)**: В локальной БД (`ObjectBox`) транзакция сохраняет неизменный физический факт чека (`amount`, `currencyCode`), а также курс и базовую сумму на момент совершения операции.
+  - **Динамический пересчет в представлении (On-the-fly Presentation Conversion)**: При смене базовой валюты пользователя в профиле (или на онбординге) база данных **не мутируется**, а исторические записи **не перезаписываются**. Месячные агрегации (`LocalDbService.getMonthTotals`, `getSpentForCategory`) и отображение элементов (`effectiveBaseAmount`, `effectiveExchangeRate`) вычисляются динамически на лету через `CurrencyExchangeService` за доли миллисекунды.
+  - **Чистота синхронизации (Sync Integrity)**: Исключены паразитные выставления флагов `isModified = true` и массовые сетевые перезаписи базы на бэкенд при смене валюты отображения.
+  - **Изоляция выбора валюты**: Виджет `CurrencyPickerSheet` разделяет смену глобальной валюты аккаунта (`updateGlobalCurrency: true` в профиле) и выбор локальной валюты конкретной операции (`updateGlobalCurrency: false` в формах транзакций и бюджетов).

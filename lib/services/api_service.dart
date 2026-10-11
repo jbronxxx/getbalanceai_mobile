@@ -207,6 +207,17 @@ class ApiService {
   Future<void> fetchAndSaveUserProfile() =>
       _authService.fetchAndSaveUserProfile();
 
+  Future<void> updateUserProfile({
+    String? name,
+    String? avatarUrl,
+    String? baseCurrency,
+  }) =>
+      _authService.updateUserProfile(
+        name: name,
+        avatarUrl: avatarUrl,
+        baseCurrency: baseCurrency,
+      );
+
   Future<void> deleteAccount() => _authService.deleteAccount();
 
   Future<LogoutResponseModel> logout() => _authService.logout();
