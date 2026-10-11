@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
@@ -100,16 +101,21 @@ class CurrencyPickerSheet extends StatelessWidget {
                 trailing: isSelected
                     ? Icon(Icons.check, color: colorScheme.primary)
                     : null,
-                onTap: () {
+                onTap: () async {
                   if (updateGlobalCurrency) {
-                    CurrencyFormatter.setCurrency(currency);
-                    ApiService.instance
-                        .updateUserProfile(baseCurrency: currency.code);
+                    await CurrencyFormatter.setCurrency(currency);
+                    if (ApiService.instance.isAuthenticated) {
+                      unawaited(ApiService.instance
+                          .updateUserProfile(baseCurrency: currency.code)
+                          .catchError((_) {}));
+                    }
                   }
                   if (onCurrencySelected != null) {
                     onCurrencySelected!(currency);
                   }
-                  Navigator.pop(context, currency);
+                  if (context.mounted) {
+                    Navigator.pop(context, currency);
+                  }
                 },
               );
             }),

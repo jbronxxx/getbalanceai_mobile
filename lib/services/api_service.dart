@@ -185,6 +185,8 @@ class ApiService {
     await _syncService.clearEtags();
   }
 
+  Future<void> clearEtags() => _syncService.clearEtags();
+
   Future<RegisterModel> register({
     required String email,
     required String password,

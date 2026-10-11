@@ -1,7 +1,10 @@
-import 'package:getbalanceai_mobile/utils/utils.dart';
-import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import '../main.dart';
 
 /// Централизованный обработчик ошибок приложения.
@@ -9,6 +12,43 @@ import '../main.dart';
 /// Отвечает за преобразование технических исключений (сетевых, серверных)
 /// в понятные пользователю сообщения и их отображение в UI.
 class AppErrorHandler {
+  /// Проверяет, является ли исключение результатом отмены действия пользователем
+  /// (например, закрытие системного окна авторизации Google или Apple).
+  static bool isUserCanceled(dynamic error) {
+    if (error == null || error is DioException) return false;
+
+    if (error is GoogleSignInException) {
+      return error.code == GoogleSignInExceptionCode.canceled;
+    }
+
+    if (error is SignInWithAppleAuthorizationException) {
+      return error.code == AuthorizationErrorCode.canceled;
+    }
+
+    if (error is PlatformException) {
+      final code = error.code.toLowerCase();
+      final message = error.message?.toLowerCase() ?? '';
+      return code == 'sign_in_canceled' ||
+          code == 'canceled' ||
+          code == 'cancelled' ||
+          code == '12501' ||
+          code == '16' ||
+          message.contains('canceled') ||
+          message.contains('cancelled');
+    }
+
+    final errorStr = error.toString().toLowerCase();
+    return errorStr.contains('googlesigninexceptioncode.canceled') ||
+        errorStr.contains('authorizationerrorcode.canceled') ||
+        errorStr.contains('sign_in_canceled') ||
+        errorStr.contains('12501') ||
+        (errorStr.contains('google') &&
+            (errorStr.contains('canceled') ||
+                errorStr.contains('cancelled'))) ||
+        (errorStr.contains('apple') &&
+            (errorStr.contains('canceled') || errorStr.contains('cancelled')));
+  }
+
   /// Возвращает текстовое сообщение на основе типа ошибки.
   static String getMessage(dynamic error) {
     if (error is DioException) {
@@ -21,6 +61,11 @@ class AppErrorHandler {
   ///
   /// В случае истечения сессии (401 или специальные коды) отображает модальный диалог.
   static void show(BuildContext context, dynamic error, {String? title}) {
+    if (isUserCanceled(error)) {
+      AppLogger.i('[AppErrorHandler] Действие отменено пользователем');
+      return;
+    }
+
     final message = getMessage(error);
 
     if (error is DioException) {

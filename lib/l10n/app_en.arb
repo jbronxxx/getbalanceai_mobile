@@ -21,7 +21,7 @@
   "login_btn_short": "Log In",
   "local_profile": "Local Profile",
   "offline_storage_desc": "Data is stored on this device",
-  "local_storage_warning": "Device storage • Not preserved on delete",
+  "local_storage_warning": "Data is stored only on your device and is deleted when the app is uninstalled",
   "cloud_backup_prompt": "Sign in to enable cloud backup",
   "user": "User",
   "select_currency": "Select Currency",
@@ -68,6 +68,19 @@
   "save_changes_btn": "Save Changes",
   "alert_valid_amount": "Enter a valid amount",
   "alert_amount_too_large": "Amount is too large for",
+  "amount_requirement_enter": "Enter amount",
+  "amount_requirement_positive": "Amount must be greater than 0",
+  "amount_requirement_max": "Max: {max} {currency}",
+  "@amount_requirement_max": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
   "budgets_title": "Expense Budgets",
   "add_budget_title": "Set Budget Limit",
   "edit_budget_title": "Edit Budget Limit",

@@ -78,26 +78,13 @@ class ProfileHeader extends StatelessWidget {
                 color: colorScheme.outlineVariant.withValues(alpha: 0.4),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.phone_iphone_rounded,
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    l10n.local_storage_warning,
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              l10n.local_storage_warning,
+              textAlign: TextAlign.center,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

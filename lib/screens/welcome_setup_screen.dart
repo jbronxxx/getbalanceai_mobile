@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
@@ -77,6 +78,12 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
   Future<void> _finishSetup() async {
     await PreferencesService.instance.saveLanguage(_selectedLanguage.code);
     CurrencyFormatter.setCurrency(_selectedCurrency);
+    if (ApiService.instance.isAuthenticated) {
+      unawaited(
+        ApiService.instance
+            .updateUserProfile(baseCurrency: _selectedCurrency.code),
+      );
+    }
     await PreferencesService.instance.setOnboardingCompleted();
     if (mounted) {
       Navigator.of(context).pop();

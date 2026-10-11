@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +34,7 @@ void main() {
   setUp(() async {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
+    await ApiService.instance.setTokens(null, null);
     LanguageManager.initFallback();
     await CurrencyFormatter.loadSavedCurrency();
     await CurrencyExchangeService.instance.init();
@@ -72,6 +75,110 @@ void main() {
           service.formatRateDescription(from: Currency.uzs, to: Currency.rub);
       expect(desc, contains('сум'));
       expect(desc, contains('≈'));
+    });
+
+    test(
+        'Приоритетная загрузка актуальных курсов с собственного бэкенда /currencies/rates',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.path.contains('/currencies/rates')) {
+          return ResponseBody.fromString(
+            jsonEncode({
+              'status': 'success',
+              'data': {
+                'base': 'USD',
+                'rates': {
+                  'USD': 1.0,
+                  'EUR': 0.90,
+                  'RUB': 100.0,
+                  'UZS': 13000.0,
+                  'KZT': 500.0,
+                },
+                'updated_at': '2026-10-11T19:00:00Z',
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw DioException(
+          requestOptions: options,
+          error: 'External gateway should not be called when backend succeeds',
+        );
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isTrue);
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(100.0));
+      expect(service.getRate(from: Currency.usd, to: Currency.uzs),
+          equals(13000.0));
+
+      final cached = await PreferencesService.instance.getExchangeRates();
+      expect(cached, isNotNull);
+      expect(cached, contains('100'));
+    });
+
+    test(
+        'Graceful Fallback на открытый шлюз open.er-api.com при ошибке бэкенда',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.path.contains('/currencies/rates')) {
+          return ResponseBody.fromString('Service Unavailable', 503);
+        }
+        if (options.path.contains('open.er-api.com')) {
+          return ResponseBody.fromString(
+            jsonEncode({
+              'result': 'success',
+              'rates': {
+                'USD': 1.0,
+                'EUR': 0.93,
+                'RUB': 98.5,
+                'UZS': 12950.0,
+                'KZT': 498.0,
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw DioException(requestOptions: options);
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isTrue);
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(98.5));
+    });
+
+    test(
+        'При полной недоступности сети fetchLatestRates возвращает false и сохраняет оффлайн-курсы',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        throw DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          error: 'No Internet',
+        );
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isFalse);
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
     });
   });
 
@@ -228,6 +335,60 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Русский'), findsOneWidget);
+    });
+
+    testWidgets(
+        'При завершении онбординга авторизованный пользователь отправляет валюту на бэкенд',
+        (WidgetTester tester) async {
+      await ApiService.instance.setTokens('test_token', 'test_refresh');
+      expect(ApiService.instance.isAuthenticated, isTrue);
+
+      final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+      addTearDown(() async {
+        await ApiService.instance.setTokens(null, null);
+        ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      });
+
+      bool profilePatched = false;
+      ApiService.instance.dio.httpClientAdapter =
+          _MockHttpClientAdapter((options) async {
+        if (options.method == 'PATCH' && options.path.contains('/auth/me')) {
+          profilePatched = true;
+          return ResponseBody.fromString(
+            jsonEncode({'status': 'success', 'data': {}}),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        return ResponseBody.fromString('{}', 200, headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        });
+      });
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('ru'),
+          home: WelcomeSetupScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Шаг 1 -> продолжить
+      await tester.tap(find.text('Продолжить'));
+      await tester.pumpAndSettle();
+
+      // Шаг 2 -> нажимаем продолжить (завершить онбординг)
+      final finishBtn = find.text('Продолжить');
+      expect(finishBtn, findsOneWidget);
+      await tester.tap(finishBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(profilePatched, isTrue);
     });
   });
 
@@ -505,4 +666,101 @@ void main() {
       expect(savedTxs.first.isModified, isFalse);
     });
   });
+
+  group('AuthApiService Base Currency Update & ETag Invalidation Tests', () {
+    late FlutterSecureStorage storage;
+    late Dio testDio;
+    late AuthApiService authService;
+
+    setUp(() async {
+      storage = const FlutterSecureStorage();
+      await storage.deleteAll();
+      testDio = Dio(BaseOptions(baseUrl: 'http://localhost:8000/api/v1'));
+      authService = AuthApiService(dio: testDio, storage: storage);
+      await authService.setTokens('fake_access_token', 'fake_refresh_token');
+    });
+
+    test(
+        'Сброс ETag transactions_etag и budgets_etag при updateUserProfile(baseCurrency: ...)',
+        () async {
+      await storage.write(key: 'transactions_etag', value: 'etag-tx-initial');
+      await storage.write(key: 'budgets_etag', value: 'etag-b-initial');
+
+      expect(await storage.read(key: 'transactions_etag'),
+          equals('etag-tx-initial'));
+      expect(await storage.read(key: 'budgets_etag'), equals('etag-b-initial'));
+
+      bool patchCalled = false;
+      testDio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.method == 'PATCH' && options.path.contains('/auth/me')) {
+          patchCalled = true;
+          return ResponseBody.fromString(
+            jsonEncode({
+              'status': 'success',
+              'data': {
+                'id': 'user-1',
+                'name': 'Test User',
+                'email': 'test@example.com',
+                'base_currency': 'UZS',
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        return ResponseBody.fromString('{}', 200, headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        });
+      });
+
+      await authService.updateUserProfile(baseCurrency: 'UZS');
+
+      expect(patchCalled, isTrue);
+      expect(await storage.read(key: 'transactions_etag'), isNull);
+      expect(await storage.read(key: 'budgets_etag'), isNull);
+    });
+
+    test('При updateUserProfile без baseCurrency ETag не сбрасываются',
+        () async {
+      await storage.write(key: 'transactions_etag', value: 'etag-tx-keep');
+      await storage.write(key: 'budgets_etag', value: 'etag-b-keep');
+
+      testDio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        return ResponseBody.fromString(
+          jsonEncode({
+            'status': 'success',
+            'data': {'name': 'New Name'},
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      await authService.updateUserProfile(name: 'New Name');
+
+      expect(
+          await storage.read(key: 'transactions_etag'), equals('etag-tx-keep'));
+      expect(await storage.read(key: 'budgets_etag'), equals('etag-b-keep'));
+    });
+  });
+}
+
+class _MockHttpClientAdapter implements HttpClientAdapter {
+  final Future<ResponseBody> Function(RequestOptions options) _handler;
+  _MockHttpClientAdapter(this._handler);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) =>
+      _handler(options);
+
+  @override
+  void close({bool force = false}) {}
 }

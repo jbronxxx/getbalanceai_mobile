@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import '../config/api_config.dart';
 import '../utils/app_logger.dart';
 import '../utils/currency_formatter.dart';
 import 'preferences_service.dart';
@@ -7,9 +9,9 @@ import 'preferences_service.dart';
 /// Сервис конвертации и актуализации курсов валют.
 ///
 /// Реализует трёхуровневую отказоустойчивость:
-/// 1. Фоновая загрузка свежих котировок из открытого шлюза курсов валют при наличии сети.
-/// 2. Локальное кэширование курсов в защищённом хранилище.
-/// 3. Вшитая оффлайн-таблица средних кросс-курсов на случай полного отсутствия сети.
+/// 1. Приоритетная загрузка свежих котировок с собственного бэкенда [ApiConfig.currencyRates].
+/// 2. Graceful Fallback на открытый шлюз https://open.er-api.com/v6/latest/USD при недоступности бэкенда.
+/// 3. Локальное кэширование в защищённом хранилище и вшитая оффлайн-таблица средних кросс-курсов.
 class CurrencyExchangeService {
   CurrencyExchangeService._internal();
 
@@ -33,12 +35,24 @@ class CurrencyExchangeService {
   /// Временная метка последнего обновления курсов.
   DateTime? _lastUpdated;
 
-  final Dio _dio = Dio(
+  Dio _dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 5),
       receiveTimeout: const Duration(seconds: 5),
     ),
   );
+
+  Dio get dio => _dio;
+
+  @visibleForTesting
+  set dio(Dio customDio) => _dio = customDio;
+
+  @visibleForTesting
+  void resetForTesting() {
+    _ratesToUsd.clear();
+    _ratesToUsd.addAll(_fallbackRatesToUsd);
+    _lastUpdated = null;
+  }
 
   /// Инициализирует сервис: загружает сохраненные курсы из кэша.
   Future<void> init() async {
@@ -113,9 +127,12 @@ class CurrencyExchangeService {
     }
   }
 
-  /// Загружает актуальные курсы валют из открытого API.
+  /// Загружает актуальные котировки валют.
   ///
-  /// По умолчанию обновляет курсы не чаще 1 раза в 12 часов, если не передан флаг [force].
+  /// Порядок обращения (Graceful Fallback):
+  /// 1. Приоритетно запрашивает котировки с собственного бэкенда: [ApiConfig.currencyRates].
+  /// 2. При ошибке или недоступности бэкенда обращается к открытому шлюзу https://open.er-api.com/v6/latest/USD.
+  /// 3. В оффлайн-режиме опирается на сохраненный локальный кэш либо встроенную таблицу [_fallbackRatesToUsd].
   Future<bool> fetchLatestRates({bool force = false}) async {
     final now = DateTime.now();
     if (!force && _lastUpdated != null) {
@@ -125,17 +142,28 @@ class CurrencyExchangeService {
       }
     }
 
+    // 1. Приоритетный запрос к собственному бэкенду
     try {
-      final response = await _dio.get('https://open.er-api.com/v6/latest/USD');
-      if (response.statusCode == 200 && response.data is Map) {
-        final data = response.data as Map<String, dynamic>;
-        final rates = data['rates'] as Map<String, dynamic>?;
+      final backendUrl = '${ApiConfig.baseUrl}${ApiConfig.currencyRates}';
+      final response = await _dio.get(backendUrl);
 
-        if (rates != null) {
+      if (response.statusCode == 200 && response.data is Map) {
+        final payload = response.data as Map<String, dynamic>;
+        final data = payload['data'] is Map
+            ? payload['data'] as Map<String, dynamic>
+            : payload;
+        final rates =
+            data['rates'] is Map ? data['rates'] as Map<String, dynamic> : null;
+
+        if (rates != null && rates.isNotEmpty) {
           for (final currency in Currency.values) {
-            final val = rates[currency.code];
+            final val =
+                rates[currency.code] ?? rates[currency.code.toLowerCase()];
             if (val is num) {
               _ratesToUsd[currency.code] = val.toDouble();
+            } else if (val is String) {
+              final parsed = double.tryParse(val);
+              if (parsed != null) _ratesToUsd[currency.code] = parsed;
             }
           }
 
@@ -148,17 +176,56 @@ class CurrencyExchangeService {
           );
 
           AppLogger.i(
-            '[CurrencyExchangeService] Exchange rates successfully updated from network',
+            '[CurrencyExchangeService] Exchange rates successfully updated from backend',
           );
           return true;
         }
       }
     } catch (e) {
       AppLogger.w(
-        '[CurrencyExchangeService] Could not refresh rates from network, using cache/fallback',
-        e,
+        '[CurrencyExchangeService] Could not refresh rates from backend, falling back to open gateway: $e',
       );
     }
+
+    // 2. Graceful Fallback на открытый внешний шлюз
+    try {
+      final response = await _dio.get('https://open.er-api.com/v6/latest/USD');
+      if (response.statusCode == 200 && response.data is Map) {
+        final data = response.data as Map<String, dynamic>;
+        final rates = data['rates'] as Map<String, dynamic>?;
+
+        if (rates != null && rates.isNotEmpty) {
+          for (final currency in Currency.values) {
+            final val = rates[currency.code];
+            if (val is num) {
+              _ratesToUsd[currency.code] = val.toDouble();
+            } else if (val is String) {
+              final parsed = double.tryParse(val);
+              if (parsed != null) _ratesToUsd[currency.code] = parsed;
+            }
+          }
+
+          _lastUpdated = now;
+          await PreferencesService.instance.saveExchangeRates(
+            jsonEncode(_ratesToUsd),
+          );
+          await PreferencesService.instance.saveExchangeRatesUpdated(
+            now.millisecondsSinceEpoch,
+          );
+
+          AppLogger.i(
+            '[CurrencyExchangeService] Exchange rates successfully updated from fallback gateway',
+          );
+          return true;
+        }
+      }
+    } catch (e) {
+      AppLogger.w(
+        '[CurrencyExchangeService] Could not refresh rates from fallback gateway, using cached/fallback rates: $e',
+      );
+    }
+
+    // 3. При недоступности сети используется кэш из PreferencesService или _fallbackRatesToUsd
     return false;
   }
 }

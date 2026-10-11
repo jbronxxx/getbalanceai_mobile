@@ -24,6 +24,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
   late Currency _selectedCurrency;
+  String? _amountError;
 
   @override
   void initState() {
@@ -43,6 +44,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   void _onAmountChanged() {
+    if (_amountError != null) {
+      _amountError = null;
+    }
     if (mounted) setState(() {});
   }
 
@@ -63,23 +67,39 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (picked != null && mounted) {
       setState(() {
         _selectedCurrency = picked;
+        _amountError = null;
       });
     }
   }
 
-  /// Валидирует сумму (принимает и запятую, и точку как десятичный
-  /// разделитель) и сохраняет транзакцию — новую или обновлённую.
+  /// Валидирует сумму и сохраняет транзакцию. При невалидных данных
+  /// отображает красный контур поля с компактным сообщением требования.
   void _save() {
-    final amount = CurrencyFormatter.parseInput(_amountController.text);
+    final rawText = _amountController.text.trim();
+    if (rawText.isEmpty) {
+      setState(() {
+        _amountError = context.l10n.amount_requirement_enter;
+      });
+      return;
+    }
+
+    final amount = CurrencyFormatter.parseInput(rawText);
 
     if (amount == null || amount <= 0) {
-      AppAlerts.warning(context, context.l10n.alert_valid_amount);
+      setState(() {
+        _amountError = context.l10n.amount_requirement_positive;
+      });
       return;
     }
 
     if (amount > _selectedCurrency.maxAmount) {
-      AppAlerts.warning(context,
-          '${context.l10n.alert_amount_too_large} ${_selectedCurrency.code}');
+      setState(() {
+        _amountError = context.l10n.amount_requirement_max(
+          CurrencyFormatter.format(_selectedCurrency.maxAmount,
+              showSymbol: false),
+          _selectedCurrency.code,
+        );
+      });
       return;
     }
 
@@ -298,8 +318,28 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                           decoration: InputDecoration(
                             labelText:
                                 '${context.l10n.amount_label} (${_selectedCurrency.localizedName})',
+                            errorText: _amountError,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: colorScheme.error,
+                                width: 1.5,
+                              ),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: colorScheme.error,
+                                width: 2,
+                              ),
+                            ),
+                            errorStyle: TextStyle(
+                              color: colorScheme.error,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
                             suffixIcon: Padding(
                               padding: const EdgeInsets.only(right: 8),

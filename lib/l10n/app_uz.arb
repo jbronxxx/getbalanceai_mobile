@@ -21,7 +21,7 @@
   "login_btn_short": "Kirish",
   "local_profile": "Mahalliy profil",
   "offline_storage_desc": "Ma'lumotlar ushbu qurilmada saqlanadi",
-  "local_storage_warning": "Qurilmadagi xotira • O'chirilganda saqlanmaydi",
+  "local_storage_warning": "Ma'lumotlar faqat qurilmangizda saqlanadi va ilova o'chirilganda o'chib ketadi",
   "cloud_backup_prompt": "Zaxira nusxalashni yoqish uchun kiring",
   "user": "Foydalanuvchi",
   "select_currency": "Valyutani tanlash",
@@ -68,6 +68,19 @@
   "save_changes_btn": "O'zgarishlarni saqlash",
   "alert_valid_amount": "To'g'ri summani kiriting",
   "alert_amount_too_large": "Summa juda katta, valyuta:",
+  "amount_requirement_enter": "Summani kiriting",
+  "amount_requirement_positive": "Summa 0 dan katta bo'lishi kerak",
+  "amount_requirement_max": "Maksimal: {max} {currency}",
+  "@amount_requirement_max": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
   "budgets_title": "Xarajatlar limitlari",
   "add_budget_title": "Budjet limiti",
   "edit_budget_title": "Limitni tahrirlash",

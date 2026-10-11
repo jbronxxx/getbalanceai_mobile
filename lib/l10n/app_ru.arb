@@ -21,7 +21,7 @@
   "login_btn_short": "Войти",
   "local_profile": "Локальный профиль",
   "offline_storage_desc": "Данные сохраняются на этом устройстве",
-  "local_storage_warning": "Хранилище на устройстве • Не сохраняется при удалении",
+  "local_storage_warning": "Данные хранятся только на вашем устройстве и удаляются при удалении приложения",
   "cloud_backup_prompt": "Войдите для включения резервной копии",
   "user": "Пользователь",
   "select_currency": "Выбор валюты",
@@ -68,6 +68,19 @@
   "save_changes_btn": "Сохранить изменения",
   "alert_valid_amount": "Введите корректную сумму",
   "alert_amount_too_large": "Сумма слишком велика для",
+  "amount_requirement_enter": "Укажите сумму",
+  "amount_requirement_positive": "Сумма должна быть больше 0",
+  "amount_requirement_max": "Максимум: {max} {currency}",
+  "@amount_requirement_max": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
   "budgets_title": "Лимиты расходов",
   "add_budget_title": "Лимит на бюджет",
   "edit_budget_title": "Редактировать лимит",

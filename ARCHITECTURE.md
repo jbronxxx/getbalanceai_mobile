@@ -145,6 +145,13 @@ main.dart`. Это было исправлено переносом состоя
   - Все цвета и параметры тем вынесены из `main.dart` в единый класс `AppTheme`.
   - Поддерживаются `AppTheme.lightTheme` и `AppTheme.darkTheme` на базе Material 3 с палитрами `colorScheme` (основной цвет — `primaryTeal` `#0D9488`, фоны `#F8FAFC` и `#0F172A`, карточки `#FFFFFF` и `#1E293B`, границы `#E2E8F0` и `#334155`).
   - Во всех экранах и виджетах устранены прямые константы цветов (`Colors.grey/red/orange/...`); стилизация выполняется строго через `Theme.of(context).colorScheme` и `Theme.of(context).textTheme`.
+  - Сконфигурирована глобальная `inputDecorationTheme` для светлой и темной тем со скруглением 16px, аккуратными границами и красным контуром ошибки (`errorBorder` и `focusedErrorBorder` на базе `AppTheme.errorRed`).
+
+- **Инлайн-валидация полей ввода (Inline Input Validation & Error Styling)**:
+  - Вывод ошибок валидации полей ввода отвязан от всплывающих алертов и тостов (`AppAlerts.warning`/`SnackBar`).
+  - При ошибке валидации поле подсвечивается красным контуром, а под полем выводится компактное и емкое сообщение требования (`amount_requirement_enter`, `amount_requirement_positive`, `amount_requirement_max`).
+  - Ошибка автоматически очищается в реальном времени при вводе символов пользователем или смене валюты.
+  - Формы ввода в модальных листах (`AddTransactionSheet`, `AddBudgetSheet`) защищены от переполнения экрана при появлении ошибки и клавиатуры через `SingleChildScrollView`.
 
 - **Декомпозиция крупных экранов**:
   - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget`, `DashboardPeriodPickerSheet` (директория `lib/widgets/dashboard/`).
@@ -170,3 +177,5 @@ main.dart`. Это было исправлено переносом состоя
   - **Динамический пересчет в представлении (On-the-fly Presentation Conversion)**: При смене базовой валюты пользователя в профиле (или на онбординге) база данных **не мутируется**, а исторические записи **не перезаписываются**. Месячные агрегации (`LocalDbService.getMonthTotals`, `getSpentForCategory`) и отображение элементов (`effectiveBaseAmount`, `effectiveExchangeRate`) вычисляются динамически на лету через `CurrencyExchangeService` за доли миллисекунды.
   - **Чистота синхронизации (Sync Integrity)**: Исключены паразитные выставления флагов `isModified = true` и массовые сетевые перезаписи базы на бэкенд при смене валюты отображения.
   - **Изоляция выбора валюты**: Виджет `CurrencyPickerSheet` разделяет смену глобальной валюты аккаунта (`updateGlobalCurrency: true` в профиле) и выбор локальной валюты конкретной операции (`updateGlobalCurrency: false` в формах транзакций и бюджетов).
+  - **Приоритетная загрузка курсов с бэкенда (`/currencies/rates`)**: В `CurrencyExchangeService.fetchLatestRates` запросы первоочередно направляются на собственный бэкенд (`${ApiConfig.currencyRates}`). При недоступности или ошибке сервера предусмотрен каскадный Graceful Fallback на открытый шлюз (`open.er-api.com`), локальный кэш `PreferencesService` и встроенные резервные котировки.
+  - **Атомарная инвалидация ETag и фоновая синхронизация**: При смене базовой валюты пользователя (`AuthApiService.updateUserProfile(baseCurrency: ...)`) бэкенд атомарно пересчитывает исторические данные. Мобильный клиент удаляет заголовки `transactions_etag` и `budgets_etag` из безопасного хранилища (`FlutterSecureStorage`), сбрасывает кэш ETag в `SyncService` и запускает фоновый `ApiService.syncAll()`, обновляя интерфейсы через `CurrencyFormatter.notifyCurrencyChanged()`.

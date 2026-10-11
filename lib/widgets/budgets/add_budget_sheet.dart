@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
-import '../app_alerts.dart';
 
 /// Модальный лист создания или редактирования лимита бюджета.
 class AddBudgetSheet extends StatefulWidget {
@@ -46,6 +45,7 @@ class AddBudgetSheet extends StatefulWidget {
 class _AddBudgetSheetState extends State<AddBudgetSheet> {
   late Category _selectedCategory;
   late final TextEditingController _amountController;
+  String? _amountError;
 
   @override
   void initState() {
@@ -57,26 +57,48 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
               showSymbol: false)
           : '',
     );
+    _amountController.addListener(_onAmountChanged);
+  }
+
+  void _onAmountChanged() {
+    if (_amountError != null && mounted) {
+      setState(() => _amountError = null);
+    }
   }
 
   @override
   void dispose() {
+    _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     super.dispose();
   }
 
   void _saveBudget() {
-    final amount = CurrencyFormatter.parseInput(_amountController.text);
-    if (amount == null || amount <= 0) {
-      AppAlerts.warning(context, context.l10n.alert_valid_amount);
+    final rawText = _amountController.text.trim();
+    if (rawText.isEmpty) {
+      setState(() {
+        _amountError = context.l10n.amount_requirement_enter;
+      });
       return;
     }
 
-    if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-      AppAlerts.warning(
-        context,
-        '${context.l10n.alert_amount_too_large} ${CurrencyFormatter.currentCurrency.code}',
-      );
+    final amount = CurrencyFormatter.parseInput(rawText);
+    if (amount == null || amount <= 0) {
+      setState(() {
+        _amountError = context.l10n.amount_requirement_positive;
+      });
+      return;
+    }
+
+    final currentCurrency = CurrencyFormatter.currentCurrency;
+    if (amount > currentCurrency.maxAmount) {
+      setState(() {
+        _amountError = context.l10n.amount_requirement_max(
+          CurrencyFormatter.format(currentCurrency.maxAmount,
+              showSymbol: false),
+          currentCurrency.code,
+        );
+      });
       return;
     }
 
@@ -125,93 +147,118 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
           color: colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 80,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              isEditing
-                  ? context.l10n.edit_budget_title
-                  : context.l10n.add_budget_title,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 20),
-            DropdownButtonFormField<Category>(
-              value: _selectedCategory,
-              borderRadius: BorderRadius.circular(24),
-              alignment: Alignment.centerLeft,
-              decoration: InputDecoration(
-                labelText: context.l10n.category_label,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              items: Category.expenseCategories.map((cat) {
-                return DropdownMenuItem(
-                  value: cat,
-                  child: Text(cat.getLocalizedName(context)),
-                );
-              }).toList(),
-              onChanged: isEditing
-                  ? null
-                  : (val) {
-                      if (val != null) {
-                        setState(() => _selectedCategory = val);
-                      }
-                    },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _amountController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [CurrencyInputFormatter()],
-              autofocus: false,
-              decoration: InputDecoration(
-                labelText:
-                    '${context.l10n.budget_amount_hint} (${CurrencyFormatter.currentCurrency.localizedName})',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 80,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-                onPressed: _saveBudget,
-                child: Text(
-                  context.l10n.save_btn,
-                  style: textTheme.titleMedium?.copyWith(
+                Text(
+                  isEditing
+                      ? context.l10n.edit_budget_title
+                      : context.l10n.add_budget_title,
+                  style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onPrimary,
+                    color: colorScheme.onSurface,
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<Category>(
+                  value: _selectedCategory,
+                  borderRadius: BorderRadius.circular(24),
+                  alignment: Alignment.centerLeft,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.category_label,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  items: Category.expenseCategories.map((cat) {
+                    return DropdownMenuItem(
+                      value: cat,
+                      child: Text(cat.getLocalizedName(context)),
+                    );
+                  }).toList(),
+                  onChanged: isEditing
+                      ? null
+                      : (val) {
+                          if (val != null) {
+                            setState(() => _selectedCategory = val);
+                          }
+                        },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _amountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [CurrencyInputFormatter()],
+                  autofocus: false,
+                  decoration: InputDecoration(
+                    labelText:
+                        '${context.l10n.budget_amount_hint} (${CurrencyFormatter.currentCurrency.localizedName})',
+                    errorText: _amountError,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                        width: 2,
+                      ),
+                    ),
+                    errorStyle: TextStyle(
+                      color: colorScheme.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: _saveBudget,
+                    child: Text(
+                      context.l10n.save_btn,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
