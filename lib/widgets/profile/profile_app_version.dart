@@ -48,16 +48,6 @@ class _ProfileAppVersionState extends State<ProfileAppVersion> {
         context,
         MaterialPageRoute(builder: (_) => const DebugMenuScreen()),
       );
-    } else if (_debugTapCount >= 2) {
-      final remaining = 5 - _debugTapCount;
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.debug_tap_hint(remaining)),
-          duration: const Duration(milliseconds: 1000),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     }
   }
 
@@ -69,8 +59,9 @@ class _ProfileAppVersionState extends State<ProfileAppVersion> {
 
     return GestureDetector(
       onTap: _handleTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Text(
           context.l10n.version_label(widget.appVersion),
           style: textTheme.bodySmall?.copyWith(

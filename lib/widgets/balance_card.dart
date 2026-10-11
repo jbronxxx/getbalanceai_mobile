@@ -96,38 +96,50 @@ class _IncomeExpenseInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    Icon(icon, color: color.withValues(alpha: 0.95), size: 12),
               ),
-              child: Icon(icon, color: color.withValues(alpha: 0.9), size: 12),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: color.withValues(alpha: 0.7),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: color.withValues(alpha: 0.8),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        CurrencyFormatter.formatText(
-          amount,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
+            ],
           ),
-          useFittedBox: true,
-        ),
-      ],
+          const SizedBox(height: 6),
+          CurrencyFormatter.formatText(
+            amount,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+            useFittedBox: true,
+          ),
+        ],
+      ),
     );
   }
 }
