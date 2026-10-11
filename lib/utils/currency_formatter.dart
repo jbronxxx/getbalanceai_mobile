@@ -40,13 +40,26 @@ enum Currency {
                   : LanguageManager.l10n.usd_name;
 }
 
+/// Специализированный ValueNotifier с поддержкой принудительного уведомления слушателей.
+class CurrencyValueNotifier extends ValueNotifier<Currency> {
+  CurrencyValueNotifier(super.value);
+
+  /// Принудительно оповещает слушателей, даже если значение валюты не изменилось.
+  void forceNotify() => notifyListeners();
+}
+
 /// Утилита для форматирования и валидации денежных сумм.
 class CurrencyFormatter {
   static Currency _currentCurrency = Currency.rub;
 
   /// Уведомляет слушателей (UI) об изменении выбранной валюты.
-  static final ValueNotifier<Currency> currencyNotifier =
-      ValueNotifier(Currency.rub);
+  static final CurrencyValueNotifier currencyNotifier =
+      CurrencyValueNotifier(Currency.rub);
+
+  /// Принудительно уведомляет слушателей о необходимости обновить отображение валюты.
+  static void notifyCurrencyChanged() {
+    currencyNotifier.forceNotify();
+  }
 
   /// Устанавливает текущую базовую валюту аккаунта и уведомляет слушателей.
   /// Все экраны и виджеты динамически пересчитывают отображение на лету без мутации БД.

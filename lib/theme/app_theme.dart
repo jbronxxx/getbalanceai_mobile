@@ -50,6 +50,33 @@ class AppTheme {
         elevation: 4,
         shape: CircleBorder(),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderSide: BorderSide(color: primaryTeal, width: 2),
+        ),
+        errorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderSide: BorderSide(color: errorRed, width: 1.5),
+        ),
+        focusedErrorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderSide: BorderSide(color: errorRed, width: 2),
+        ),
+        errorStyle: const TextStyle(
+          color: errorRed,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        errorMaxLines: 2,
+      ),
     );
   }
 
@@ -78,6 +105,33 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 4,
         shape: CircleBorder(),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: darkCardBorder),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderSide: BorderSide(color: secondaryTeal, width: 2),
+        ),
+        errorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderSide: BorderSide(color: errorRed, width: 1.5),
+        ),
+        focusedErrorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderSide: BorderSide(color: errorRed, width: 2),
+        ),
+        errorStyle: const TextStyle(
+          color: errorRed,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        errorMaxLines: 2,
       ),
     );
   }

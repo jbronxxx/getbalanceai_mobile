@@ -75,6 +75,10 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      if (AppErrorHandler.isUserCanceled(e)) {
+        AppLogger.i('[AuthScreen] Вход через $provider отменен пользователем');
+        return;
+      }
       if (e is PlatformException) {
         AppAlerts.showErrorDialog(
           context,

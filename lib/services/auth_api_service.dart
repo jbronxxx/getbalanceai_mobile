@@ -6,6 +6,7 @@ import '../config/api_config.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
 import '../utils/currency_formatter.dart';
+import 'api_service.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
 
@@ -288,6 +289,26 @@ class AuthApiService {
       );
       if (name != null) await setUserName(name);
       if (avatarUrl != null) await setAvatarUrl(avatarUrl);
+
+      if (baseCurrency != null) {
+        await _storage.delete(key: 'transactions_etag');
+        await _storage.delete(key: 'budgets_etag');
+        try {
+          await ApiService.instance.clearEtags();
+          unawaited(() async {
+            try {
+              await ApiService.instance.syncAll();
+              CurrencyFormatter.notifyCurrencyChanged();
+            } catch (e) {
+              AppLogger.w(
+                  '[AuthApiService] Background sync after currency change failed: $e');
+            }
+          }());
+        } catch (e) {
+          AppLogger.w('[AuthApiService] Resetting ETags/Sync failed: $e');
+        }
+      }
+
       AppLogger.i('[AuthApiService] Remote user profile updated: $data');
     } on DioException catch (e) {
       AppLogger.w(

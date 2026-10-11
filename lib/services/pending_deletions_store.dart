@@ -25,9 +25,12 @@ import '../utils/app_logger.dart';
 /// переустановки сервер остаётся единственным источником данных, и
 /// проигрывать старые удаления уже нечему.
 class PendingDeletionsStore {
-  static late final PendingDeletionsStore instance;
+  static PendingDeletionsStore? _instance;
+  static PendingDeletionsStore get instance =>
+      _instance ??= PendingDeletionsStore._(null, {}, {});
+  static set instance(PendingDeletionsStore value) => _instance = value;
 
-  final File _file;
+  final File? _file;
   final Set<String> _transactionIds;
   final Set<String> _budgetIds;
 
@@ -98,8 +101,10 @@ class PendingDeletionsStore {
   }
 
   Future<void> _flush() async {
+    final file = _file;
+    if (file == null) return;
     try {
-      await _file.writeAsString(jsonEncode({
+      await file.writeAsString(jsonEncode({
         'transactions': _transactionIds.toList(),
         'budgets': _budgetIds.toList(),
       }));
