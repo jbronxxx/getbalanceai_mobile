@@ -38,12 +38,14 @@ class BudgetItemCard extends StatelessWidget {
     final background = Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      color: colorScheme.error,
+      decoration: BoxDecoration(
+        color: colorScheme.error,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Icon(Icons.delete, color: colorScheme.onError),
     );
 
     final cardContent = Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
@@ -64,57 +66,70 @@ class BudgetItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        budget.category.getLocalizedName(context),
-                        style: textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CurrencyFormatter.formatText(
-                                  currentSpent,
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: isExceeded
-                                        ? colorScheme.error
-                                        : colorScheme.primary,
-                                  ),
-                                ),
-                                Text(
-                                  ' / ',
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: isExceeded
-                                        ? colorScheme.error
-                                        : colorScheme.primary,
-                                  ),
-                                ),
-                                CurrencyFormatter.formatText(
-                                  budget.limitAmount,
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: isExceeded
-                                        ? colorScheme.error
-                                        : colorScheme.primary,
-                                  ),
-                                ),
-                              ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxCategoryWidth = constraints.maxWidth * 0.45;
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ConstrainedBox(
+                            constraints:
+                                BoxConstraints(maxWidth: maxCategoryWidth),
+                            child: Text(
+                              budget.category.getLocalizedName(context),
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CurrencyFormatter.formatText(
+                                      currentSpent,
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isExceeded
+                                            ? colorScheme.error
+                                            : colorScheme.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' / ',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isExceeded
+                                            ? colorScheme.error
+                                            : colorScheme.primary,
+                                      ),
+                                    ),
+                                    CurrencyFormatter.formatText(
+                                      budget.limitAmount,
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isExceeded
+                                            ? colorScheme.error
+                                            : colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
@@ -150,15 +165,19 @@ class BudgetItemCard extends StatelessWidget {
       child: cardContent,
     );
 
-    if (isFirst) {
-      return SwipeHintWrapper(
-        showHint: showSwipeHint,
-        background: background,
-        onHintShown: onHintShown,
-        child: dismissibleItem,
-      );
-    }
+    final itemWithHint = isFirst
+        ? SwipeHintWrapper(
+            showHint: showSwipeHint,
+            background: background,
+            borderRadius: BorderRadius.circular(20),
+            onHintShown: onHintShown,
+            child: dismissibleItem,
+          )
+        : dismissibleItem;
 
-    return dismissibleItem;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: itemWithHint,
+    );
   }
 }

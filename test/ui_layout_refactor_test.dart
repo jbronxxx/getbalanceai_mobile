@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
+import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
 import 'package:getbalanceai_mobile/screens/debug_menu_screen.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
@@ -13,7 +14,7 @@ import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
 import 'package:getbalanceai_mobile/widgets/dashboard/dashboard.dart';
 import 'package:getbalanceai_mobile/widgets/profile/profile.dart';
-import 'package:getbalanceai_mobile/widgets/welcome_language_sheet.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 
 Widget _buildTestApp(Widget child, {Locale locale = const Locale('ru')}) {
   return MaterialApp(
@@ -93,7 +94,7 @@ API_BASE_URL=http://localhost:8000/api/v1
     });
 
     testWidgets(
-        'Tapping 2-4 times displays hint snackbar and resets after 2 seconds',
+        'Tapping less than 5 times does not show any snackbar and resets after 2 seconds',
         (tester) async {
       await tester.pumpWidget(
         _buildTestApp(
@@ -104,28 +105,19 @@ API_BASE_URL=http://localhost:8000/api/v1
 
       final versionFinder = find.byType(ProfileAppVersion);
 
-      // Tap 1
-      await tester.tap(versionFinder);
-      await tester.pump();
+      // Tapping 1 to 4 times does not show any snackbar
+      for (int i = 0; i < 4; i++) {
+        await tester.tap(versionFinder);
+        await tester.pump();
+      }
       expect(find.byType(SnackBar), findsNothing);
 
-      // Tap 2 -> shows hint (3 remaining)
+      // Wait 2s for reset timer to fire
+      await tester.pump(const Duration(milliseconds: 2100));
+
+      // Tapping again once does not show snackbar
       await tester.tap(versionFinder);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.textContaining('3 раз'), findsOneWidget);
-
-      // Wait for snackbar to dismiss and 2s reset timer to fire
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pump();
-      expect(find.byType(SnackBar), findsNothing);
-
-      // After reset timer has fired, tapping once should be Tap 1 (no snackbar)
-      await tester.tap(versionFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(SnackBar), findsNothing);
     });
 
@@ -227,6 +219,39 @@ API_BASE_URL=http://localhost:8000/api/v1
 
       expect(find.textContaining('Превышен'), findsOneWidget);
     });
+
+    testWidgets(
+        'BudgetItemCard handles very large amounts without overflow and maintains category spacing',
+        (tester) async {
+      final largeBudget = Budget(
+        localId: 2,
+        dbCategory: Category.entertainment.name,
+        limitAmount: 500000000,
+        month: 5,
+        year: 2026,
+        spent: 250000000,
+        remaining: 250000000,
+      );
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          BudgetItemCard(
+            budget: largeBudget,
+            currentSpent: 250000000,
+            isFirst: false,
+            showSwipeHint: false,
+            onTap: () {},
+            onDelete: () {},
+            onHintShown: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Развлечения'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('Dashboard Widgets Tests', () {
@@ -286,6 +311,45 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(find.text('🇺🇿   O\'zbekcha'), findsOneWidget);
       expect(find.text('🇬🇧   English'), findsOneWidget);
       expect(find.byType(ElevatedButton), findsOneWidget);
+    });
+  });
+
+  group('AddTransactionSheet Tests', () {
+    testWidgets(
+        'AddTransactionSheet has no close button and uses SingleChildScrollView to avoid keyboard overflow',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          const AddTransactionSheet(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(LanguageManager.l10n.new_transaction), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('BalanceCard Tests', () {
+    testWidgets('BalanceCard renders amounts and income/expense containers',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          const BalanceCard(
+            balance: 150000,
+            income: 200000,
+            expense: 50000,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(LanguageManager.l10n.total_balance), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.income_title), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.expense_title), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

@@ -274,7 +274,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       if (mounted) setState(() {});
                     },
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     height: 56,
@@ -316,14 +316,14 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                           ),
                   ),
                   if (isAuthenticated) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 8),
                     Center(
                       child: TextButton(
                         style: TextButton.styleFrom(
                           foregroundColor: colorScheme.outline,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
-                            vertical: 12,
+                            vertical: 8,
                           ),
                         ),
                         onPressed: _handleDeleteAccount,
@@ -337,9 +337,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   ProfileAppVersion(appVersion: _appVersion),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

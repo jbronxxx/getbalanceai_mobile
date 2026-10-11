@@ -29,6 +29,7 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
   late AnimationController _controller;
   late Animation<Offset> _animation;
   bool _hasStarted = false;
+  bool _isCompleted = false;
   Timer? _startTimer;
 
   @override
@@ -38,6 +39,14 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() {
+          _isCompleted = true;
+        });
+      }
+    });
 
     _animation = TweenSequence<Offset>([
       TweenSequenceItem(
@@ -85,7 +94,7 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
 
   @override
   Widget build(BuildContext context) {
-    if (!_hasStarted) return widget.child;
+    if (!_hasStarted || _isCompleted) return widget.child;
 
     return Stack(
       children: [
