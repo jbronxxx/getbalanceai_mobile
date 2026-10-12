@@ -3,41 +3,16 @@ import '../../services/preferences_service.dart';
 import '../../utils/utils.dart';
 import 'currency_picker_sheet.dart';
 import 'language_picker_sheet.dart';
+import 'theme_mode_picker_sheet.dart';
 
-/// Карточка настроек интерфейса (тема, язык, валюта, уведомления).
-class ProfileSettingsCard extends StatefulWidget {
+/// Карточка настроек интерфейса (тема, язык, валюта).
+class ProfileSettingsCard extends StatelessWidget {
   final VoidCallback onLanguageChanged;
 
   const ProfileSettingsCard({
     super.key,
     required this.onLanguageChanged,
   });
-
-  @override
-  State<ProfileSettingsCard> createState() => _ProfileSettingsCardState();
-}
-
-class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
-  bool _notificationsEnabled = true;
-  bool _isDarkMode = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final notifications =
-        await PreferencesService.instance.getNotificationsEnabled();
-    final darkMode = await PreferencesService.instance.getDarkMode();
-    if (mounted) {
-      setState(() {
-        _notificationsEnabled = notifications;
-        _isDarkMode = darkMode;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +27,8 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
         : Colors.white.withValues(alpha: 0.85);
     final glassBorder =
         isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+    final dividerColor =
+        isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9);
 
     return Container(
       decoration: BoxDecoration(
@@ -71,21 +48,37 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
       ),
       child: Column(
         children: [
-          SwitchListTile(
+          ListTile(
             title: Text(
-              l10n.dark_mode,
+              l10n.theme_mode,
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: colorScheme.onSurface,
               ),
             ),
-            value: _isDarkMode,
-            activeColor: colorScheme.primary,
-            onChanged: (val) {
-              setState(() => _isDarkMode = val);
-              PreferencesService.instance.saveDarkMode(val);
-            },
+            trailing: ValueListenableBuilder<ThemeMode>(
+              valueListenable: PreferencesService.instance.themeModeNotifier,
+              builder: (context, mode, child) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      ThemeModePickerSheet.getThemeModeLabel(context, mode),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right,
+                        size: 20, color: colorScheme.outline),
+                  ],
+                );
+              },
+            ),
+            onTap: () => ThemeModePickerSheet.show(context),
           ),
+          Divider(height: 1, thickness: 1, color: dividerColor),
           ListTile(
             title: Text(
               l10n.language,
@@ -111,10 +104,11 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
             onTap: () {
               LanguagePickerSheet.show(
                 context,
-                onLanguageChanged: widget.onLanguageChanged,
+                onLanguageChanged: onLanguageChanged,
               );
             },
           ),
+          Divider(height: 1, thickness: 1, color: dividerColor),
           ListTile(
             title: Text(
               l10n.currency,
@@ -144,21 +138,6 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
               },
             ),
             onTap: () => CurrencyPickerSheet.show(context),
-          ),
-          SwitchListTile(
-            title: Text(
-              l10n.notifications,
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            value: _notificationsEnabled,
-            activeColor: colorScheme.primary,
-            onChanged: (val) {
-              setState(() => _notificationsEnabled = val);
-              PreferencesService.instance.saveNotificationsEnabled(val);
-            },
           ),
         ],
       ),

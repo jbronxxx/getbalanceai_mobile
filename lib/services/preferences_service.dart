@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../utils/app_logger.dart';
 
 /// Сервис для управления UX-подсказками.
 ///
@@ -15,7 +16,13 @@ class PreferencesService {
       encryptedSharedPreferences: true,
     ),
   );
-  final ValueNotifier<bool> darkModeNotifier = ValueNotifier(false);
+  ValueNotifier<ThemeMode>? _themeModeNotifier;
+  ValueNotifier<ThemeMode> get themeModeNotifier =>
+      _themeModeNotifier ??= ValueNotifier(ThemeMode.system);
+
+  ValueNotifier<bool>? _darkModeNotifier;
+  ValueNotifier<bool> get darkModeNotifier =>
+      _darkModeNotifier ??= ValueNotifier(false);
 
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
   static const _keyCurrency = 'selected_currency';
@@ -23,6 +30,7 @@ class PreferencesService {
   static const _keyOnboardingCompleted = 'onboarding_setup_completed';
   static const _keyNotifications = 'settings_notifications';
   static const _keyDarkMode = 'settings_dark_mode';
+  static const _keyThemeMode = 'settings_theme_mode';
   static const _keyExchangeRates = 'cached_exchange_rates';
   static const _keyExchangeRatesUpdated = 'cached_exchange_rates_updated';
 
@@ -90,18 +98,63 @@ class PreferencesService {
     return val == null || val == 'true';
   }
 
+  /// Загружает сохраненный режим темы оформления.
+  /// По умолчанию используется системная тема ([ThemeMode.system]).
+  Future<void> loadSavedThemeMode() async {
+    final mode = await getThemeMode();
+    themeModeNotifier.value = mode;
+    darkModeNotifier.value = mode == ThemeMode.dark;
+  }
+
+  /// Сохраняет выбранный режим темы оформления.
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    themeModeNotifier.value = mode;
+    darkModeNotifier.value = mode == ThemeMode.dark;
+    try {
+      await _storage.write(key: _keyThemeMode, value: mode.name);
+      await _storage.write(
+        key: _keyDarkMode,
+        value: (mode == ThemeMode.dark).toString(),
+      );
+    } catch (e, stack) {
+      AppLogger.e('Ошибка при сохранении режима темы', e, stack);
+    }
+  }
+
+  /// Получает сохраненный режим темы оформления с миграцией со старого булева флага.
+  Future<ThemeMode> getThemeMode() async {
+    try {
+      final val = await _storage.read(key: _keyThemeMode);
+      if (val != null) {
+        return ThemeMode.values.firstWhere(
+          (m) => m.name == val,
+          orElse: () => ThemeMode.system,
+        );
+      }
+      final legacyVal = await _storage.read(key: _keyDarkMode);
+      if (legacyVal != null) {
+        return legacyVal == 'true' ? ThemeMode.dark : ThemeMode.light;
+      }
+    } catch (e, stack) {
+      AppLogger.e('Ошибка при чтении режима темы', e, stack);
+    }
+    return ThemeMode.system;
+  }
+
+  /// Обратная совместимость для загрузки флага темной темы.
   Future<void> loadSavedDarkMode() async {
-    darkModeNotifier.value = await getDarkMode();
+    await loadSavedThemeMode();
   }
 
+  /// Обратная совместимость для сохранения флага темной темы.
   Future<void> saveDarkMode(bool enabled) async {
-    await _storage.write(key: _keyDarkMode, value: enabled.toString());
-    darkModeNotifier.value = enabled;
+    await saveThemeMode(enabled ? ThemeMode.dark : ThemeMode.light);
   }
 
+  /// Обратная совместимость для проверки активности темной темы.
   Future<bool> getDarkMode() async {
-    final val = await _storage.read(key: _keyDarkMode);
-    return val == 'true';
+    final mode = await getThemeMode();
+    return mode == ThemeMode.dark;
   }
 
   // Храним идентификаторы экранов, где хинт уже был показан в этой сессии

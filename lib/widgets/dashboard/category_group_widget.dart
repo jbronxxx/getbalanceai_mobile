@@ -7,6 +7,7 @@ import 'transaction_item_tile.dart';
 class CategoryGroupWidget extends StatefulWidget {
   final Category category;
   final List<Transaction> transactions;
+  final DateTime? date;
   final bool showHintOnFirstTransaction;
   final void Function(Transaction) onTransactionTap;
   final void Function(Transaction) onTransactionDelete;
@@ -16,6 +17,7 @@ class CategoryGroupWidget extends StatefulWidget {
     super.key,
     required this.category,
     required this.transactions,
+    this.date,
     this.showHintOnFirstTransaction = false,
     required this.onTransactionTap,
     required this.onTransactionDelete,
@@ -181,8 +183,9 @@ class _CategoryGroupWidgetState extends State<CategoryGroupWidget> {
         ],
       ),
       child: ExpansionTile(
-        key: Key(
-            'expansion_${widget.category.name}_${widget.showHintOnFirstTransaction}'),
+        key: PageStorageKey<String>(
+          'category_expansion_${widget.date?.millisecondsSinceEpoch ?? 0}_${widget.category.name}_${widget.showHintOnFirstTransaction}',
+        ),
         initiallyExpanded: widget.showHintOnFirstTransaction,
         onExpansionChanged: (expanded) {
           setState(() {

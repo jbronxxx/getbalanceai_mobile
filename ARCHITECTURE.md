@@ -156,6 +156,11 @@ main.dart`. Это было исправлено переносом состоя
   - Поддерживаются `AppTheme.lightTheme` и `AppTheme.darkTheme` на базе Material 3 с палитрами `colorScheme` (основной цвет — `primaryTeal` `#0D9488`, фоны `#F8FAFC` и `#0F172A`, карточки `#FFFFFF` и `#1E293B`, границы `#E2E8F0` и `#334155`).
   - Во всех экранах и виджетах устранены прямые константы цветов (`Colors.grey/red/orange/...`); стилизация выполняется строго через `Theme.of(context).colorScheme` и `Theme.of(context).textTheme`.
   - Сконфигурирована глобальная `inputDecorationTheme` для светлой и темной тем со скруглением 16px, аккуратными границами и красным контуром ошибки (`errorBorder` и `focusedErrorBorder` на базе `AppTheme.errorRed`).
+  - **Динамическое переключение тем оформления (`ThemeMode`)**:
+    - Поддерживаются 3 режима: `ThemeMode.system` («Системная»), `ThemeMode.light` («Светлая») и `ThemeMode.dark` («Темная»).
+    - По умолчанию активен системный режим: приложение динамически следует настройкам темы телефона (при включении темной темы в ОС автоматически применяется `darkTheme`, при выключении — `lightTheme`).
+    - Ручной выбор темы осуществляется в профиле (`ProfileSettingsCard`) по аналогии с выбором языка и валюты: через строку меню без лишних иконок и модальный дропдаун-лист `ThemeModePickerSheet`, где варианты выбора отображаются только текстом, а выбранная строка подсвечена цветом темы и отмечена галочкой.
+    - Состояние темы управляется через `PreferencesService.instance.themeModeNotifier` с сохранением в `FlutterSecureStorage` (`settings_theme_mode`) и автоматической миграцией с устаревшего булева ключа `settings_dark_mode`.
 
 - **Архитектура интерфейса Liquid Glass (Полированное жидкое стекло)**:
   - **Дизайн-система токенов стекла (`ThemeExtension<GlassTheme>`)**:
@@ -181,9 +186,10 @@ main.dart`. Это было исправлено переносом состоя
 
 - **Декомпозиция крупных экранов**:
   - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget`, `DashboardPeriodPickerSheet` (директория `lib/widgets/dashboard/`).
-    - `CategoryGroupWidget` суммирует итог категории строго в базовой валюте пользователя (`effectiveBaseAmount`) со знаком валюты, обеспечивая 100% сходимость с общим балансом дашборда. При наличии мультивалютных трат выводит подстроку с оригинальной валютой чека, счетчик операций с корректным склонением (`LanguageManager.formatOperationsCount`) и анимированный шеврон раскрытия аккордеона (`AnimatedRotation`).
+    - `CategoryGroupWidget` суммирует итог категории строго в базовой валюте пользователя (`effectiveBaseAmount`) со знаком валюты, обеспечивая 100% сходимость с общим балансом дашборда. При наличии мультивалютных трат выводит подстроку с оригинальной валютой чека, счетчик операций с корректным склонением (`LanguageManager.formatOperationsCount`) и анимированный шеврон раскрытия аккордеона (`AnimatedRotation`). Для внутреннего `ExpansionTile` используется изолированный `PageStorageKey<String>`, исключающий коллизию типов (`type 'double' is not a subtype of type 'bool?'`) с сохраненным смещением скролла родительского `CustomScrollView`.
   - `BudgetsScreen`: декомпозирован на `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
+  - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
 
 - **Жизненный цикл провайдеров в `main.dart`**:

@@ -294,17 +294,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: ApiService.instance.isAuthenticated
                 ? GestureDetector(
                     onTap: _openProfile,
-                    child: CircleAvatar(
+                    child: UserAvatar(
                       radius: 18,
-                      backgroundColor:
-                          colorScheme.primary.withValues(alpha: 0.1),
-                      backgroundImage: ApiService.instance.avatarUrl != null
-                          ? NetworkImage(ApiService.instance.avatarUrl!)
-                          : null,
-                      child: ApiService.instance.avatarUrl == null
-                          ? Icon(Icons.person,
-                              size: 20, color: colorScheme.primary)
-                          : null,
+                      avatarUrl: ApiService.instance.avatarUrl,
+                      defaultIcon: Icons.person,
                     ),
                   )
                 : TextButton(
@@ -334,6 +327,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: CustomPullToRefresh(
         onRefresh: _handleRefresh,
         child: CustomScrollView(
+          key: const PageStorageKey('dashboard_custom_scroll_view'),
           controller: _scrollController,
           physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),

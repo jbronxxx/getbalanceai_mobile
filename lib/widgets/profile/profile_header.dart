@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../utils/utils.dart';
+import '../user_avatar.dart';
 
 /// Виджет заголовка профиля с аватаром и информацией о пользователе.
 class ProfileHeader extends StatelessWidget {
@@ -49,25 +50,12 @@ class ProfileHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: CircleAvatar(
+          child: UserAvatar(
             radius: 48,
-            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-            child: avatarUrl == null
-                ? (isAuthenticated
-                    ? Text(
-                        initialLetter,
-                        style: textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      )
-                    : Icon(
-                        Icons.person_outline_rounded,
-                        size: 46,
-                        color: colorScheme.primary,
-                      ))
-                : null,
+            avatarUrl: avatarUrl,
+            initials:
+                isAuthenticated && userName.isNotEmpty ? initialLetter : null,
+            defaultIcon: Icons.person_outline_rounded,
           ),
         ),
         const SizedBox(height: 16),
