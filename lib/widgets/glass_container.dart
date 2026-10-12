@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../services/services.dart';
 import '../theme/app_theme.dart';
 
 /// Универсальный контейнер с эффектом полированного жидкого стекла (Liquid Glass / Frosted Glass).
@@ -39,12 +40,21 @@ class GlassContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glassTheme = GlassTheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final isBlurSupported = DeviceCapabilityService.instance.isBlurSupported;
     final effectiveSigma = blurSigma ?? glassTheme.blurSigma;
+    final shouldUseBlur =
+        !disableAnimations && isBlurSupported && effectiveSigma > 0;
 
-    final effectiveColor =
-        color ?? (gradient == null ? glassTheme.surface : null);
+    final fallbackOpaqueColor =
+        isDark ? const Color(0xFF18181C) : const Color(0xFFFFFFFF);
+
+    final effectiveColor = color ??
+        (gradient == null
+            ? (shouldUseBlur ? glassTheme.surface : fallbackOpaqueColor)
+            : null);
 
     final effectiveBorder = border ??
         Border.all(
@@ -77,7 +87,7 @@ class GlassContainer extends StatelessWidget {
     );
 
     Widget content;
-    if (disableAnimations || effectiveSigma <= 0) {
+    if (!shouldUseBlur) {
       content = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         clipBehavior: clipBehavior,

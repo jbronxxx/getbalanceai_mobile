@@ -93,11 +93,11 @@
 
 ## D. Производительность
 
-### [ ] D1 (P1). Тяжёлый `BackdropFilter` (sigma 28) поверх скроллящегося списка
+### [x] D1 (P1). Тяжёлый `BackdropFilter` (sigma 28) поверх скроллящегося списка
 - Каждый кадр скролла пересчитывает blur во весь размер навбара; на Android low/mid-end (Impeller/Skia) — джанк.
 - **Фикс:** снизить sigma до 16–20; обернуть навбар в `RepaintBoundary`; для Android < API 31 / при `MediaQuery.disableAnimations` — fallback на непрозрачную заливку без blur.
 
-### [ ] D2 (P2). Все экраны пересоздаются при смене вкладки
+### [x] D2 (P2). Все экраны пересоздаются при смене вкладки
 `_getScreens(...)[_currentIndex]` + внешний `ValueListenableBuilder<Currency>` пересоздаёт список экранов на каждый rebuild; позиция скролла и состояние вкладок теряются. Рассмотреть `IndexedStack` (или `PageStorageKey` для скроллов) и перенести `ValueListenableBuilder` ниже.
 
 ---
