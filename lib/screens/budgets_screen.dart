@@ -139,6 +139,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       body: CustomPullToRefresh(
         onRefresh: _handleRefresh,
         child: CustomScrollView(
+          key: const PageStorageKey('budgets_custom_scroll_view'),
           physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),

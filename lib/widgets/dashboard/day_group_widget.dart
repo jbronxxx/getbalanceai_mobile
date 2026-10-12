@@ -52,6 +52,9 @@ class DayGroupWidget extends StatelessWidget {
           final isFirst = idx == 0;
 
           return CategoryGroupWidget(
+            key: ValueKey(
+                'category_group_${date.millisecondsSinceEpoch}_${categoryEntry.key.name}'),
+            date: date,
             category: categoryEntry.key,
             transactions: categoryEntry.value,
             showHintOnFirstTransaction: showHintOnFirstCategory && isFirst,

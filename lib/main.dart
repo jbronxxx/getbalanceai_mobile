@@ -57,7 +57,7 @@ void main() async {
   unawaited(CurrencyExchangeService.instance.fetchLatestRates());
   await LanguageManager.loadSavedLanguage();
   LanguageManager.initFallback();
-  await PreferencesService.instance.loadSavedDarkMode();
+  await PreferencesService.instance.loadSavedThemeMode();
 
   // На планшетах и iPad поддерживаем все ориентации согласно требованиям App Store,
   // на смартфонах фиксируем портретную ориентацию для предотвращения скачков интерфейса.
@@ -91,9 +91,10 @@ class FinanceApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => AuthCubit(),
-      child: ValueListenableBuilder<bool>(
-        valueListenable: PreferencesService.instance.darkModeNotifier,
-        builder: (context, isDarkMode, child) {
+      child: ValueListenableBuilder<ThemeMode>(
+        key: const ValueKey('finance_app_theme_mode'),
+        valueListenable: PreferencesService.instance.themeModeNotifier,
+        builder: (context, themeMode, child) {
           return ValueListenableBuilder<AppLanguage>(
             valueListenable: LanguageManager.languageNotifier,
             builder: (context, currentLanguage, child) {
@@ -101,7 +102,7 @@ class FinanceApp extends StatelessWidget {
                 navigatorKey: navigatorKey,
                 title: 'Family Budget',
                 debugShowCheckedModeBanner: false,
-                themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+                themeMode: themeMode,
                 locale: Locale(currentLanguage.code),
                 supportedLocales: const [
                   Locale('ru'),
