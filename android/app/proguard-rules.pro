@@ -12,3 +12,7 @@
 # Google Sign In
 -keep class com.google.android.gms.auth.** { *; }
 -keep class com.google.android.gms.common.** { *; }
+
+# Flutter Deferred Components / Play Core (not used in monolithic app)
+-dontwarn com.google.android.play.core.**
+
