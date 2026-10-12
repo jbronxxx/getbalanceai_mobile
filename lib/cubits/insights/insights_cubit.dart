@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
@@ -8,11 +9,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'insights_state.dart';
 
-/// Загружает AI-инсайты и перезагружает их при смене валюты или языка.
+/// Загружает AI-инсайты и перезагружает их при смене валюты, языка или статуса авторизации.
 class InsightsCubit extends Cubit<InsightsState> {
   final ApiService _api;
   final Connectivity _connectivity;
   CancelToken? _cancelToken;
+  StreamSubscription<bool>? _authSub;
 
   InsightsCubit({ApiService? api, Connectivity? connectivity})
       : _api = api ?? ApiService.instance,
@@ -20,6 +22,15 @@ class InsightsCubit extends Cubit<InsightsState> {
         super(InsightsInitial()) {
     CurrencyFormatter.currencyNotifier.addListener(loadInsights);
     LanguageManager.languageNotifier.addListener(loadInsights);
+    _authSub = _api.authStream.listen((isAuthenticated) {
+      if (isClosed) return;
+      if (isAuthenticated) {
+        loadInsights();
+      } else {
+        _cancelToken?.cancel();
+        emit(InsightsUnauthenticated(LanguageManager.l10n.insight_login_hint));
+      }
+    });
   }
 
   /// Запрашивает инсайты, отменяя предыдущий незавершённый запрос.
@@ -62,7 +73,8 @@ class InsightsCubit extends Cubit<InsightsState> {
       if (isClosed || (e is DioException && CancelToken.isCancel(e))) {
         return;
       }
-      emit(InsightsError(AppErrorHandler.getMessage(e)));
+      AppLogger.e('[Insights] Failed to load insights', e);
+      emit(InsightsError(LanguageManager.l10n.insights_assistants_busy));
     }
   }
 
@@ -70,6 +82,7 @@ class InsightsCubit extends Cubit<InsightsState> {
   Future<void> close() {
     CurrencyFormatter.currencyNotifier.removeListener(loadInsights);
     LanguageManager.languageNotifier.removeListener(loadInsights);
+    _authSub?.cancel();
     _cancelToken?.cancel();
     return super.close();
   }

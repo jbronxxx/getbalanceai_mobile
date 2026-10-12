@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,10 +8,21 @@ import '../widgets/widgets.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatelessWidget {
-  const InsightsScreen({super.key});
+  final InsightsCubit? cubit;
+
+  const InsightsScreen({
+    super.key,
+    this.cubit,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (cubit != null) {
+      return BlocProvider.value(
+        value: cubit!,
+        child: const _InsightsScreenView(),
+      );
+    }
     return BlocProvider(
       create: (_) => InsightsCubit()..loadInsights(),
       child: const _InsightsScreenView(),
@@ -19,7 +31,56 @@ class InsightsScreen extends StatelessWidget {
 }
 
 class _InsightsScreenView extends StatelessWidget {
+  static const double _topContentPadding = 94.0;
+
   const _InsightsScreenView();
+
+  Widget _buildLoadingPlaceholder() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(
+            top: _topContentPadding,
+            left: 16,
+            right: 16,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - _topContentPadding)
+                  .clamp(0.0, double.infinity),
+            ),
+            child: const Center(
+              child: AiSparklesLoader(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBusyCardsList(BuildContext context) {
+    final busyInsights = [
+      context.l10n.insights_assistants_busy_msg1,
+      context.l10n.insights_assistants_busy_msg2,
+    ];
+
+    return ListView.builder(
+      physics: const ClampingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: EdgeInsets.only(
+        top: _topContentPadding,
+        left: 16,
+        right: 16,
+        bottom: LiquidGlassNavBar.bottomContentPadding(context),
+      ),
+      itemCount: busyInsights.length,
+      itemBuilder: (context, index) {
+        return _buildInsightCard(context, busyInsights[index]);
+      },
+    );
+  }
 
   Widget _buildNoNetworkPlaceholder(BuildContext context) {
     final theme = Theme.of(context);
@@ -30,8 +91,16 @@ class _InsightsScreenView extends StatelessWidget {
       builder: (context, constraints) {
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(
+            top: _topContentPadding,
+            left: 16,
+            right: 16,
+          ),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - _topContentPadding)
+                  .clamp(0.0, double.infinity),
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -125,6 +194,89 @@ class _InsightsScreenView extends StatelessWidget {
     );
   }
 
+  Widget _buildFloatingTopBanner(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 480),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0D9488)
+                  .withValues(alpha: isDark ? 0.25 : 0.14),
+              blurRadius: 14,
+              spreadRadius: -3,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+              blurRadius: 8,
+              spreadRadius: -2,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF0D9488)
+                        .withValues(alpha: isDark ? 0.82 : 0.85),
+                    const Color(0xFF0F766E)
+                        .withValues(alpha: isDark ? 0.84 : 0.88),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      context.l10n.insights_header_subtitle,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -153,202 +305,68 @@ class _InsightsScreenView extends StatelessWidget {
                 .copyWith(statusBarColor: Colors.transparent),
       ),
       body: CustomPullToRefresh(
+        releaseImmediately: true,
         onRefresh: () => context.read<InsightsCubit>().loadInsights(),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.28),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF14B8A6).withValues(alpha: 0.30),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        context.l10n.insights_header_subtitle,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                context.l10n.personal_recs_title,
-                style: textTheme.titleMedium?.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              BlocBuilder<InsightsCubit, InsightsState>(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: BlocBuilder<InsightsCubit, InsightsState>(
                 builder: (context, state) {
-                  if (state is InsightsLoaded && state.generatedAt != null) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.schedule,
-                            size: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${context.l10n.insights_updated_prefix}: ${LanguageManager.formatDate(state.generatedAt!)}',
-                            key: const Key('insights_updated_at'),
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                  if (state is InsightsLoading || state is InsightsInitial) {
+                    return _buildLoadingPlaceholder();
+                  } else if (state is InsightsNetworkError) {
+                    return _buildNoNetworkPlaceholder(context);
+                  } else if (state is InsightsError) {
+                    return _buildBusyCardsList(context);
+                  } else if (state is InsightsUnauthenticated) {
+                    return ListView.builder(
+                      physics: const ClampingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
                       ),
+                      padding: EdgeInsets.only(
+                        top: _topContentPadding,
+                        left: 16,
+                        right: 16,
+                        bottom: LiquidGlassNavBar.bottomContentPadding(context),
+                      ),
+                      itemCount: 1,
+                      itemBuilder: (context, index) {
+                        return _buildInsightCard(context, state.hint);
+                      },
+                    );
+                  } else if (state is InsightsLoaded) {
+                    return ListView.builder(
+                      physics: const ClampingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      padding: EdgeInsets.only(
+                        top: _topContentPadding,
+                        left: 16,
+                        right: 16,
+                        bottom: LiquidGlassNavBar.bottomContentPadding(context),
+                      ),
+                      itemCount: state.insights.length,
+                      itemBuilder: (context, index) {
+                        return _buildInsightCard(
+                          context,
+                          state.insights[index],
+                        );
+                      },
                     );
                   }
                   return const SizedBox.shrink();
                 },
               ),
-              BlocBuilder<InsightsCubit, InsightsState>(
-                builder: (context, state) {
-                  bool showCacheHint = false;
-                  if (state is InsightsLoaded &&
-                      (state.generatedAt != null ||
-                          (!state.insights
-                              .contains(context.l10n.insight_login_hint)))) {
-                    showCacheHint = true;
-                  }
-                  if (showCacheHint) {
-                    return Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: theme.dividerColor.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 15,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              context.l10n.insights_cache_hint,
-                              key: const Key('insights_cache_hint'),
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+            ),
+            Positioned(
+              top: 8,
+              left: 16,
+              right: 16,
+              child: IgnorePointer(
+                child: _buildFloatingTopBanner(context),
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: BlocBuilder<InsightsCubit, InsightsState>(
-                  builder: (context, state) {
-                    if (state is InsightsLoading || state is InsightsInitial) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          color: colorScheme.primary,
-                        ),
-                      );
-                    } else if (state is InsightsNetworkError) {
-                      return _buildNoNetworkPlaceholder(context);
-                    } else if (state is InsightsError) {
-                      return Center(
-                        child: Text(
-                          state.message,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.error,
-                          ),
-                        ),
-                      );
-                    } else if (state is InsightsUnauthenticated) {
-                      return ListView.builder(
-                        physics: const ClampingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: EdgeInsets.only(
-                          bottom:
-                              LiquidGlassNavBar.bottomContentPadding(context),
-                        ),
-                        itemCount: 1,
-                        itemBuilder: (context, index) {
-                          return _buildInsightCard(context, state.hint);
-                        },
-                      );
-                    } else if (state is InsightsLoaded) {
-                      return ListView.builder(
-                        physics: const ClampingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: EdgeInsets.only(
-                          bottom:
-                              LiquidGlassNavBar.bottomContentPadding(context),
-                        ),
-                        itemCount: state.insights.length,
-                        itemBuilder: (context, index) {
-                          return _buildInsightCard(
-                              context, state.insights[index]);
-                        },
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

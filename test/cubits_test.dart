@@ -19,6 +19,7 @@ class MockConnectivity extends Mock implements Connectivity {}
 void main() {
   late MockApiService api;
   late MockConnectivity connectivity;
+  late StreamController<bool> authStreamController;
 
   setUpAll(() {
     LanguageManager.initFallback();
@@ -35,13 +36,26 @@ void main() {
   setUp(() {
     api = MockApiService();
     connectivity = MockConnectivity();
+    authStreamController = StreamController<bool>.broadcast();
+    when(() => api.authStream).thenAnswer((_) => authStreamController.stream);
     when(() => connectivity.checkConnectivity())
         .thenAnswer((_) async => [ConnectivityResult.wifi]);
+  });
+
+  tearDown(() {
+    authStreamController.close();
   });
 
   group('InsightsCubit', () {
     InsightsCubit build() =>
         InsightsCubit(api: api, connectivity: connectivity);
+
+    blocTest<InsightsCubit, InsightsState>(
+      'reacts to authStream emitting false by emitting InsightsUnauthenticated',
+      build: build,
+      act: (cubit) => authStreamController.add(false),
+      expect: () => [isA<InsightsUnauthenticated>()],
+    );
 
     blocTest<InsightsCubit, InsightsState>(
       'emits Unauthenticated when user is not logged in',

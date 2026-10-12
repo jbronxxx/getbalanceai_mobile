@@ -54,12 +54,14 @@ lib/
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
 │   ├── auth/                    # AuthCubit: глобальное состояние авторизации
-│   ├── insights/                # InsightsCubit: загрузка AI-инсайтов, отмена запросов, реакция на смену валюты/языка
+│   ├── insights/                # InsightsCubit: загрузка AI-инсайтов, отмена запросов, реакция на смену валюты/языка/авторизации
 │   └── profile/                 # ProfileCubit: статус авторизации, облачная синхронизация, выход
 ├── widgets/
 │   ├── dashboard/               # Декомпозированные виджеты экрана дашборда (баннер гостя, тайлы, группы)
 │   ├── budgets/                 # Декомпозированные виджеты экрана бюджетов (селектор периода, карточка, лист)
 │   ├── profile/                 # Декомпозированные виджеты профиля (шапка, синк, настройки, версия с таймером)
+│   ├── ai_sparkles_loader.dart  # Анимированный лоадер генерации ИИ (пульсирующие звёздочки)
+│   ├── custom_pull_to_refresh.dart # Кастомный Pull-to-Refresh со шторкой и режимом releaseImmediately
 │   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter, RepaintBoundary и непрозрачным fallback
 │   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass (RepaintBoundary, sigma 18, fallback без размытия для Android < 31)
 │   ├── liquid_glass_fab.dart    # Плавающая кнопка действия с градиентным стеклом и неоновым свечением
@@ -190,6 +192,7 @@ main.dart`. Это было исправлено переносом состоя
   - `BudgetsScreen`: декомпозирован на `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
+  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка (`BackdropFilter`, тонкая скругленная тень с `spreadRadius: -3`), под которую плавно скользит список ответов при скролле; анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»);
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
 
 - **Жизненный цикл провайдеров в `main.dart`**:

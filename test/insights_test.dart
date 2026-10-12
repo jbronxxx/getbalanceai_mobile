@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
@@ -6,11 +8,11 @@ import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
-
-import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
 
 void main() {
+  final storageData = <String, String>{};
+
   setUpAll(() {
     LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +21,22 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (MethodCall methodCall) async => null,
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'write') {
+          storageData[methodCall.arguments['key'] as String] =
+              methodCall.arguments['value'] as String;
+          return null;
+        } else if (methodCall.method == 'read') {
+          return storageData[methodCall.arguments['key'] as String];
+        } else if (methodCall.method == 'delete') {
+          storageData.remove(methodCall.arguments['key'] as String);
+          return null;
+        } else if (methodCall.method == 'deleteAll') {
+          storageData.clear();
+          return null;
+        }
+        return null;
+      },
     );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -27,6 +44,10 @@ void main() {
       const MethodChannel('dev.fluttercommunity.plus/connectivity'),
       (MethodCall methodCall) async => ['wifi'],
     );
+  });
+
+  setUp(() {
+    storageData.clear();
   });
 
   group('InsightsModel Tests', () {
@@ -103,18 +124,27 @@ void main() {
       expect(LanguageManager.l10n.insights_updated_prefix, 'Обновлено');
       expect(LanguageManager.l10n.insights_cache_hint,
           contains('Советы обновляются автоматически'));
+      expect(
+          LanguageManager.l10n.insights_assistants_busy_msg1,
+          'Наши умные помощники заняты' != ''
+              ? contains('наши умные помощники')
+              : '');
 
       LanguageManager.setLanguage(AppLanguage.uz);
       expect(LanguageManager.formatDate(testDate), '2-oktabr, 14:30');
       expect(LanguageManager.l10n.insights_updated_prefix, 'Yangilangan');
       expect(LanguageManager.l10n.insights_cache_hint,
           contains('avtomatik ravishda yangilanadi'));
+      expect(LanguageManager.l10n.insights_assistants_busy_msg1,
+          contains('aqlli yordamchilarimiz'));
 
       LanguageManager.setLanguage(AppLanguage.en);
       expect(LanguageManager.formatDate(testDate), 'October 2, 14:30');
       expect(LanguageManager.l10n.insights_updated_prefix, 'Updated');
       expect(LanguageManager.l10n.insights_cache_hint,
           contains('Insights update automatically'));
+      expect(LanguageManager.l10n.insights_assistants_busy_msg1,
+          contains('smart assistants'));
 
       // Restore RU
       LanguageManager.setLanguage(AppLanguage.ru);
@@ -173,14 +203,100 @@ void main() {
   });
 
   testWidgets(
-      'InsightsScreen displays updated date and cache hint when generated_at is present',
+      'InsightsScreen shows AiSparklesLoader during loading and not CircularProgressIndicator',
+      (tester) async {
+    await ApiService.instance.setTokens('test_token', 'test_refresh');
+
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      // Simulate delayed response
+      await Future.delayed(const Duration(milliseconds: 500));
+      return ResponseBody.fromString(
+        jsonEncode({
+          'status': 'success',
+          'data': {
+            'insights': ['Совет 1'],
+          }
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    });
+
+    try {
+      await tester.pumpWidget(const MaterialApp(
+          locale: Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: InsightsScreen()));
+      await tester.pump();
+
+      expect(find.byType(AiSparklesLoader), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
+  });
+
+  testWidgets(
+      'InsightsScreen displays busy assistants stub on endpoint error and allows pull-to-refresh',
+      (tester) async {
+    await ApiService.instance.setTokens('test_token', 'test_refresh');
+
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    int requestCount = 0;
+
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      requestCount++;
+      return ResponseBody.fromString(
+        jsonEncode({'detail': 'Internal Server Error'}),
+        500,
+      );
+    });
+
+    try {
+      await tester.pumpWidget(const MaterialApp(
+          locale: Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: InsightsScreen()));
+      await tester.pumpAndSettle();
+      expect(find.text(LanguageManager.l10n.insights_assistants_busy_msg1),
+          findsOneWidget);
+      expect(find.text(LanguageManager.l10n.insights_assistants_busy_msg2),
+          findsOneWidget);
+      expect(requestCount, 1);
+
+      // Perform pull-to-refresh gesture
+      await tester.fling(
+        find.text(LanguageManager.l10n.insights_assistants_busy_msg1),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(requestCount, greaterThan(1));
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
+  });
+
+  testWidgets(
+      'InsightsScreen does not display updated date, personal recs title, or cache hint',
       (tester) async {
     await ApiService.instance.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
     const testGeneratedAt = '2026-10-02T13:45:00Z';
-    final parsedDate = DateTime.parse(testGeneratedAt).toLocal();
-    final expectedFormatted = LanguageManager.formatDate(parsedDate);
 
     ApiService.instance.dio.httpClientAdapter =
         _MockHttpClientAdapter((options) async {
@@ -210,21 +326,31 @@ void main() {
           home: InsightsScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('insights_updated_at')), findsOneWidget);
-      expect(
-          find.text(
-              '${LanguageManager.l10n.insights_updated_prefix}: $expectedFormatted'),
-          findsOneWidget);
-
-      expect(find.byKey(const Key('insights_cache_hint')), findsOneWidget);
-      expect(
-          find.text(LanguageManager.l10n.insights_cache_hint), findsOneWidget);
+      // Check removed elements
+      expect(find.byKey(const Key('insights_updated_at')), findsNothing);
+      expect(find.text(LanguageManager.l10n.personal_recs_title), findsNothing);
+      expect(find.byKey(const Key('insights_cache_hint')), findsNothing);
 
       expect(find.text('Следите за расходами на рестораны'), findsOneWidget);
     } finally {
       ApiService.instance.dio.httpClientAdapter = originalAdapter;
       await ApiService.instance.clearAllUserData();
     }
+  });
+
+  testWidgets('InsightsScreen displays login hint for unauthenticated guest',
+      (tester) async {
+    await ApiService.instance.clearAllUserData();
+
+    await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text(LanguageManager.l10n.insight_login_hint), findsOneWidget);
+    expect(find.byKey(const Key('insights_cache_hint')), findsNothing);
   });
 }
 
