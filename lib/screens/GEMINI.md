@@ -1,49 +1,11 @@
-# Регламент слоя экранов и виджетов (lib/screens/GEMINI.md)
+# Правила UI (lib/screens/, lib/widgets/)
 
-Данные правила применяются при разработке и рефакторинге пользовательского интерфейса в директориях `lib/screens/` и `lib/widgets/`.
-
----
-
-## 1. Назначение слоя Screens & Widgets
-
-Слой экранов отвечает **исключительно** за визуализацию данных, верстку по гайдлайнам Material Design 3, реакцию на жесты пользователя и передачу команд в слой управления состоянием (`lib/cubits/`).
-
-### Строгие запреты:
-* **Запрещена бизнес-логика и прямые вызовы API**: экраны не делают прямых сетевых вызовов через `Dio` и не обращаются напрямую к операциям синхронизации. Все действия инициируются через методы соответствующих Cubit-классов.
-* **Запрещен прямой импорт `main.dart`**: экраны никогда не импортируют `main.dart` (во избежание циклических зависимостей). Доступ к сервисам и синглтонам организуется через слои сервисов (`LocalDbService.instance`, `ApiService.instance`) либо через DI в Cubit.
-* **Запрещен хардкод цветов и стилей шрифтов**:
-  * Категорически запрещено использовать прямые `Colors.grey`, `Colors.red`, `Colors.white`, шестнадцатеричные константы (`0xFF...`) в верстке.
-  * Все цвета и стили **обязаны** браться из текущей темы: `Theme.of(context).colorScheme.<primary|surface|error|...>` и `Theme.of(context).textTheme.<titleMedium|bodyMedium|...>`. Это критично для корректной поддержки Dark Mode.
-* **Запрещен хардкод текстовых строк**: все строки пользовательского интерфейса должны подключаться через `AppLocalizations.of(context)` (ARB / l10n). Запрещено использовать хардкодные словари или статические строки.
-* **Категорический запрет `print()` и `debugPrint()`**:
-  * В экранах и виджетах (`lib/screens/`, `lib/widgets/`, `CustomPullToRefresh` и др.) запрещены вызовы `debugPrint` / `print`.
-  * При необходимости вывода сообщений используется `AppLogger` (`Talker`).
-
----
-
-## 2. Стандарты работы с BLoC / Cubit в UI
-
-* **Разделение рендеринга и сайд-эффектов (BlocConsumer)**:
-  * Вся отрисовка интерфейса на основе состояния выполняется строго в блоке `builder: (context, state)`.
-  * Все одноразовые побочные эффекты (сайд-эффекты: навигация, показ `SnackBar`, системные диалоги `AppAlerts`, всплывающие окна) выполняются строго в блоке `listener: (context, state)`. Внутри `builder` вызовы `Navigator` или `ScaffoldMessenger` **категорически запрещены**.
-* **Жизненный цикл провайдеров**:
-  * Создавать Cubit через `BlocProvider(create: (context) => MyCubit()..init())`.
-  * Не помещать `BlocProvider` внутрь `ValueListenableBuilder` или динамических билдеров тем/языков, чтобы исключить паразитное пересоздание кубитов и сброс состояния при смене локали/темы.
-
----
-
-## 3. Архитектура и качество верстки
-
-* **Декомпозиция крупных экранов**:
-  * Экраны не должны превышать 300–400 строк кода. Большие экраны (Dashboard, Profile, Budgets) необходимо декомпозировать на независимые виджеты в `lib/widgets/` или приватные виджеты в отдельном файле фичи.
-  * Избегать антипаттерна длинных методов `Widget _buildSomeSection(BuildContext context)`. Вместо методов создавать выделенные `StatelessWidget` / `StatefulWidget` — это оптимизирует дерево элементов Flutter и предотвращает лишние перерисовки.
-* **Безопасность асинхронных операций (`mounted`)**:
-  * После любого `await` или `Future.delayed` перед вызовом `setState()` или использованием `context` обязательна проверка:
-    ```dart
-    if (!mounted) return;
-    setState(() { ... });
-    ```
-* **Обработка системных ошибок API**:
-  * **HTTP 429 (Rate Limit)**: при получении ошибки превышения лимитов перехватывать ее и вызывать `AppAlerts.showRateLimitDialog(context, retryAfter: ...)` с таймером обратного отсчета.
-  * **HTTP 503 (Service Unavailable)**: при технических работах или недоступности API перенаправлять на экран `ServiceUnavailableScreen` либо открывать `AppAlerts.showServiceUnavailableDialog`.
-  * **Пустые и загрузочные состояния**: каждый экран обязан иметь понятное состояние загрузки (`CircularProgressIndicator` / Skeleton) и пустого списка (Empty State) с подсказкой для пользователя.
+* Только отображение (Material 3) и передача действий в Cubit. Никаких вызовов Dio/синхронизации напрямую.
+* Цвета и шрифты — только `Theme.of(context).colorScheme` / `textTheme` (никаких `Colors.*`, `0xFF...`) — важно для Dark Mode.
+* Строки — только `AppLocalizations.of(context)`.
+* `BlocConsumer`: рендер в `builder`; навигация, `SnackBar`, `AppAlerts` — только в `listener`.
+* `BlocProvider(create: (_) => MyCubit()..init())`; не размещать внутри `ValueListenableBuilder`/билдеров темы/локали (пересоздание кубита).
+* Экран ≤ 300–400 строк; секции — отдельные `StatelessWidget`/`StatefulWidget`, а не методы `_buildX()`.
+* После `await` перед `setState()`/`context`: `if (!mounted) return;`.
+* 429 → `AppAlerts.showRateLimitDialog(context, retryAfter: ...)`; 503 → `ServiceUnavailableScreen` или `AppAlerts.showServiceUnavailableDialog`.
+* Каждый экран имеет состояния loading (индикатор/skeleton) и empty (с подсказкой).
