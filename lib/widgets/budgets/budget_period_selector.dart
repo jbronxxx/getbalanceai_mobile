@@ -7,6 +7,7 @@ class BudgetPeriodSelector extends StatelessWidget {
   final int selectedYear;
   final ValueChanged<int> onMonthChanged;
   final ValueChanged<int> onYearChanged;
+  final EdgeInsetsGeometry? padding;
 
   const BudgetPeriodSelector({
     super.key,
@@ -14,6 +15,7 @@ class BudgetPeriodSelector extends StatelessWidget {
     required this.selectedYear,
     required this.onMonthChanged,
     required this.onYearChanged,
+    this.padding,
   });
 
   @override
@@ -33,12 +35,13 @@ class BudgetPeriodSelector extends StatelessWidget {
         : colorScheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 16.0,
-        right: 16.0,
-        top: 16.0,
-        bottom: 20.0,
-      ),
+      padding: padding ??
+          const EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+            bottom: 20.0,
+          ),
       child: Row(
         children: [
           Expanded(

@@ -170,9 +170,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
         // Нижний слой (Подложка)
         Container(
           color: widget.backgroundColor == const Color(0xFFF1F5F9)
-              ? (Theme.of(context).brightness == Brightness.dark
-                  ? Theme.of(context).colorScheme.surface
-                  : widget.backgroundColor)
+              ? Theme.of(context).colorScheme.surface
               : widget.backgroundColor,
           width: double.infinity,
           height: double.infinity,
@@ -220,7 +218,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
           offset: Offset(0, _dragOffset),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 if (_dragOffset > 0)
                   BoxShadow(

@@ -36,13 +36,17 @@ class TransactionItemTile extends StatelessWidget {
       child: Icon(Icons.delete_rounded, color: colorScheme.onError),
     );
 
+    final isDark = theme.brightness == Brightness.dark;
+    final tileBgColor = theme.cardTheme.color ??
+        (isDark ? const Color(0xFF141416) : Colors.white);
+
     final item = Dismissible(
       key: Key(transaction.localId.toString()),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onDelete(),
       background: background,
       child: Material(
-        color: Colors.transparent,
+        color: tileBgColor,
         child: ListTile(
           onTap: onTap,
           contentPadding:

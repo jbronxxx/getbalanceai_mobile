@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
+import '../widgets/budgets/budgets.dart';
 import '../widgets/dashboard/dashboard.dart';
 import '../widgets/widgets.dart';
 import 'add_transaction_sheet.dart';
@@ -209,34 +210,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     widget.onOpenProfile?.call();
   }
 
-  void _showPeriodPicker() {
-    DashboardPeriodPickerSheet.show(
-      context,
-      initialMonth: _selectedMonth,
-      initialYear: _selectedYear,
-      onPeriodSelected: (month, year) {
-        setState(() {
-          _selectedMonth = month;
-          _selectedYear = year;
-          _loadTransactions();
-        });
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final currentMonthName = LanguageManager.monthsNames[_selectedMonth - 1];
 
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        title: Text(
+          context.l10n.balance,
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         elevation: 0,
         systemOverlayStyle: isDark
@@ -244,50 +239,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 .copyWith(statusBarColor: Colors.transparent)
             : SystemUiOverlayStyle.dark
                 .copyWith(statusBarColor: Colors.transparent),
-        title: GestureDetector(
-          onTap: _showPeriodPicker,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF18181C)
-                  : Colors.black.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.22)
-                    : const Color(0xFFCBD5E1),
-                width: 1.2,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    '$currentMonthName $_selectedYear',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.70)
-                      : colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-        centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -345,16 +296,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       income: _totalIncome,
                       expense: _totalExpense,
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      context.l10n.balance,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
+                    BudgetPeriodSelector(
+                      selectedMonth: _selectedMonth,
+                      selectedYear: _selectedYear,
+                      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                      onMonthChanged: (month) {
+                        setState(() {
+                          _selectedMonth = month;
+                          _loadTransactions();
+                        });
+                      },
+                      onYearChanged: (year) {
+                        setState(() {
+                          _selectedYear = year;
+                          _loadTransactions();
+                        });
+                      },
                     ),
-                    const SizedBox(height: 12),
                     if (_transactions.isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 40.0),

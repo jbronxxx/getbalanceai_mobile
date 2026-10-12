@@ -194,6 +194,43 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                TextField(
+                  controller: _amountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    CurrencyInputFormatter(
+                        currency: CurrencyFormatter.currentCurrency),
+                  ],
+                  autofocus: false,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.amount_label,
+                    errorText: _amountError,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                        width: 2,
+                      ),
+                    ),
+                    errorStyle: TextStyle(
+                      color: colorScheme.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<Category>(
                   value: _selectedCategory,
                   borderRadius: BorderRadius.circular(20),
@@ -222,44 +259,6 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                             setState(() => _selectedCategory = val);
                           }
                         },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _amountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    CurrencyInputFormatter(
-                        currency: CurrencyFormatter.currentCurrency),
-                  ],
-                  autofocus: false,
-                  decoration: InputDecoration(
-                    labelText:
-                        '${context.l10n.budget_amount_hint} (${CurrencyFormatter.currentCurrency.localizedName})',
-                    errorText: _amountError,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colorScheme.error,
-                        width: 1.5,
-                      ),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colorScheme.error,
-                        width: 2,
-                      ),
-                    ),
-                    errorStyle: TextStyle(
-                      color: colorScheme.error,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
