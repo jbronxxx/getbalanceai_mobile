@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -88,88 +87,54 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       barrierColor: Colors.black.withValues(alpha: isDark ? 0.70 : 0.40),
       builder: (dialogContext) => PopScope(
         canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 280),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.15),
-                    blurRadius: 32,
-                    offset: const Offset(0, 10),
-                  ),
-                  if (isDark)
-                    BoxShadow(
-                      color: const Color(0xFF14B8A6).withValues(alpha: 0.18),
-                      blurRadius: 24,
-                      offset: const Offset(0, 2),
-                    ),
-                ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: GlassContainer(
+              borderRadius: 28,
+              blurSigma: 18,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 28,
+                vertical: 26,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 26),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF18181B).withValues(alpha: 0.94)
-                          : Colors.white.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(28),
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary
+                          .withValues(alpha: isDark ? 0.16 : 0.12),
                       border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.30)
-                            : Colors.white.withValues(alpha: 0.90),
-                        width: 1.5,
+                        color:
+                            theme.colorScheme.primary.withValues(alpha: 0.35),
+                        width: 1.2,
                       ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 58,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF14B8A6)
-                                .withValues(alpha: isDark ? 0.16 : 0.12),
-                            border: Border.all(
-                              color: const Color(0xFF14B8A6)
-                                  .withValues(alpha: 0.35),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 26,
-                              height: 26,
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF14B8A6),
-                                strokeWidth: 2.8,
-                              ),
-                            ),
-                          ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          color: theme.colorScheme.primary,
+                          strokeWidth: 2.8,
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          message,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                            letterSpacing: -0.2,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 18),
+                  Text(
+                    message,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           ),
@@ -293,10 +258,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                 left: 20.0,
                 right: 20.0,
                 top: 16.0,
-                bottom: 120.0 +
-                    (MediaQuery.of(context).padding.bottom > 0
-                        ? MediaQuery.of(context).padding.bottom
-                        : 12.0),
+                bottom: LiquidGlassNavBar.bottomContentPadding(context),
               ),
               child: Column(
                 children: [

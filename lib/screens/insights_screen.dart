@@ -318,7 +318,10 @@ class _InsightsScreenView extends StatelessWidget {
                         physics: const ClampingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.only(bottom: 140),
+                        padding: EdgeInsets.only(
+                          bottom:
+                              LiquidGlassNavBar.bottomContentPadding(context),
+                        ),
                         itemCount: 1,
                         itemBuilder: (context, index) {
                           return _buildInsightCard(context, state.hint);
@@ -329,7 +332,10 @@ class _InsightsScreenView extends StatelessWidget {
                         physics: const ClampingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.only(bottom: 140),
+                        padding: EdgeInsets.only(
+                          bottom:
+                              LiquidGlassNavBar.bottomContentPadding(context),
+                        ),
                         itemCount: state.insights.length,
                         itemBuilder: (context, index) {
                           return _buildInsightCard(

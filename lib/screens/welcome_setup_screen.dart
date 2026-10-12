@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/services.dart';
+import '../theme/app_theme.dart';
 import '../utils/utils.dart';
+import '../widgets/widgets.dart';
 
 /// Экран пошаговой первоначальной настройки языка и базовой валюты.
 class WelcomeSetupScreen extends StatefulWidget {
@@ -143,7 +144,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                     center: Alignment.topCenter,
                     radius: 0.9,
                     colors: [
-                      const Color(0xFF0F766E)
+                      colorScheme.primary
                           .withValues(alpha: isDark ? 0.20 : 0.12),
                       Colors.transparent,
                     ],
@@ -196,13 +197,13 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
       height: 5,
       decoration: BoxDecoration(
         color: (isActive || isDone)
-            ? const Color(0xFF0F766E)
+            ? colorScheme.primary
             : colorScheme.outlineVariant.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(10),
         boxShadow: (isActive || isDone)
             ? [
                 BoxShadow(
-                  color: const Color(0xFF0F766E).withValues(alpha: 0.45),
+                  color: colorScheme.primary.withValues(alpha: 0.45),
                   blurRadius: 8,
                   offset: const Offset(0, 1),
                 ),
@@ -220,6 +221,8 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     dynamic l10n,
   ) {
     final isDark = theme.brightness == Brightness.dark;
+    final glassTheme = GlassTheme.of(context);
+    final primaryColor = colorScheme.primary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -248,92 +251,70 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                   const Spacer(),
                   ...AppLanguage.values.map((lang) {
                     final isSelected = _selectedLanguage == lang;
-                    return Container(
+                    return GlassContainer(
                       margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isSelected
-                                ? const Color(0xFF0F766E)
-                                    .withValues(alpha: isDark ? 0.35 : 0.20)
-                                : Colors.black
-                                    .withValues(alpha: isDark ? 0.16 : 0.03),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                      borderRadius: 20,
+                      blurSigma: 16,
+                      color: isSelected
+                          ? primaryColor.withValues(alpha: isDark ? 0.24 : 0.12)
+                          : glassTheme.surface,
+                      border: Border.all(
+                        color: isSelected
+                            ? primaryColor.withValues(alpha: 0.85)
+                            : glassTheme.rim,
+                        width: isSelected ? 1.5 : 1.0,
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () => _onLanguageSelected(lang),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF0F766E).withValues(
-                                          alpha: isDark ? 0.24 : 0.12)
-                                      : (isDark
-                                          ? const Color(0xFF141416)
-                                              .withValues(alpha: 0.70)
-                                          : Colors.white
-                                              .withValues(alpha: 0.82)),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color(0xFF0F766E)
-                                            .withValues(alpha: 0.85)
-                                        : (isDark
-                                            ? Colors.white
-                                                .withValues(alpha: 0.12)
-                                            : Colors.white
-                                                .withValues(alpha: 0.75)),
-                                    width: isSelected ? 1.5 : 1.0,
-                                  ),
-                                ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 4,
-                                  ),
-                                  title: Text(
-                                    lang.displayName,
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.w500,
-                                      color: isSelected
-                                          ? const Color(0xFF0F766E)
-                                          : colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  trailing: isSelected
-                                      ? Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: const Color(0xFF0F766E)
-                                                .withValues(alpha: 0.20),
-                                          ),
-                                          child: const Icon(
-                                            Icons.check_circle_rounded,
-                                            color: Color(0xFF0F766E),
-                                            size: 22,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.circle_outlined,
-                                          color: colorScheme.outline,
-                                          size: 22,
-                                        ),
-                                ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSelected
+                              ? primaryColor.withValues(
+                                  alpha: isDark ? 0.35 : 0.20)
+                              : glassTheme.shadow,
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                          spreadRadius: -2,
+                        ),
+                      ],
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => _onLanguageSelected(lang),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 4,
+                            ),
+                            title: Text(
+                              lang.displayName,
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? primaryColor
+                                    : colorScheme.onSurface,
                               ),
                             ),
+                            trailing: isSelected
+                                ? Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          primaryColor.withValues(alpha: 0.20),
+                                    ),
+                                    child: Icon(
+                                      Icons.check_circle_rounded,
+                                      color: primaryColor,
+                                      size: 22,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.circle_outlined,
+                                    color: colorScheme.outline,
+                                    size: 22,
+                                  ),
                           ),
                         ),
                       ),
@@ -356,6 +337,8 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     dynamic l10n,
   ) {
     final isDark = theme.brightness == Brightness.dark;
+    final glassTheme = GlassTheme.of(context);
+    final primaryColor = colorScheme.primary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -384,93 +367,71 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                   const Spacer(),
                   ...Currency.values.map((currency) {
                     final isSelected = _selectedCurrency == currency;
-                    return Container(
+                    return GlassContainer(
                       margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isSelected
-                                ? const Color(0xFF0F766E)
-                                    .withValues(alpha: isDark ? 0.35 : 0.20)
-                                : Colors.black
-                                    .withValues(alpha: isDark ? 0.16 : 0.03),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                      borderRadius: 20,
+                      blurSigma: 16,
+                      color: isSelected
+                          ? primaryColor.withValues(alpha: isDark ? 0.24 : 0.12)
+                          : glassTheme.surface,
+                      border: Border.all(
+                        color: isSelected
+                            ? primaryColor.withValues(alpha: 0.85)
+                            : glassTheme.rim,
+                        width: isSelected ? 1.5 : 1.0,
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () => _onCurrencySelected(currency),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF0F766E).withValues(
-                                          alpha: isDark ? 0.24 : 0.12)
-                                      : (isDark
-                                          ? const Color(0xFF141416)
-                                              .withValues(alpha: 0.70)
-                                          : Colors.white
-                                              .withValues(alpha: 0.82)),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color(0xFF0F766E)
-                                            .withValues(alpha: 0.85)
-                                        : (isDark
-                                            ? Colors.white
-                                                .withValues(alpha: 0.12)
-                                            : Colors.white
-                                                .withValues(alpha: 0.75)),
-                                    width: isSelected ? 1.5 : 1.0,
-                                  ),
-                                ),
-                                child: ListTile(
-                                  dense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 2,
-                                  ),
-                                  title: Text(
-                                    currency.localizedName,
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.w500,
-                                      color: isSelected
-                                          ? const Color(0xFF0F766E)
-                                          : colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  trailing: isSelected
-                                      ? Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: const Color(0xFF0F766E)
-                                                .withValues(alpha: 0.20),
-                                          ),
-                                          child: const Icon(
-                                            Icons.check_circle_rounded,
-                                            color: Color(0xFF0F766E),
-                                            size: 22,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.circle_outlined,
-                                          color: colorScheme.outline,
-                                          size: 22,
-                                        ),
-                                ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSelected
+                              ? primaryColor.withValues(
+                                  alpha: isDark ? 0.35 : 0.20)
+                              : glassTheme.shadow,
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                          spreadRadius: -2,
+                        ),
+                      ],
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => _onCurrencySelected(currency),
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 2,
+                            ),
+                            title: Text(
+                              currency.localizedName,
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? primaryColor
+                                    : colorScheme.onSurface,
                               ),
                             ),
+                            trailing: isSelected
+                                ? Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          primaryColor.withValues(alpha: 0.20),
+                                    ),
+                                    child: Icon(
+                                      Icons.check_circle_rounded,
+                                      color: primaryColor,
+                                      size: 22,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.circle_outlined,
+                                    color: colorScheme.outline,
+                                    size: 22,
+                                  ),
                           ),
                         ),
                       ),
@@ -492,59 +453,50 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
   ) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0F766E).withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
+      child: GlassContainer(
+        borderRadius: 18,
+        blurSigma: 16,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary,
+            colorScheme.secondary,
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () {
-                  if (_currentStep == 0) {
-                    _goToStep(1);
-                  } else {
-                    _finishSetup();
-                  }
-                },
-                child: Ink(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF0F766E),
-                        Color(0xFF115E59),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      l10n.continue_btn,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+            spreadRadius: -2,
+          ),
+        ],
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () {
+              if (_currentStep == 0) {
+                _goToStep(1);
+              } else {
+                _finishSetup();
+              }
+            },
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: Center(
+                child: Text(
+                  l10n.continue_btn,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimary,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
