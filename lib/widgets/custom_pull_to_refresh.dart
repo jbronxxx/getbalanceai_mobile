@@ -13,6 +13,7 @@ class CustomPullToRefresh extends StatefulWidget {
   final String? refreshingText;
   final Color backgroundColor;
   final Color foregroundColor;
+  final bool releaseImmediately;
 
   const CustomPullToRefresh({
     super.key,
@@ -23,6 +24,7 @@ class CustomPullToRefresh extends StatefulWidget {
     this.refreshingText,
     this.backgroundColor = const Color(0xFFF1F5F9),
     this.foregroundColor = const Color(0xFF0F766E),
+    this.releaseImmediately = false,
   });
 
   @override
@@ -112,19 +114,33 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
       _canRefresh = false;
     });
 
-    // Фиксируем шторку на уровне порога на время выполнения асинхронного метода
-    _animateTo(_refreshThreshold);
-
     HapticFeedback.mediumImpact(); // Подтверждающая вибрация старта загрузки
 
-    try {
-      await widget.onRefresh();
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-        _animateTo(0.0);
+    if (widget.releaseImmediately) {
+      // Плавно возвращаем шторку на исходную позицию сразу при старте запроса
+      _animateTo(0.0);
+      try {
+        await widget.onRefresh();
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isRefreshing = false;
+          });
+        }
+      }
+    } else {
+      // Фиксируем шторку на уровне порога на время выполнения асинхронного метода
+      _animateTo(_refreshThreshold);
+
+      try {
+        await widget.onRefresh();
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isRefreshing = false;
+          });
+          _animateTo(0.0);
+        }
       }
     }
   }
