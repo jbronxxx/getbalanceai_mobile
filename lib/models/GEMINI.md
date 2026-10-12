@@ -1,57 +1,8 @@
-# Регламент слоя моделей данных и DTO (lib/models/GEMINI.md)
+# Правила моделей (lib/models/)
 
-Данные правила применяются при работе с моделями данных ObjectBox и сетевыми DTO-моделями в директории `lib/models/`.
-
----
-
-## 1. Назначение слоя Models
-
-Слой моделей определяет:
-1. Сетевые DTO (Data Transfer Objects) для десериализации ответов REST API бэкенда (`TransactionModel`, `BudgetModel`, `AuthModel`, `PaginatedResponse`).
-2. Персистентные сущности локальной встроенной базы данных ObjectBox (`Transaction`, `Budget`), помеченные аннотацией `@Entity()`.
-
----
-
-## 2. Стандарты финансовых данных и типов
-
-* **Денежные суммы (Decimal / Numeric(12, 2))**:
-  * На бэкенде денежные поля строго типизированы как `Decimal(12, 2)`.
-  * При десериализации JSON на клиенте **категорически запрещено** использовать прямой каст `as double` или `as num`:
-    ```dart
-    // ЗАПРЕЩЕНО (приведет к падению Type 'String' is not a subtype of type 'num'):
-    amount: json['amount'] as double,
-    ```
-  * Десериализация всех денежных полей (`amount`, `limit_amount`, `spent`, `remaining`) **всегда** выполняется через безопасный хелпер `parseAmount(json['amount'])`, который корректно парсит как строковый `"150.50"`, так и числовой `150.5` формат.
-* **Временные метки (Timestamps)**:
-  * Все даты для отправки на бэкенд форматируются в UTC ISO 8601: `dateTime.toUtc().toIso8601String()`.
-  * При парсинге полученных с сервера дат обязательно приведение к локальному времени устройства: `DateTime.parse(isoString).toLocal()`.
-* **Пагинация ответов**:
-  * Списочные эндпоинты бэкенда возвращают пагинированные данные. На клиенте они маппятся в обобщенную модель `PaginatedResponse<T>` с полями `items: List<T>`, `total: int`, `limit: int`, `offset: int`.
-* **Локализация перечислений и моделей**:
-  * Методы локализованного отображения сущностей (например, `Category.getLocalizedName()` или `TransactionType.getLocalizedName()`) получают строки через `LanguageManager.l10n` (`AppLocalizations`).
-  * Запрещено хранить в моделях собственные хардкодные Map-словари переводов.
-  * Обращение к локализации не должно требовать `BuildContext`, чтобы модели оставались полностью пригодными для модульного тестирования.
-
----
-
-## 3. Стандарты сущностей ObjectBox (`@Entity()`)
-
-* **Первичные ключи (Primary Keys)**:
-  * Локальный первичный ключ ObjectBox задается аннотацией `@Id()` с типом `int id = 0`.
-  * Для синхронизации с бэкендом обязательно строковое поле `String? serverId`, хранящее UUID записи на сервере.
-* **Индексы**:
-  * Для полей, по которым часто выполняется фильтрация или сортировка (например, `serverId`, `date`, `category`, `userId`), обязательно указывать аннотацию `@Index()`.
-* **Флаги синхронизации**:
-  * Локальные модели должны содержать атрибуты синхронизации (`isSynced: bool`, `updatedAt: DateTime`) для обеспечения надежного push/pull механизма.
-
----
-
-## 4. Обязательная кодогенерация
-
-При добавлении нового поля, сущности или изменении аннотаций `@Entity()`:
-1. Выполнить команду генерации:
-   ```bash
-   fvm flutter pub run build_runner build --delete-conflicting-outputs
-   ```
-2. Убедиться, что обновлены `lib/objectbox.g.dart` и `lib/objectbox-model.json`.
-3. **Оба файла обязательны к фиксации в git**, так как `objectbox-model.json` хранит стабильные ID схемы БД между версиями.
+* Денежные поля (`amount`, `limit_amount`, `spent`, `remaining`; на бэкенде `Decimal(12,2)`) — только `parseAmount(json[...])`, никаких `as double`/`as num` (API может прислать `"150.50"`).
+* Даты: отправка `dt.toUtc().toIso8601String()`, приём `DateTime.parse(s).toLocal()`.
+* Списки → `PaginatedResponse<T>` (`items`, `total`, `limit`, `offset`).
+* Локализация enum/моделей (`getLocalizedName()`) — через `LanguageManager.l10n`, без `BuildContext` и без хардкодных Map-переводов.
+* `@Entity()`: `@Id() int id = 0`; `String? serverId` (UUID сервера); `@Index()` на полях фильтрации/сортировки (`serverId`, `date`, `category`, `userId`); поля синхронизации `isSynced`, `updatedAt`.
+* После изменения `@Entity()` — кодогенерация (см. корневой GEMINI.md, шаг 5); `objectbox-model.json` хранит стабильные ID схемы и коммитится.
