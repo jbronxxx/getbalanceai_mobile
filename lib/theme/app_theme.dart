@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -127,6 +128,7 @@ class AppTheme {
         ),
         errorMaxLines: 2,
       ),
+      extensions: const [GlassTheme.light],
     );
   }
 
@@ -247,6 +249,133 @@ class AppTheme {
         ),
         errorMaxLines: 2,
       ),
+      extensions: const [GlassTheme.dark],
+    );
+  }
+}
+
+/// Расширение темы Material 3 с токенами эффекта Liquid Glass.
+@immutable
+class GlassTheme extends ThemeExtension<GlassTheme> {
+  /// Полупрозрачный цвет поверхности стекла.
+  final Color surface;
+
+  /// Цвет завершения градиента поверхности стекла.
+  final Color surfaceEnd;
+
+  /// Цвет световой фаски (границы / rim).
+  final Color rim;
+
+  /// Цвет рассеянной тени стекла.
+  final Color shadow;
+
+  /// Акцентный цвет интерактивных элементов стекла.
+  final Color accent;
+
+  /// Цвет фона активного элемента на стекле.
+  final Color activeItemBg;
+
+  /// Цвет неактивного содержимого (обеспечивает WCAG AA контраст > 4.5:1).
+  final Color inactiveItemColor;
+
+  /// Фон модальных окон и тостов.
+  final Color toastSurface;
+
+  /// Граница модальных окон и тостов.
+  final Color toastRim;
+
+  /// Базовый радиус размытия заднего плана.
+  final double blurSigma;
+
+  const GlassTheme({
+    required this.surface,
+    required this.surfaceEnd,
+    required this.rim,
+    required this.shadow,
+    required this.accent,
+    required this.activeItemBg,
+    required this.inactiveItemColor,
+    required this.toastSurface,
+    required this.toastRim,
+    this.blurSigma = 18.0,
+  });
+
+  /// Токены Liquid Glass для светлой темы.
+  static const light = GlassTheme(
+    surface: Color(0xC0FFFFFF),
+    surfaceEnd: Color(0xB3F8FAFC),
+    rim: Color(0x99CBD5E1),
+    shadow: Color(0x14000000),
+    accent: AppTheme.primaryTeal,
+    activeItemBg: Color(0x1A0F766E),
+    inactiveItemColor: Color(0xB3334155),
+    toastSurface: Color(0xE0FFFFFF),
+    toastRim: Color(0xD9FFFFFF),
+    blurSigma: 18.0,
+  );
+
+  /// Токены Liquid Glass для темной темы.
+  static const dark = GlassTheme(
+    surface: Color(0xA6141418),
+    surfaceEnd: Color(0xB309090D),
+    rim: Color(0x24FFFFFF),
+    shadow: Color(0x66000000),
+    accent: Color(0xFF2DD4BF),
+    activeItemBg: Color(0x1FFFFFFF),
+    inactiveItemColor: Color(0xB394A3B8),
+    toastSurface: Color(0xE0141416),
+    toastRim: Color(0x3DFFFFFF),
+    blurSigma: 18.0,
+  );
+
+  /// Получение токенов GlassTheme с безопасным fallback-значением по яркости темы.
+  static GlassTheme of(BuildContext context) {
+    return Theme.of(context).extension<GlassTheme>() ??
+        (Theme.of(context).brightness == Brightness.dark ? dark : light);
+  }
+
+  @override
+  GlassTheme copyWith({
+    Color? surface,
+    Color? surfaceEnd,
+    Color? rim,
+    Color? shadow,
+    Color? accent,
+    Color? activeItemBg,
+    Color? inactiveItemColor,
+    Color? toastSurface,
+    Color? toastRim,
+    double? blurSigma,
+  }) {
+    return GlassTheme(
+      surface: surface ?? this.surface,
+      surfaceEnd: surfaceEnd ?? this.surfaceEnd,
+      rim: rim ?? this.rim,
+      shadow: shadow ?? this.shadow,
+      accent: accent ?? this.accent,
+      activeItemBg: activeItemBg ?? this.activeItemBg,
+      inactiveItemColor: inactiveItemColor ?? this.inactiveItemColor,
+      toastSurface: toastSurface ?? this.toastSurface,
+      toastRim: toastRim ?? this.toastRim,
+      blurSigma: blurSigma ?? this.blurSigma,
+    );
+  }
+
+  @override
+  GlassTheme lerp(ThemeExtension<GlassTheme>? other, double t) {
+    if (other is! GlassTheme) return this;
+    return GlassTheme(
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceEnd: Color.lerp(surfaceEnd, other.surfaceEnd, t)!,
+      rim: Color.lerp(rim, other.rim, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      activeItemBg: Color.lerp(activeItemBg, other.activeItemBg, t)!,
+      inactiveItemColor:
+          Color.lerp(inactiveItemColor, other.inactiveItemColor, t)!,
+      toastSurface: Color.lerp(toastSurface, other.toastSurface, t)!,
+      toastRim: Color.lerp(toastRim, other.toastRim, t)!,
+      blurSigma: lerpDouble(blurSigma, other.blurSigma, t)!,
     );
   }
 }

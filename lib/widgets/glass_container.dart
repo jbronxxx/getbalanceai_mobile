@@ -1,10 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 /// Универсальный контейнер с эффектом полированного жидкого стекла (Liquid Glass / Frosted Glass).
 ///
-/// Реализует размытие фона ([BackdropFilter]), настраиваемый полупрозрачный фон,
-/// деликатную световую грань ([border]) и мягкие рассеянные тени ([boxShadow]).
+/// Реализует размытие фона ([BackdropFilter]), полупрозрачную подложку из [GlassTheme],
+/// деликатную световую грань ([border]) и рассеянные тени без затемнения центра стекла.
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final double? width;
@@ -12,7 +13,7 @@ class GlassContainer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final double borderRadius;
-  final double blurSigma;
+  final double? blurSigma;
   final Color? color;
   final Gradient? gradient;
   final BoxBorder? border;
@@ -27,7 +28,7 @@ class GlassContainer extends StatelessWidget {
     this.padding,
     this.margin,
     this.borderRadius = 24.0,
-    this.blurSigma = 16.0,
+    this.blurSigma,
     this.color,
     this.gradient,
     this.border,
@@ -37,52 +38,64 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final glassTheme = GlassTheme.of(context);
+    final disableAnimations =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final effectiveSigma = blurSigma ?? glassTheme.blurSigma;
 
-    final effectiveColor = color ??
-        (gradient == null
-            ? (isDark
-                ? const Color(0xFF141416).withValues(alpha: 0.70)
-                : Colors.white.withValues(alpha: 0.78))
-            : null);
+    final effectiveColor =
+        color ?? (gradient == null ? glassTheme.surface : null);
 
     final effectiveBorder = border ??
         Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.65),
+          color: glassTheme.rim,
           width: 1.0,
         );
 
+    // Отрицательный spreadRadius предотвращает просвечивание темной тени сквозь стекло
     final effectiveShadow = boxShadow ??
         [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
+            color: glassTheme.shadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
+            spreadRadius: -2,
           ),
         ];
 
-    Widget content = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      clipBehavior: clipBehavior,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          width: width,
-          height: height,
-          padding: padding,
-          decoration: BoxDecoration(
-            color: effectiveColor,
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: effectiveBorder,
-          ),
-          child: child,
-        ),
+    Widget body = Container(
+      width: width,
+      height: height,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: effectiveColor,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: effectiveBorder,
       ),
+      child: child,
     );
+
+    Widget content;
+    if (disableAnimations || effectiveSigma <= 0) {
+      content = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        clipBehavior: clipBehavior,
+        child: body,
+      );
+    } else {
+      content = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        clipBehavior: clipBehavior,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: effectiveSigma,
+            sigmaY: effectiveSigma,
+          ),
+          child: body,
+        ),
+      );
+    }
 
     if (margin != null || effectiveShadow.isNotEmpty) {
       return Container(

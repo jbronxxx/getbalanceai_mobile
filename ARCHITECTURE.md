@@ -157,16 +157,20 @@ main.dart`. Это было исправлено переносом состоя
   - Сконфигурирована глобальная `inputDecorationTheme` для светлой и темной тем со скруглением 16px, аккуратными границами и красным контуром ошибки (`errorBorder` и `focusedErrorBorder` на базе `AppTheme.errorRed`).
 
 - **Архитектура интерфейса Liquid Glass (Полированное жидкое стекло)**:
-  - **Плавающий островок навигации в Stack (`LiquidGlassNavBar`)**: Навигационная панель вынесена из слота `bottomNavigationBar` Scaffold в плавающий оверлей `Stack(alignment: Alignment.bottomCenter)` с `Positioned(bottom: 0)`. Панель выполнена в стиле полупрозрачного полированного жидкого стекла (`BackdropFilter(sigma: 28)`, прозрачность 65-70%) со скруглением 36px, позволяя контенту (`CustomScrollView`) физически скользить на 100% высоты экрана прямо под островком и вокруг него.
-  - **Стабильная геометрия без компрессии**: Поведение островка зафиксировано в стабильной форме без сжатия при скролле, гарантируя спокойное и чистое восприятие интерфейса без визуального дребезга.
-  - **Оптимизация производительности GPU (Zero-Cost Glassmorphism в списках)**:
-    - Тяжелый `BackdropFilter` изолирован строго там, где под элементом физически скроллится контент (плавающий остров `LiquidGlassNavBar`, модальные диалоги и тосты `AppAlerts`).
-    - В элементах скроллируемых списков (`BudgetItemCard`, `CategoryGroupWidget`, карточки инсайтов в `InsightsScreen`, настройки профиля) применен высокопроизводительный псевдо-глассморфизм: полупрозрачные фоны `isDark ? 0xFF141416 : 0xFFFFFFFF`, тонкая световая кайма (`border`) и рассеянные тени (`boxShadow`) без вызовов `saveLayer`. Это гарантирует плавность 60/120 FPS без просадок частоты кадров.
-    - В `LiquidGlassFab` убран избыточный `BackdropFilter` над непрозрачным градиентом.
-  - **Тактильный отклик (Haptic Feedback)**:
-    - Добавлен легкий тактильный клик `HapticFeedback.lightImpact()` при переключении табов нижней навигации и `HapticFeedback.mediumImpact()` при нажатии на плавающую кнопку добавления действия (`LiquidGlassFab`).
-  - **Адаптивные отступы под плавающий остров**:
-    - Для предотвращения перекрытия контента плавающей навигацией списки на экранах дашборда, бюджетов и инсайтов (`InsightsScreen`) имеют безопасный нижний отступ 140px, а экран профиля — динамический отступ с учетом нижней зоны безопасности (`bottomPadding`). Экран авторизации (`AuthScreen`) защищен от переполнения верстки на малых экранах через `SingleChildScrollView` и `IntrinsicHeight`.
+  - **Дизайн-система токенов стекла (`ThemeExtension<GlassTheme>`)**:
+    - Централизованные токены стекла вынесены в `GlassTheme` (`surface`, `surfaceEnd`, `rim`, `shadow`, `accent`, `activeItemBg`, `inactiveItemColor`, `toastSurface`, `toastRim`, `blurSigma = 18.0`).
+    - Поддерживаются светлая и темная темы с контрастом неактивных пунктов по стандарту WCAG AA (> 4.5:1).
+    - Универсальный компонент `GlassContainer` автоматически использует токены из `GlassTheme.of(context)` и устраняет просвечивание темной тени сквозь стекло за счет `spreadRadius: -2`.
+  - **Плавающий островок навигации в Stack (`LiquidGlassNavBar`)**:
+    - Навигационная панель вынесена из слота `bottomNavigationBar` Scaffold в плавающий оверлей `Stack(alignment: Alignment.bottomCenter)` с `Positioned(bottom: 0)`.
+    - Обернута в `RepaintBoundary` для изоляции перерисовок, а радиус размытия оптимизирован до `sigma: 18.0`.
+    - Поддерживает доступность через `Semantics(button: true, selected: isSelected, label: item.label)`, ограничение масштабирования текста `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3)` и тактильно-визуальный отклик нажатия с микро-анимацией масштаба (`AnimatedScale` 0.94 на tap-down).
+  - **Централизованные метрики высоты и адаптивные отступы**:
+    - Устранены дублирующиеся магические числа (68.0, 140.0, 120.0). Расчет отступов централизован в хелперах `LiquidGlassNavBar.totalHeight(context)`, `bottomContentPadding(context)` и `fabBottomPadding(context)` на базе `MediaQuery.paddingOf(context)`.
+    - Всплывающие уведомления `AppAlerts` (SnackBar) используют `SnackBarBehavior.floating` с `margin.bottom = totalHeight + 8.0`, предотвращая перекрытие тостов плавающим навбаром.
+  - **Плавающая кнопка действия (`LiquidGlassFab`)**:
+    - Стилизована через палитру темы (`colorScheme.primary`/`secondary`/`onPrimary`) без хардкода цветов.
+    - Включает полную поддержку доступности (`Tooltip`, `Semantics`) с локализованными подсказками.
 
 - **Инлайн-валидация полей ввода (Inline Input Validation & Error Styling)**:
   - Вывод ошибок валидации полей ввода отвязан от всплывающих алертов и тостов (`AppAlerts.warning`/`SnackBar`).

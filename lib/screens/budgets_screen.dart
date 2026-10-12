@@ -209,18 +209,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   ),
                 ),
               ),
-            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: LiquidGlassNavBar.bottomContentPadding(context),
+              ),
+            ),
           ],
         ),
       ),
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
-          bottom: (MediaQuery.of(context).padding.bottom > 0
-                  ? MediaQuery.of(context).padding.bottom + 6
-                  : 16.0) +
-              68.0,
+          bottom: LiquidGlassNavBar.fabBottomPadding(context),
         ),
         child: LiquidGlassFab(
+          tooltip: context.l10n.add_budget_title,
           onPressed: () => _openAddBudgetSheet(),
         ),
       ),

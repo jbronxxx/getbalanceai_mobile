@@ -1,8 +1,9 @@
-import 'dart:ui';
-import 'package:getbalanceai_mobile/utils/utils.dart';
-import '../theme/app_theme.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import '../theme/app_theme.dart';
+import 'glass_container.dart';
+import 'liquid_glass_nav_bar.dart';
 
 enum AlertType { success, error, warning, info }
 
@@ -18,31 +19,33 @@ class AppAlerts {
     AlertType type = AlertType.info,
     Duration duration = const Duration(seconds: 4),
   }) {
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final glassTheme = GlassTheme.of(context);
+
     Color iconColor;
     IconData icon;
 
     switch (type) {
       case AlertType.success:
-        iconColor = const Color(0xFF10B981); // Emerald
+        iconColor = AppTheme.successGreen;
         icon = Icons.check_circle_rounded;
         break;
       case AlertType.error:
-        iconColor = const Color(0xFFEF4444); // Red
+        iconColor = colorScheme.error;
         icon = Icons.error_rounded;
         break;
       case AlertType.warning:
-        iconColor = const Color(0xFFF59E0B); // Amber
+        iconColor = AppTheme.warningOrange;
         icon = Icons.warning_rounded;
         break;
       case AlertType.info:
-        iconColor = const Color(0xFF14B8A6); // Teal
+        iconColor = colorScheme.primary;
         icon = Icons.info_rounded;
         break;
     }
-
-    final messenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final snackBar = SnackBar(
       backgroundColor: Colors.transparent,
@@ -50,112 +53,100 @@ class AppAlerts {
       behavior: SnackBarBehavior.floating,
       duration: duration,
       padding: EdgeInsets.zero,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      content: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            // Мягкая естественная тень
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-              blurRadius: isDark ? 24 : 14,
-              offset: const Offset(0, 4),
-            ),
-            // Неоновое свечение в темной теме
-            if (isDark)
-              BoxShadow(
-                color: iconColor.withValues(alpha: 0.30),
-                blurRadius: 20,
-                spreadRadius: 1,
-                offset: const Offset(0, 2),
-              ),
-          ],
+      margin: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: LiquidGlassNavBar.totalHeight(context) + 8.0,
+        top: 8,
+      ),
+      content: GlassContainer(
+        borderRadius: 22,
+        blurSigma: 20,
+        color: glassTheme.toastSurface,
+        border: Border.all(
+          color: glassTheme.toastRim,
+          width: 1.2,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+            blurRadius: isDark ? 24 : 14,
+            offset: const Offset(0, 4),
+            spreadRadius: -2,
+          ),
+          if (isDark)
+            BoxShadow(
+              color: iconColor.withValues(alpha: 0.30),
+              blurRadius: 20,
+              spreadRadius: 1,
+              offset: const Offset(0, 2),
+            ),
+        ],
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF141416).withValues(alpha: 0.88)
-                    : Colors.white.withValues(alpha: 0.88),
-                borderRadius: BorderRadius.circular(22),
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    iconColor.withValues(alpha: isDark ? 0.35 : 0.22),
+                    iconColor.withValues(alpha: isDark ? 0.12 : 0.08),
+                  ],
+                ),
                 border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.24)
-                      : Colors.white.withValues(alpha: 0.85),
+                  color: iconColor.withValues(alpha: 0.45),
                   width: 1.2,
                 ),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              child: Center(
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          iconColor.withValues(alpha: isDark ? 0.35 : 0.22),
-                          iconColor.withValues(alpha: isDark ? 0.12 : 0.08),
-                        ],
-                      ),
-                      border: Border.all(
-                        color: iconColor.withValues(alpha: 0.45),
-                        width: 1.2,
+                  if (title != null) ...[
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    child: Center(
-                      child: Icon(icon, color: iconColor, size: 22),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (title != null) ...[
-                          Text(
-                            title,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                        ],
-                        Text(
-                          message,
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontSize: title != null ? 12.5 : 13.5,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 18,
+                    const SizedBox(height: 2),
+                  ],
+                  Text(
+                    message,
+                    style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: title != null ? 12.5 : 13.5,
+                      height: 1.35,
                     ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: messenger.hideCurrentSnackBar,
                   ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: messenger.hideCurrentSnackBar,
+            ),
+          ],
         ),
       ),
     );
@@ -448,14 +439,15 @@ class AppAlerts {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final errorColor = Theme.of(context).colorScheme.error;
         return _LiquidGlassDialog(
-          glowColor: const Color(0xFFEF4444),
+          glowColor: errorColor,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const _LiquidAlertIconBadge(
+              _LiquidAlertIconBadge(
                 icon: Icons.warning_rounded,
-                color: Color(0xFFEF4444),
+                color: errorColor,
               ),
               const SizedBox(height: 20),
               Text(
@@ -519,13 +511,13 @@ class AppAlerts {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return _LiquidGlassDialog(
-          glowColor: const Color(0xFFD97706),
+          glowColor: AppTheme.warningAmber,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const _LiquidAlertIconBadge(
                 icon: Icons.engineering_rounded,
-                color: Color(0xFFD97706),
+                color: AppTheme.warningAmber,
               ),
               const SizedBox(height: 20),
               Text(
@@ -625,7 +617,7 @@ class AppAlerts {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return _LiquidGlassDialog(
-          glowColor: const Color(0xFFD97706),
+          glowColor: AppTheme.warningAmber,
           child: _RateLimitDialogContent(
             title: title ?? context.l10n.rate_limit_exceeded_title,
             message: message ?? context.l10n.http_429,
@@ -696,7 +688,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
       children: [
         const _LiquidAlertIconBadge(
           icon: Icons.hourglass_bottom_rounded,
-          color: Color(0xFFD97706),
+          color: AppTheme.warningAmber,
         ),
         const SizedBox(height: 20),
         Text(
@@ -828,52 +820,40 @@ class _LiquidGlassDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final glassTheme = GlassTheme.of(context);
 
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      shadowColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(28)),
+        side: BorderSide.none,
+      ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.08),
-              blurRadius: isDark ? 32 : 16,
-              offset: const Offset(0, 8),
-            ),
-            if (isDark)
-              BoxShadow(
-                color: glowColor.withValues(alpha: 0.22),
-                blurRadius: 40,
-                spreadRadius: 2,
-              ),
-          ],
+      child: GlassContainer(
+        borderRadius: 28,
+        blurSigma: 24,
+        color: glassTheme.toastSurface,
+        border: Border.all(
+          color: glassTheme.toastRim,
+          width: 1.2,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF18181B).withValues(alpha: 0.94)
-                    : Colors.white.withValues(alpha: 0.94),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.22)
-                      : Colors.white.withValues(alpha: 0.90),
-                  width: 1.2,
-                ),
-              ),
-              child: child,
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.08),
+            blurRadius: isDark ? 32 : 16,
+            offset: const Offset(0, 8),
+            spreadRadius: -2,
           ),
-        ),
+          if (isDark)
+            BoxShadow(
+              color: glowColor.withValues(alpha: 0.22),
+              blurRadius: 40,
+              spreadRadius: 2,
+            ),
+        ],
+        padding: const EdgeInsets.all(24),
+        child: child,
       ),
     );
   }

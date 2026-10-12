@@ -58,35 +58,35 @@
 
 ## C. UI/UX (Liquid Glass)
 
-### [ ] C1 (P1). Регрессия доступности навбара и FAB
+### [x] C1 (P1). Регрессия доступности навбара и FAB
 [liquid_glass_nav_bar.dart](file:///Users/user/getbalanceai_mobile/lib/widgets/liquid_glass_nav_bar.dart), [liquid_glass_fab.dart](file:///Users/user/getbalanceai_mobile/lib/widgets/liquid_glass_fab.dart)
 - Material `NavigationBar` давал `Semantics(selected, button, "вкладка 1 из 4")`; `GestureDetector` — нет. FAB без `tooltip`/semantic label.
 - **Фикс:** обернуть элемент в `Semantics(button: true, selected: isSelected, label: item.label)`, использовать `InkWell`/`InkResponse` для ripple и фокуса; FAB — параметр `tooltip` + `Tooltip`/`Semantics(label: l10n.add_transaction)`.
 - Hit-area элемента ≈ 22+3+14+12 ≈ 51 dp — ок, но проверить при `textScaler` 1.3+ (лейбл 11sp обрезается ellipsis → добавить `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3)`).
 
-### [ ] C2 (P1). SnackBar/AppAlerts перекрываются плавающим навбаром
+### [x] C2 (P1). SnackBar/AppAlerts перекрываются плавающим навбаром
 [main_shell.dart:88-128](file:///Users/user/getbalanceai_mobile/lib/screens/main_shell.dart#L88-L128)
 - Навбар перенесён из `Scaffold.bottomNavigationBar` в `Stack` → Scaffold больше не знает о его высоте; SnackBar'ы вложенных Scaffold всплывают под стеклом.
 - **Фикс:** экспортировать `LiquidGlassNavBar.totalHeight(context)` и задавать `SnackBarBehavior.floating` с `margin.bottom = totalHeight + 8` (или в `AppAlerts`).
 
-### [ ] C3 (P1). Магические отступы, продублированные в 3 экранах
+### [x] C3 (P1). Магические отступы, продублированные в 3 экранах
 `68.0`, `+6`, `16.0`, `SizedBox(height: 140)` в [dashboard_screen.dart:427-437](file:///Users/user/getbalanceai_mobile/lib/screens/dashboard_screen.dart#L427-L437), [budgets_screen.dart:218](file:///Users/user/getbalanceai_mobile/lib/screens/budgets_screen.dart#L218), [profile_screen.dart:297](file:///Users/user/getbalanceai_mobile/lib/screens/profile_screen.dart#L297).
 - Любое изменение высоты навбара сломает FAB/последний элемент списка. **Фикс:** одна константа/хелпер в `LiquidGlassNavBar`, использовать `MediaQuery.paddingOf(context)` (меньше ребилдов, чем `MediaQuery.of`).
 
-### [ ] C4 (P1). Хардкод цветов вместо `colorScheme`
+### [x] C4 (P1). Хардкод цветов вместо `colorScheme`
 23 файла содержат `Color(0x…)` (полный список: `grep -rln "Color(0x" lib`). Критичные: `liquid_glass_nav_bar.dart` (`0xFF2DD4BF`, `0xFF141418`), `liquid_glass_fab.dart` (`0xFF0F766E`), `glass_container.dart`, `app_alerts.dart`.
 - **Фикс:** вынести glass-токены в `ThemeExtension<GlassTheme>` в [app_theme.dart](file:///Users/user/getbalanceai_mobile/lib/theme/app_theme.dart) (surfaceTint, rim, shadow, accent), FAB — `colorScheme.primary/onPrimary`.
 
-### [ ] C5 (P2). Тень просвечивает сквозь полупрозрачное стекло
+### [x] C5 (P2). Тень просвечивает сквозь полупрозрачное стекло
 `BoxShadow` рисуется под всей площадью контейнера, а заливка 65–78 % альфы → внутри навбара/FAB виден грязный тёмный ореол (особенно в светлой теме). Использовать тень с меньшим `blurRadius` и смещением или `ShapeDecoration` + отдельный слой тени, обрезанный по внешнему контуру.
 
-### [ ] C6 (P2). Контраст неактивных пунктов
+### [x] C6 (P2). Контраст неактивных пунктов
 `onSurface @ 0.55` поверх полупрозрачного фона с произвольным контентом под ним — риск < 4.5:1 (WCAG AA) в светлой теме. Поднять до 0.70 или использовать `onSurfaceVariant`.
 
-### [ ] C7 (P2). Мёртвый код `GlassContainer`
+### [x] C7 (P2). Мёртвый код `GlassContainer`
 [glass_container.dart](file:///Users/user/getbalanceai_mobile/lib/widgets/glass_container.dart) нигде не используется, при этом в `welcome_setup_screen.dart` (×3), `profile_screen.dart`, `app_alerts.dart` (×2) blur реализован вручную. Либо перевести эти места на `GlassContainer`, либо удалить.
 
-### [ ] C8 (P2). Нет состояния «нажато» у навбара
+### [x] C8 (P2). Нет состояния «нажато» у навбара
 `AnimatedContainer` только по selected; нет pressed/ripple feedback, кроме haptic. Добавить scale 0.96 на tap-down (как у iOS 26 Liquid Glass).
 
 ---
@@ -106,7 +106,7 @@
 - [x] E1. `sync_service`: падение на 2-й странице → ETag не сохранён, локальные записи не удалены (A1, A2).
 - [x] E2. `currency_exchange_service`: курс `0`, `-1`, `"abc"` игнорируются (A4).
 - [x] E3. `CurrencyInputFormatter`: вставка `"000…0001"` (25 символов) без исключения (A5).
-- [ ] E4. Widget-тест `LiquidGlassNavBar`: `find.bySemanticsLabel` + `isSelected` (C1).
+- [x] E4. Widget-тест `LiquidGlassNavBar`: `find.bySemanticsLabel` + `isSelected` (C1).
 
 ---
 
