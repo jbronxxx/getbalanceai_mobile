@@ -1,12 +1,63 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
+import '../config/environment.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
+import '../utils/language_manager.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
 import 'transaction_api_service.dart';
 import 'budget_api_service.dart';
+
+/// Коды ошибок синхронизации.
+enum SyncErrorCode {
+  unauthorized,
+  syncFailed,
+  loadFailed,
+}
+
+/// Исключение процесса синхронизации с поддержкой локализации.
+class SyncException implements Exception {
+  final SyncErrorCode code;
+  final int? statusCode;
+  final dynamic cause;
+
+  const SyncException(this.code, {this.statusCode, this.cause});
+
+  String getLocalizedMessage([AppLocalizations? l10n]) {
+    final l = l10n ?? LanguageManager.l10n;
+    switch (code) {
+      case SyncErrorCode.unauthorized:
+        return l.sync_login_required;
+      case SyncErrorCode.syncFailed:
+        return statusCode != null
+            ? '${l.sync_error}: $statusCode'
+            : l.sync_error;
+      case SyncErrorCode.loadFailed:
+        return statusCode != null
+            ? '${l.sync_error}: $statusCode'
+            : l.sync_error;
+    }
+  }
+
+  @override
+  String toString() => getLocalizedMessage();
+}
+
+class _RemoteTransactionsFetchResult {
+  final List<Transaction>? transactions;
+  final bool isNotModified;
+  final bool isComplete;
+  final String? newEtag;
+
+  const _RemoteTransactionsFetchResult({
+    this.transactions,
+    this.isNotModified = false,
+    this.isComplete = true,
+    this.newEtag,
+  });
+}
 
 /// Сервис синхронизации локальных данных с сервером.
 class SyncService {
@@ -14,6 +65,7 @@ class SyncService {
   final FlutterSecureStorage _storage;
   final Options Function([String? token]) _authOptions;
   final String? Function() _tokenProvider;
+  final String? Function()? _userIdProvider;
   final TransactionApiService _transactionApiService;
   final BudgetApiService _budgetApiService;
 
@@ -24,6 +76,7 @@ class SyncService {
     required Dio dio,
     required Options Function([String? token]) authOptions,
     required String? Function() tokenProvider,
+    String? Function()? userIdProvider,
     required TransactionApiService transactionApiService,
     required BudgetApiService budgetApiService,
     FlutterSecureStorage storage = const FlutterSecureStorage(
@@ -32,24 +85,43 @@ class SyncService {
   })  : _dio = dio,
         _authOptions = authOptions,
         _tokenProvider = tokenProvider,
+        _userIdProvider = userIdProvider,
         _transactionApiService = transactionApiService,
         _budgetApiService = budgetApiService,
         _storage = storage;
 
+  String get _transactionsEtagKey => _etagKey('transactions');
+  String get _budgetsEtagKey => _etagKey('budgets');
+
+  String _etagKey(String entity) {
+    final userId = _userIdProvider?.call() ?? 'anon';
+    final env = EnvironmentConfig.current.name;
+    return '${entity}_etag_${userId}_$env';
+  }
+
+  String? get transactionsEtag => _transactionsEtag;
+  String? get budgetsEtag => _budgetsEtag;
+
   Future<void> init() async {
-    _transactionsEtag = await _storage.read(key: 'transactions_etag');
-    _budgetsEtag = await _storage.read(key: 'budgets_etag');
+    _transactionsEtag = await _storage.read(key: _transactionsEtagKey);
+    _budgetsEtag = await _storage.read(key: _budgetsEtagKey);
   }
 
   Future<void> clearEtags() async {
     _transactionsEtag = null;
     _budgetsEtag = null;
+    try {
+      await _storage.delete(key: _transactionsEtagKey);
+      await _storage.delete(key: _budgetsEtagKey);
+      await _storage.delete(key: 'transactions_etag');
+      await _storage.delete(key: 'budgets_etag');
+    } catch (_) {}
   }
 
   /// Выгружает локальные транзакции и бюджеты на сервер.
   Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) async {
     final jwtToken = token ?? _tokenProvider();
-    if (jwtToken == null) throw Exception('Не авторизован');
+    if (jwtToken == null) throw const SyncException(SyncErrorCode.unauthorized);
 
     try {
       final localTransactions =
@@ -110,7 +182,8 @@ class SyncService {
       return data is Map ? data.cast<String, dynamic>() : response.data;
     } on DioException catch (e) {
       AppLogger.e('[SyncService] Sync error: ${e.response?.statusCode}', e);
-      throw Exception('Ошибка синхронизации: ${e.response?.statusCode}');
+      throw SyncException(SyncErrorCode.syncFailed,
+          statusCode: e.response?.statusCode, cause: e);
     } catch (e) {
       AppLogger.e('[SyncService] Sync unexpected error', e);
       rethrow;
@@ -124,10 +197,10 @@ class SyncService {
     int maxPages = 100,
   ]) async {
     final jwtToken = token ?? _tokenProvider();
-    if (jwtToken == null) throw Exception('Не авторизован');
+    if (jwtToken == null) throw const SyncException(SyncErrorCode.unauthorized);
 
     try {
-      final remoteTransactions = await _fetchRemoteTransactions(
+      final remoteTransactionsResult = await _fetchRemoteTransactions(
         jwtToken,
         onProgress: onTransactionProgress,
         maxPages: maxPages,
@@ -136,10 +209,16 @@ class SyncService {
 
       int removedTransactions = 0;
       int transLength = 0;
-      if (remoteTransactions != null) {
-        removedTransactions =
-            LocalDbService.instance.reconcileTransactions(remoteTransactions);
-        transLength = remoteTransactions.length;
+      if (remoteTransactionsResult.transactions != null) {
+        if (remoteTransactionsResult.isComplete) {
+          removedTransactions = LocalDbService.instance
+              .reconcileTransactions(remoteTransactionsResult.transactions!);
+        } else {
+          LocalDbService.instance
+              .upsertRemoteTransactions(remoteTransactionsResult.transactions!);
+          removedTransactions = 0;
+        }
+        transLength = remoteTransactionsResult.transactions!.length;
       } else {
         AppLogger.i(
             '[SyncService] Transactions not modified (304). Skipping reconciliation.');
@@ -170,7 +249,8 @@ class SyncService {
       };
     } on DioException catch (e) {
       AppLogger.e('[SyncService] Load error: ${e.response?.statusCode}', e);
-      throw Exception('Ошибка загрузки данных: ${e.response?.statusCode}');
+      throw SyncException(SyncErrorCode.loadFailed,
+          statusCode: e.response?.statusCode, cause: e);
     } catch (e) {
       AppLogger.e('[SyncService] Load unexpected error', e);
       rethrow;
@@ -184,7 +264,7 @@ class SyncService {
     int maxPages = 100,
   ]) async {
     final jwtToken = token ?? _tokenProvider();
-    if (jwtToken == null) throw Exception('Не авторизован');
+    if (jwtToken == null) throw const SyncException(SyncErrorCode.unauthorized);
 
     final deleted = await _flushPendingDeletions(jwtToken);
     final pushed = await syncLocalDataToBackend(jwtToken);
@@ -255,7 +335,7 @@ class SyncService {
     return totalDone;
   }
 
-  Future<List<Transaction>?> _fetchRemoteTransactions(
+  Future<_RemoteTransactionsFetchResult> _fetchRemoteTransactions(
     String token, {
     DateTime? since,
     void Function(int count, int page)? onProgress,
@@ -264,8 +344,16 @@ class SyncService {
     final options = _authOptions(token);
     options.validateStatus = (status) =>
         status != null && ((status >= 200 && status < 300) || status == 304);
-    if (_transactionsEtag != null) {
-      options.headers?['If-None-Match'] = _transactionsEtag;
+
+    final hasLocal =
+        LocalDbService.isInitialized && LocalDbService.instance.hasTransactions;
+    if (!hasLocal) {
+      _transactionsEtag = null;
+    } else {
+      _transactionsEtag ??= await _storage.read(key: _transactionsEtagKey);
+      if (_transactionsEtag != null) {
+        options.headers?['If-None-Match'] = _transactionsEtag;
+      }
     }
 
     const pageSize = 100;
@@ -282,20 +370,20 @@ class SyncService {
     );
 
     if (firstResponse.statusCode == 304) {
-      return null;
+      return const _RemoteTransactionsFetchResult(
+        isNotModified: true,
+        isComplete: true,
+      );
     }
 
     final newEtag = firstResponse.headers.value('etag');
-    if (newEtag != null) {
-      _transactionsEtag = newEtag;
-      await _storage.write(key: 'transactions_etag', value: newEtag);
-    }
-
     final firstData =
         firstResponse.data is Map ? firstResponse.data['data'] : null;
     final firstItems = _asJsonList(firstData);
     allTransactions.addAll(firstItems.map(Transaction.fromJson));
     onProgress?.call(allTransactions.length, 1);
+
+    bool isComplete = true;
 
     if (firstData is Map) {
       bool hasMore = firstData['has_more'] == true;
@@ -317,7 +405,10 @@ class SyncService {
         final nextData =
             nextResponse.data is Map ? nextResponse.data['data'] : null;
         final nextItems = _asJsonList(nextData);
-        if (nextItems.isEmpty) break;
+        if (nextItems.isEmpty) {
+          isComplete = false;
+          break;
+        }
 
         allTransactions.addAll(nextItems.map(Transaction.fromJson));
         onProgress?.call(allTransactions.length, page);
@@ -330,13 +421,26 @@ class SyncService {
         }
       }
 
-      if (page >= maxPages && hasMore) {
-        AppLogger.w(
-            '[SyncService] Transaction pagination limit ($maxPages pages) reached.');
+      if (hasMore) {
+        isComplete = false;
+        if (page >= maxPages) {
+          AppLogger.w(
+              '[SyncService] Transaction pagination limit ($maxPages pages) reached.');
+        }
       }
     }
 
-    return allTransactions;
+    // Сохраняем ETag только после успешной загрузки всех страниц
+    if (isComplete && newEtag != null) {
+      _transactionsEtag = newEtag;
+      await _storage.write(key: _transactionsEtagKey, value: newEtag);
+    }
+
+    return _RemoteTransactionsFetchResult(
+      transactions: allTransactions,
+      isComplete: isComplete,
+      newEtag: isComplete ? newEtag : null,
+    );
   }
 
   Future<List<Budget>?> _fetchRemoteBudgets(String token) async {
@@ -344,8 +448,15 @@ class SyncService {
     options.validateStatus = (status) =>
         status != null && ((status >= 200 && status < 300) || status == 304);
 
-    if (_budgetsEtag != null) {
-      options.headers?['If-None-Match'] = _budgetsEtag;
+    final hasLocalBudgets =
+        LocalDbService.isInitialized && LocalDbService.instance.hasBudgets;
+    if (!hasLocalBudgets) {
+      _budgetsEtag = null;
+    } else {
+      _budgetsEtag ??= await _storage.read(key: _budgetsEtagKey);
+      if (_budgetsEtag != null) {
+        options.headers?['If-None-Match'] = _budgetsEtag;
+      }
     }
 
     final response = await _dio.get(
@@ -360,7 +471,7 @@ class SyncService {
     final newEtag = response.headers.value('etag');
     if (newEtag != null) {
       _budgetsEtag = newEtag;
-      await _storage.write(key: 'budgets_etag', value: newEtag);
+      await _storage.write(key: _budgetsEtagKey, value: newEtag);
     }
 
     return _asJsonList(response.data['data'])

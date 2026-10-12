@@ -426,7 +426,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    '≈ ${CurrencyFormatter.format(approxBase)} (${CurrencyExchangeService.instance.formatRateDescription(from: _selectedCurrency, to: CurrencyFormatter.currentCurrency)})',
+                                    '≈ ${CurrencyFormatter.format(approxBase)} (${CurrencyExchangeService.instance.formatRateDescription(from: _selectedCurrency, to: CurrencyFormatter.currentCurrency)})'
+                                    '${CurrencyExchangeService.instance.isOutdated ? (CurrencyExchangeService.instance.lastUpdated != null ? ' • обновлён ${LanguageManager.formatDayMonth(CurrencyExchangeService.instance.lastUpdated!)}' : ' • курс приблизительный') : ''}',
                                     style: textTheme.bodySmall?.copyWith(
                                       color: colorScheme.outline,
                                     ),

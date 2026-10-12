@@ -71,5 +71,54 @@ void main() {
       expect(formatValue('0', '0,').text, '0,');
       expect(formatValue('0,', '0,5').text, '0,5');
     });
+
+    test(
+        'E3/A5: paste string with >19 digits and leading zeroes without FormatException',
+        () {
+      // 24 leading zeroes and '1'
+      const longInput = '0000000000000000000000001';
+      expect(longInput.length, 25);
+      final result = formatValue('', longInput);
+      expect(result.text, '1');
+    });
+
+    test('A5: input exceeding maxAmount integer length is rejected', () {
+      // Currency.usd maxAmount is 100,000,000 (9 digits)
+      final usdFormatter = CurrencyInputFormatter(currency: Currency.usd);
+      final update = usdFormatter.formatEditUpdate(
+        const TextEditingValue(text: '1000'),
+        const TextEditingValue(text: '99999999999999999999'), // 20 digits
+      );
+      expect(update.text, '1000'); // rejected, oldValue retained
+    });
+
+    test(
+        'A7: CurrencyFormatter.format respects locale for thousands and decimal separators',
+        () {
+      // English locale: comma as thousand separator, period as decimal separator
+      final enResult = CurrencyFormatter.format(
+        1234.56,
+        currency: Currency.usd,
+        locale: 'en',
+      );
+      expect(enResult, r'$1,234.56');
+
+      // Russian locale: space as thousand separator, comma as decimal separator
+      final ruResult = CurrencyFormatter.format(
+        1234.56,
+        currency: Currency.rub,
+        locale: 'ru',
+      );
+      expect(ruResult, '1 234,56 ₽');
+    });
+
+    test(
+        'A7: CurrencyFormatter.parseInput supports both English and Russian formats',
+        () {
+      expect(CurrencyFormatter.parseInput('1,234.56'), 1234.56);
+      expect(CurrencyFormatter.parseInput('1 234,56'), 1234.56);
+      expect(CurrencyFormatter.parseInput('1234.56'), 1234.56);
+      expect(CurrencyFormatter.parseInput('1234,56'), 1234.56);
+    });
   });
 }

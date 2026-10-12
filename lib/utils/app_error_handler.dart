@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import '../main.dart';
@@ -51,6 +52,9 @@ class AppErrorHandler {
 
   /// Возвращает текстовое сообщение на основе типа ошибки.
   static String getMessage(dynamic error) {
+    if (error is SyncException) {
+      return error.getLocalizedMessage();
+    }
     if (error is DioException) {
       return _handleDioError(error);
     }
@@ -67,6 +71,26 @@ class AppErrorHandler {
     }
 
     final message = getMessage(error);
+
+    if (error is SyncException) {
+      if (error.code == SyncErrorCode.unauthorized) {
+        AppAlerts.showErrorDialog(
+          context,
+          title: LanguageManager.l10n.session_expired_title,
+          message: LanguageManager.l10n.session_expired_desc,
+          onPressed: () {
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
+            );
+          },
+        );
+        return;
+      }
+      AppAlerts.error(context, message,
+          title: title ?? LanguageManager.l10n.sync_error);
+      return;
+    }
 
     if (error is DioException) {
       final data = error.response?.data;

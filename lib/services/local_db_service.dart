@@ -39,6 +39,18 @@ class LocalDbService {
     _migrateLegacyTransactions();
   }
 
+  /// Проверяет наличие транзакций в локальной базе.
+  bool get hasTransactions => !_transactionBox.isEmpty();
+
+  /// Количество транзакций в локальной базе.
+  int get transactionsCount => _transactionBox.count();
+
+  /// Проверяет наличие бюджетов в локальной базе.
+  bool get hasBudgets => !_budgetBox.isEmpty();
+
+  /// Количество бюджетов в локальной базе.
+  int get budgetsCount => _budgetBox.count();
+
   /// Мигрирует старые транзакции, созданные до внедрения мультивалютности.
   /// Если baseAmount равен 0, заполняет его на основе amount и текущей валюты.
   void _migrateLegacyTransactions() {
@@ -299,7 +311,8 @@ class LocalDbService {
   /// полуобновлённом состоянии.
   ///
   /// Возвращает число удалённых при сверке записей.
-  int reconcileTransactions(List<Transaction> remote) {
+  int reconcileTransactions(List<Transaction> remote,
+      {bool removeStale = true}) {
     return _store.runInTransaction(TxMode.write, () {
       final claimed = <int>{};
       final toPut = <Transaction>[];
@@ -316,6 +329,10 @@ class LocalDbService {
         toPut.add(transaction);
       }
       _transactionBox.putMany(toPut);
+
+      if (!removeStale) {
+        return 0;
+      }
 
       final remoteIds =
           remote.map((t) => t.serverId).whereType<String>().toSet();
@@ -336,6 +353,11 @@ class LocalDbService {
       _transactionBox.removeMany(stale);
       return stale.length;
     });
+  }
+
+  /// Вставляет или обновляет транзакции с сервера без удаления отсутствующих записей.
+  void upsertRemoteTransactions(List<Transaction> remote) {
+    reconcileTransactions(remote, removeStale: false);
   }
 
   // --- Бюджеты ---

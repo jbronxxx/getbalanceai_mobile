@@ -132,7 +132,7 @@ API_BASE_URL=http://localhost:8000/api/v1
       await tester.pumpAndSettle();
 
       final textFieldFinder = find.byType(TextField).first;
-      await tester.enterText(textFieldFinder, '999999999999999');
+      await tester.enterText(textFieldFinder, '2000000000');
       await tester.pump();
 
       final addButton = find.text(LanguageManager.l10n.add_btn);

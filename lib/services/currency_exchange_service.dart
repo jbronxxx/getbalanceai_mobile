@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import '../utils/app_logger.dart';
 import '../utils/currency_formatter.dart';
+import 'api_service.dart';
 import 'preferences_service.dart';
 
 /// Сервис конвертации и актуализации курсов валют.
@@ -35,23 +36,22 @@ class CurrencyExchangeService {
   /// Временная метка последнего обновления курсов.
   DateTime? _lastUpdated;
 
-  Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 5),
-    ),
-  );
+  Dio? _customDio;
 
-  Dio get dio => _dio;
+  /// Сетевой клиент для запроса котировок валют.
+  /// По умолчанию используется общий экземпляр [ApiService.instance.dio],
+  /// обеспечивающий сквозную трассировку (X-Request-ID), логирование и единые таймауты.
+  Dio get dio => _customDio ?? ApiService.instance.dio;
 
   @visibleForTesting
-  set dio(Dio customDio) => _dio = customDio;
+  set dio(Dio customDio) => _customDio = customDio;
 
   @visibleForTesting
-  void resetForTesting() {
+  void resetForTesting({Dio? testDio}) {
     _ratesToUsd.clear();
     _ratesToUsd.addAll(_fallbackRatesToUsd);
     _lastUpdated = null;
+    _customDio = testDio;
   }
 
   /// Инициализирует сервис: загружает сохраненные курсы из кэша.
@@ -64,8 +64,9 @@ class CurrencyExchangeService {
       if (cachedJson != null) {
         final decoded = jsonDecode(cachedJson) as Map<String, dynamic>;
         for (final entry in decoded.entries) {
-          if (entry.value is num) {
-            _ratesToUsd[entry.key] = (entry.value as num).toDouble();
+          final sanitized = _sanitizeRate(entry.value, entry.key);
+          if (sanitized != null) {
+            _ratesToUsd[entry.key] = sanitized;
           }
         }
       }
@@ -85,6 +86,50 @@ class CurrencyExchangeService {
   /// Возвращает дату последнего обновления курсов.
   DateTime? get lastUpdated => _lastUpdated;
 
+  /// Проверяет, являются ли котировки устаревшими (старше 24 часов) или не загруженными.
+  bool get isOutdated {
+    if (_lastUpdated == null) return true;
+    final diff = DateTime.now().difference(_lastUpdated!);
+    return diff.inHours >= 24;
+  }
+
+  /// Является ли текущий курс приблизительным (устаревшим или дефолтным).
+  bool get isApproximate => isOutdated;
+
+  /// Валидирует значение курса валюты. Принимает только конечные положительные числа.
+  double? _sanitizeRate(dynamic val, String currencyCode) {
+    double? parsed;
+    if (val is num) {
+      parsed = val.toDouble();
+    } else if (val is String) {
+      parsed = double.tryParse(val);
+    }
+    if (parsed != null && parsed > 0 && parsed.isFinite) {
+      return parsed;
+    }
+    AppLogger.w(
+      '[CurrencyExchangeService] Invalid rate for $currencyCode: $val, keeping previous: ${_ratesToUsd[currencyCode]}',
+    );
+    return null;
+  }
+
+  /// Проверяет допустимость курса валюты относительно базового/кэшированного значения.
+  /// Отклоняет аномальные скачки курса более чем в 2 раза (>2.0 или <0.5 от baseline).
+  bool _isRateWithinSanityBounds(double newRate, String currencyCode) {
+    final baseline =
+        _ratesToUsd[currencyCode] ?? _fallbackRatesToUsd[currencyCode];
+    if (baseline == null || baseline <= 0) return true;
+
+    if (newRate > baseline * 2.0 || newRate < baseline * 0.5) {
+      AppLogger.w(
+        '[CurrencyExchangeService] Rate anomaly detected for $currencyCode: '
+        'new rate $newRate deviates >2x from baseline $baseline, ignoring',
+      );
+      return false;
+    }
+    return true;
+  }
+
   /// Рассчитывает кросс-курс конвертации одной единицы валюты [from] в валюту [to].
   ///
   /// Формула пересчета через USD:
@@ -92,11 +137,16 @@ class CurrencyExchangeService {
   double getRate({required Currency from, required Currency to}) {
     if (from == to) return 1.0;
 
-    final fromRate =
+    final rawFrom =
         _ratesToUsd[from.code] ?? _fallbackRatesToUsd[from.code] ?? 1.0;
-    final toRate = _ratesToUsd[to.code] ?? _fallbackRatesToUsd[to.code] ?? 1.0;
+    final rawTo = _ratesToUsd[to.code] ?? _fallbackRatesToUsd[to.code] ?? 1.0;
 
-    if (fromRate <= 0) return 1.0;
+    final fromRate = (rawFrom > 0 && rawFrom.isFinite)
+        ? rawFrom
+        : (_fallbackRatesToUsd[from.code] ?? 1.0);
+    final toRate = (rawTo > 0 && rawTo.isFinite)
+        ? rawTo
+        : (_fallbackRatesToUsd[to.code] ?? 1.0);
 
     return toRate / fromRate;
   }
@@ -144,8 +194,7 @@ class CurrencyExchangeService {
 
     // 1. Приоритетный запрос к собственному бэкенду
     try {
-      final backendUrl = '${ApiConfig.baseUrl}${ApiConfig.currencyRates}';
-      final response = await _dio.get(backendUrl);
+      final response = await dio.get(ApiConfig.currencyRates);
 
       if (response.statusCode == 200 && response.data is Map) {
         final payload = response.data as Map<String, dynamic>;
@@ -156,29 +205,34 @@ class CurrencyExchangeService {
             data['rates'] is Map ? data['rates'] as Map<String, dynamic> : null;
 
         if (rates != null && rates.isNotEmpty) {
+          bool anyUpdated = false;
           for (final currency in Currency.values) {
             final val =
                 rates[currency.code] ?? rates[currency.code.toLowerCase()];
-            if (val is num) {
-              _ratesToUsd[currency.code] = val.toDouble();
-            } else if (val is String) {
-              final parsed = double.tryParse(val);
-              if (parsed != null) _ratesToUsd[currency.code] = parsed;
+            if (val != null) {
+              final sanitized = _sanitizeRate(val, currency.code);
+              if (sanitized != null &&
+                  _isRateWithinSanityBounds(sanitized, currency.code)) {
+                _ratesToUsd[currency.code] = sanitized;
+                anyUpdated = true;
+              }
             }
           }
 
-          _lastUpdated = now;
-          await PreferencesService.instance.saveExchangeRates(
-            jsonEncode(_ratesToUsd),
-          );
-          await PreferencesService.instance.saveExchangeRatesUpdated(
-            now.millisecondsSinceEpoch,
-          );
+          if (anyUpdated) {
+            _lastUpdated = now;
+            await PreferencesService.instance.saveExchangeRates(
+              jsonEncode(_ratesToUsd),
+            );
+            await PreferencesService.instance.saveExchangeRatesUpdated(
+              now.millisecondsSinceEpoch,
+            );
 
-          AppLogger.i(
-            '[CurrencyExchangeService] Exchange rates successfully updated from backend',
-          );
-          return true;
+            AppLogger.i(
+              '[CurrencyExchangeService] Exchange rates successfully updated from backend',
+            );
+            return true;
+          }
         }
       }
     } catch (e) {
@@ -189,34 +243,39 @@ class CurrencyExchangeService {
 
     // 2. Graceful Fallback на открытый внешний шлюз
     try {
-      final response = await _dio.get('https://open.er-api.com/v6/latest/USD');
+      final response = await dio.get('https://open.er-api.com/v6/latest/USD');
       if (response.statusCode == 200 && response.data is Map) {
         final data = response.data as Map<String, dynamic>;
         final rates = data['rates'] as Map<String, dynamic>?;
 
         if (rates != null && rates.isNotEmpty) {
+          bool anyUpdated = false;
           for (final currency in Currency.values) {
             final val = rates[currency.code];
-            if (val is num) {
-              _ratesToUsd[currency.code] = val.toDouble();
-            } else if (val is String) {
-              final parsed = double.tryParse(val);
-              if (parsed != null) _ratesToUsd[currency.code] = parsed;
+            if (val != null) {
+              final sanitized = _sanitizeRate(val, currency.code);
+              if (sanitized != null &&
+                  _isRateWithinSanityBounds(sanitized, currency.code)) {
+                _ratesToUsd[currency.code] = sanitized;
+                anyUpdated = true;
+              }
             }
           }
 
-          _lastUpdated = now;
-          await PreferencesService.instance.saveExchangeRates(
-            jsonEncode(_ratesToUsd),
-          );
-          await PreferencesService.instance.saveExchangeRatesUpdated(
-            now.millisecondsSinceEpoch,
-          );
+          if (anyUpdated) {
+            _lastUpdated = now;
+            await PreferencesService.instance.saveExchangeRates(
+              jsonEncode(_ratesToUsd),
+            );
+            await PreferencesService.instance.saveExchangeRatesUpdated(
+              now.millisecondsSinceEpoch,
+            );
 
-          AppLogger.i(
-            '[CurrencyExchangeService] Exchange rates successfully updated from fallback gateway',
-          );
-          return true;
+            AppLogger.i(
+              '[CurrencyExchangeService] Exchange rates successfully updated from fallback gateway',
+            );
+            return true;
+          }
         }
       }
     } catch (e) {
