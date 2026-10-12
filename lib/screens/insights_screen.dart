@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
 import '../utils/utils.dart';
@@ -67,28 +68,55 @@ class _InsightsScreenView extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final glassBg = isDark
+        ? const Color(0xFF141416).withValues(alpha: 0.70)
+        : Colors.white.withValues(alpha: 0.85);
+
+    final glassBorder =
+        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20),
+        color: glassBg,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.1),
+          color: glassBorder,
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome, color: colorScheme.primary, size: 24),
-          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               text,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface,
-                height: 1.4,
+                height: 1.45,
               ),
             ),
           ),
@@ -102,6 +130,7 @@ class _InsightsScreenView extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -115,7 +144,13 @@ class _InsightsScreenView extends StatelessWidget {
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+                .copyWith(statusBarColor: Colors.transparent)
+            : SystemUiOverlayStyle.dark
+                .copyWith(statusBarColor: Colors.transparent),
       ),
       body: CustomPullToRefresh(
         onRefresh: () => context.read<InsightsCubit>().loadInsights(),
@@ -127,27 +162,46 @@ class _InsightsScreenView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [colorScheme.primary, colorScheme.secondary],
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.28),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF14B8A6).withValues(alpha: 0.30),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.lightbulb,
-                      color: colorScheme.onPrimary,
-                      size: 36,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         context.l10n.insights_header_subtitle,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onPrimary,
+                          color: Colors.white,
                           fontWeight: FontWeight.w500,
+                          height: 1.35,
                         ),
                       ),
                     ),
@@ -264,6 +318,7 @@ class _InsightsScreenView extends StatelessWidget {
                         physics: const ClampingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
+                        padding: const EdgeInsets.only(bottom: 140),
                         itemCount: 1,
                         itemBuilder: (context, index) {
                           return _buildInsightCard(context, state.hint);
@@ -274,6 +329,7 @@ class _InsightsScreenView extends StatelessWidget {
                         physics: const ClampingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
+                        padding: const EdgeInsets.only(bottom: 140),
                         itemCount: state.insights.length,
                         itemBuilder: (context, index) {
                           return _buildInsightCard(

@@ -29,25 +29,46 @@ class ProfileHeader extends StatelessWidget {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-          child: avatarUrl == null
-              ? (isAuthenticated
-                  ? Text(
-                      initialLetter,
-                      style: textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primary.withValues(alpha: 0.4),
+                colorScheme.secondary.withValues(alpha: 0.15),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.primary.withValues(alpha: 0.22),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 48,
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+            child: avatarUrl == null
+                ? (isAuthenticated
+                    ? Text(
+                        initialLetter,
+                        style: textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      )
+                    : Icon(
+                        Icons.person_outline_rounded,
+                        size: 46,
                         color: colorScheme.primary,
-                      ),
-                    )
-                  : Icon(
-                      Icons.person_outline_rounded,
-                      size: 48,
-                      color: colorScheme.primary,
-                    ))
-              : null,
+                      ))
+                : null,
+          ),
         ),
         const SizedBox(height: 16),
         Text(

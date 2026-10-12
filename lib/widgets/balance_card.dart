@@ -1,6 +1,8 @@
-import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
 
+/// Главная карточка баланса на дашборде, выполненная в стиле полированного
+/// бирюзового жидкого стекла (Polished Turquoise Liquid Glass).
 class BalanceCard extends StatelessWidget {
   final double balance;
   final double income;
@@ -16,30 +18,48 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colorScheme.primary,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0F766E),
+            Color(0xFF115E59),
+          ],
+        ),
         borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.32),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: const Color(0xFF0F766E).withValues(alpha: 0.35),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.20),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             context.l10n.total_balance,
             style: textTheme.titleSmall?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.7),
+              color: Colors.white.withValues(alpha: 0.82),
+              letterSpacing: 0.3,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -47,20 +67,21 @@ class BalanceCard extends StatelessWidget {
             balance,
             showSign: true,
             style: textTheme.headlineLarge?.copyWith(
-              color: colorScheme.onPrimary,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
             ),
             useFittedBox: true,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
           Row(
             children: [
               Expanded(
                 child: _IncomeExpenseInfo(
                   label: context.l10n.income_title,
                   amount: income,
-                  icon: Icons.arrow_downward,
-                  color: colorScheme.onPrimary,
+                  icon: Icons.arrow_downward_rounded,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(width: 12),
@@ -68,8 +89,8 @@ class BalanceCard extends StatelessWidget {
                 child: _IncomeExpenseInfo(
                   label: context.l10n.expense_title,
                   amount: expense,
-                  icon: Icons.arrow_upward,
-                  color: colorScheme.onPrimary,
+                  icon: Icons.arrow_upward_rounded,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -96,11 +117,16 @@ class _IncomeExpenseInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.24),
+          width: 1.0,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,20 +134,24 @@ class _IncomeExpenseInfo extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
+                  color: Colors.white.withValues(alpha: 0.22),
                   shape: BoxShape.circle,
                 ),
-                child:
-                    Icon(icon, color: color.withValues(alpha: 0.95), size: 12),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 13,
+                ),
               ),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   label,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: color.withValues(alpha: 0.8),
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -133,7 +163,7 @@ class _IncomeExpenseInfo extends StatelessWidget {
           CurrencyFormatter.formatText(
             amount,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: color,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
             useFittedBox: true,

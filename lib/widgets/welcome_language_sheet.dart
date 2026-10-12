@@ -29,6 +29,12 @@ class WelcomeLanguageSheet extends StatelessWidget {
     Currency selectedCurrency = CurrencyFormatter.currentCurrency;
     bool currencyManuallyChanged = false;
 
+    final isDark = theme.brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF161618) : colorScheme.surface;
+    final sheetBorder = isDark
+        ? Colors.white.withValues(alpha: 0.18)
+        : Colors.black.withValues(alpha: 0.08);
+
     return Container(
       padding: EdgeInsets.only(
         top: 10,
@@ -37,8 +43,20 @@ class WelcomeLanguageSheet extends StatelessWidget {
         bottom: 24 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border(
+          top: BorderSide(color: sheetBorder, width: 1.5),
+          left: BorderSide(color: sheetBorder, width: 1.0),
+          right: BorderSide(color: sheetBorder, width: 1.0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.10),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
+          ),
+        ],
       ),
       child: SingleChildScrollView(
         child: StatefulBuilder(
@@ -53,7 +71,9 @@ class WelcomeLanguageSheet extends StatelessWidget {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                      color: colorScheme.outlineVariant,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

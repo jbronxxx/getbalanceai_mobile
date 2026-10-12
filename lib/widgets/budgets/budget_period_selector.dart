@@ -22,6 +22,15 @@ class BudgetPeriodSelector extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final l10n = context.l10n;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final borderColor =
+        isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1);
+    final fieldFillColor = isDark ? const Color(0xFF18181C) : Colors.white;
+    final dropdownBg = isDark ? const Color(0xFF1E1E22) : Colors.white;
+    final iconColor = isDark
+        ? Colors.white.withValues(alpha: 0.70)
+        : colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.only(
@@ -35,15 +44,31 @@ class BudgetPeriodSelector extends StatelessWidget {
           Expanded(
             child: DropdownButtonFormField<int>(
               value: selectedMonth,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
+              dropdownColor: dropdownBg,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: iconColor,
+              ),
               alignment: Alignment.center,
               decoration: InputDecoration(
                 labelText: l10n.month_label,
+                filled: true,
+                fillColor: fieldFillColor,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: borderColor, width: 1.2),
                 ),
-                filled: true,
-                fillColor: colorScheme.surface,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: borderColor, width: 1.2),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Color(0xFF0F766E), width: 1.5),
+                ),
               ),
               items: List.generate(12, (index) {
                 final monthValue = index + 1;
@@ -76,15 +101,31 @@ class BudgetPeriodSelector extends StatelessWidget {
           Expanded(
             child: DropdownButtonFormField<int>(
               value: selectedYear,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
+              dropdownColor: dropdownBg,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: iconColor,
+              ),
               alignment: Alignment.center,
               decoration: InputDecoration(
                 labelText: l10n.year_label,
+                filled: true,
+                fillColor: fieldFillColor,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: borderColor, width: 1.2),
                 ),
-                filled: true,
-                fillColor: colorScheme.surface,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: borderColor, width: 1.2),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Color(0xFF0F766E), width: 1.5),
+                ),
               ),
               items: List.generate(11, (index) {
                 final yearValue = DateTime.now().year - 5 + index;

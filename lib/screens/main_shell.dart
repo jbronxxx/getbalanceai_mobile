@@ -8,9 +8,10 @@ import 'dashboard_screen.dart';
 import 'insights_screen.dart';
 import 'profile_screen.dart';
 
+import '../widgets/widgets.dart';
 import 'welcome_setup_screen.dart';
 
-/// Каркас приложения с нижней навигацией.
+/// Каркас приложения с нижней навигацией в виде плавающего островка жидкого стекла.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -63,9 +64,6 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return ValueListenableBuilder<Currency>(
       valueListenable: CurrencyFormatter.currencyNotifier,
       builder: (context, currency, child) {
@@ -85,40 +83,46 @@ class _MainShellState extends State<MainShell> {
               name = authState.name;
             }
 
+            final theme = Theme.of(context);
+
             return Scaffold(
-              body: _getScreens(email, name)[_currentIndex],
-              bottomNavigationBar: NavigationBar(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-                indicatorColor: colorScheme.primary.withValues(alpha: 0.15),
-                destinations: [
-                  NavigationDestination(
-                    icon: const Icon(Icons.wallet_outlined),
-                    selectedIcon:
-                        Icon(Icons.wallet, color: colorScheme.primary),
-                    label: context.l10n.balance,
+              backgroundColor: theme.colorScheme.surface,
+              body: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned.fill(
+                    child: _getScreens(email, name)[_currentIndex],
                   ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.pie_chart_outline),
-                    selectedIcon:
-                        Icon(Icons.pie_chart, color: colorScheme.primary),
-                    label: context.l10n.limits,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.lightbulb_outline),
-                    selectedIcon:
-                        Icon(Icons.lightbulb, color: colorScheme.primary),
-                    label: context.l10n.insights,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.person_outline),
-                    selectedIcon:
-                        Icon(Icons.person, color: colorScheme.primary),
-                    label: context.l10n.profile,
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: LiquidGlassNavBar(
+                      selectedIndex: _currentIndex,
+                      onDestinationSelected: (index) {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      },
+                      destinations: [
+                        LiquidGlassNavItem(
+                          icon: Icons.wallet_rounded,
+                          label: context.l10n.balance,
+                        ),
+                        LiquidGlassNavItem(
+                          icon: Icons.donut_small_rounded,
+                          label: context.l10n.limits,
+                        ),
+                        LiquidGlassNavItem(
+                          icon: Icons.auto_awesome_rounded,
+                          label: context.l10n.insights,
+                        ),
+                        LiquidGlassNavItem(
+                          icon: Icons.person_rounded,
+                          label: context.l10n.profile,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

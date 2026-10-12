@@ -68,6 +68,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       setState(() {
         _selectedCurrency = picked;
         _amountError = null;
+        final currentAmount =
+            CurrencyFormatter.parseInput(_amountController.text);
+        if (currentAmount != null && currentAmount > 0) {
+          _amountController.text = CurrencyFormatter.format(
+            currentAmount,
+            showSymbol: false,
+            currency: picked,
+          );
+        }
       });
     }
   }
@@ -157,6 +166,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF161618) : colorScheme.surface;
+    final sheetBorder = isDark
+        ? Colors.white.withValues(alpha: 0.18)
+        : Colors.black.withValues(alpha: 0.08);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -164,8 +178,20 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: sheetBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border(
+            top: BorderSide(color: sheetBorder, width: 1.5),
+            left: BorderSide(color: sheetBorder, width: 1.0),
+            right: BorderSide(color: sheetBorder, width: 1.0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.10),
+              blurRadius: 32,
+              offset: const Offset(0, -8),
+            ),
+          ],
         ),
         child: SafeArea(
           top: false,
@@ -186,7 +212,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: colorScheme.outlineVariant,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -313,12 +341,56 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                           controller: _amountController,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
-                          inputFormatters: [CurrencyInputFormatter()],
+                          inputFormatters: [
+                            CurrencyInputFormatter(currency: _selectedCurrency),
+                          ],
                           autofocus: false,
                           decoration: InputDecoration(
-                            labelText:
-                                '${context.l10n.amount_label} (${_selectedCurrency.localizedName})',
+                            labelText: context.l10n.amount_label,
                             errorText: _amountError,
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: UnconstrainedBox(
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(10),
+                                    onTap: _showCurrencyPicker,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white
+                                                .withValues(alpha: 0.10)
+                                            : colorScheme.primary
+                                                .withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? Colors.white
+                                                  .withValues(alpha: 0.20)
+                                              : colorScheme.primary
+                                                  .withValues(alpha: 0.25),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _selectedCurrency.code,
+                                        style: textTheme.labelLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark
+                                              ? const Color(0xFF2DD4BF)
+                                              : colorScheme.primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -340,44 +412,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                               color: colorScheme.error,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                            ),
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: UnconstrainedBox(
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(10),
-                                  onTap: _showCurrencyPicker,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primary
-                                          .withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          _selectedCurrency.code,
-                                          style: textTheme.labelLarge?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: colorScheme.primary,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          Icons.keyboard_arrow_down,
-                                          size: 18,
-                                          color: colorScheme.primary,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
                             ),
                           ),
                         ),
@@ -407,34 +441,33 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   },
                 ),
                 const SizedBox(height: 16),
-                Theme(
-                  data: theme.copyWith(
-                    shadowColor: colorScheme.shadow,
+                DropdownButtonFormField<Category>(
+                  value: _category,
+                  borderRadius: BorderRadius.circular(20),
+                  dropdownColor:
+                      isDark ? const Color(0xFF1E1E22) : Colors.white,
+                  icon: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.70)
+                        : colorScheme.onSurfaceVariant,
                   ),
-                  child: DropdownButtonFormField<Category>(
-                    value: _category,
-                    borderRadius: BorderRadius.circular(24),
-                    dropdownColor: theme.cardColor,
-                    elevation: 16,
-                    alignment: Alignment.centerLeft,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.category_label,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
-                    items: (_type == TransactionType.income
-                            ? Category.incomeCategories
-                            : Category.expenseCategories)
-                        .map((cat) {
-                      return DropdownMenuItem(
-                        value: cat,
-                        child: Text(cat.getLocalizedName(context)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _category = val);
-                    },
+                  alignment: Alignment.centerLeft,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.category_label,
                   ),
+                  items: (_type == TransactionType.income
+                          ? Category.incomeCategories
+                          : Category.expenseCategories)
+                      .map((cat) {
+                    return DropdownMenuItem(
+                      value: cat,
+                      child: Text(cat.getLocalizedName(context)),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _category = val);
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextField(

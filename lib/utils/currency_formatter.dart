@@ -65,7 +65,12 @@ class CurrencyFormatter {
   /// Все экраны и виджеты динамически пересчитывают отображение на лету без мутации БД.
   static Future<void> setCurrency(Currency currency) async {
     if (_currentCurrency == currency) return;
+    final oldCurrency = _currentCurrency;
     _currentCurrency = currency;
+
+    if (LocalDbService.isInitialized) {
+      LocalDbService.instance.convertBudgetsCurrency(oldCurrency, currency);
+    }
 
     // Сохраняем выбор в постоянное хранилище
     await PreferencesService.instance.saveCurrency(currency.code);
@@ -188,6 +193,10 @@ class CurrencyFormatter {
 }
 
 class CurrencyInputFormatter extends TextInputFormatter {
+  final Currency? currency;
+
+  CurrencyInputFormatter({this.currency});
+
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
@@ -217,7 +226,8 @@ class CurrencyInputFormatter extends TextInputFormatter {
       intPart = int.parse(intPart).toString();
     }
 
-    final digitsLimit = CurrencyFormatter.currentCurrency.defaultDecimalDigits;
+    final targetCurrency = currency ?? CurrencyFormatter.currentCurrency;
+    final digitsLimit = targetCurrency.defaultDecimalDigits;
 
     // Если валюта не поддерживает копейки (UZS, KZT), запрещаем точку
     if (digitsLimit == 0 && parts.length > 1) {

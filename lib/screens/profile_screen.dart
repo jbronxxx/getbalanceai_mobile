@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/auth/auth_cubit.dart';
 import '../cubits/profile/profile_cubit.dart';
@@ -78,9 +80,12 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
   void _showLoadingDialog(String message) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: isDark ? 0.70 : 0.40),
       builder: (dialogContext) => PopScope(
         canPop: false,
         child: Dialog(
@@ -88,34 +93,83 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
           elevation: 0,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.all(24),
+              constraints: const BoxConstraints(maxWidth: 280),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                  )
+                    color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.15),
+                    blurRadius: 32,
+                    offset: const Offset(0, 10),
+                  ),
+                  if (isDark)
+                    BoxShadow(
+                      color: const Color(0xFF14B8A6).withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 2),
+                    ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(
-                    color: theme.colorScheme.primary,
-                    strokeWidth: 3,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    message,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 26),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF18181B).withValues(alpha: 0.94)
+                          : Colors.white.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.30)
+                            : Colors.white.withValues(alpha: 0.90),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF14B8A6)
+                                .withValues(alpha: isDark ? 0.16 : 0.12),
+                            border: Border.all(
+                              color: const Color(0xFF14B8A6)
+                                  .withValues(alpha: 0.35),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 26,
+                              height: 26,
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF14B8A6),
+                                strokeWidth: 2.8,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          message,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -0.2,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -126,24 +180,14 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
   Future<void> _handleLogout() async {
     final cubit = context.read<ProfileCubit>();
-    final colorScheme = Theme.of(context).colorScheme;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.logout_confirm_title),
-        content: Text(context.l10n.logout_confirm_desc),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-            child: Text(context.l10n.logout),
-          ),
-        ],
-      ),
+    final confirm = await AppAlerts.showConfirmDialog(
+      context,
+      title: context.l10n.logout_confirm_title,
+      message: context.l10n.logout_confirm_desc,
+      confirmText: context.l10n.logout,
+      cancelText: context.l10n.cancel,
+      isDestructive: false,
+      icon: Icons.logout_rounded,
     );
 
     if (confirm != true || !mounted) return;
@@ -158,24 +202,14 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   }
 
   Future<void> _handleDeleteAccount() async {
-    final colorScheme = Theme.of(context).colorScheme;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.delete_account_title),
-        content: Text(context.l10n.delete_account_confirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-            child: Text(context.l10n.delete_account_confirm_btn),
-          ),
-        ],
-      ),
+    final confirm = await AppAlerts.showConfirmDialog(
+      context,
+      title: context.l10n.delete_account_title,
+      message: context.l10n.delete_account_confirm,
+      confirmText: context.l10n.delete_account_confirm_btn,
+      cancelText: context.l10n.cancel,
+      isDestructive: true,
+      icon: Icons.delete_forever_rounded,
     );
 
     if (confirm == true && mounted) {
@@ -220,6 +254,8 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
+    final isDark = theme.brightness == Brightness.dark;
+
     return BlocConsumer<ProfileCubit, ProfileState>(
       listenWhen: (previous, current) =>
           previous.syncStatus != current.syncStatus,
@@ -242,16 +278,25 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
             ),
             centerTitle: true,
             backgroundColor: Colors.transparent,
+            scrolledUnderElevation: 0,
             elevation: 0,
+            systemOverlayStyle: isDark
+                ? SystemUiOverlayStyle.light
+                    .copyWith(statusBarColor: Colors.transparent)
+                : SystemUiOverlayStyle.dark
+                    .copyWith(statusBarColor: Colors.transparent),
           ),
           body: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             child: Padding(
               padding: EdgeInsets.only(
                 left: 20.0,
                 right: 20.0,
                 top: 16.0,
-                bottom: 16.0 + MediaQuery.of(context).padding.bottom,
+                bottom: 120.0 +
+                    (MediaQuery.of(context).padding.bottom > 0
+                        ? MediaQuery.of(context).padding.bottom
+                        : 12.0),
               ),
               child: Column(
                 children: [

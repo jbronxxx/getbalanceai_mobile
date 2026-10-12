@@ -4,6 +4,7 @@ import '../config/environment.dart';
 import '../utils/app_logger.dart';
 import '../utils/language_manager.dart';
 import '../services/services.dart';
+import '../widgets/widgets.dart';
 
 /// Экран меню отладки для разработчиков и QA-тестирования.
 class DebugMenuScreen extends StatefulWidget {
@@ -64,12 +65,9 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
                 await EnvironmentConfig.setEnvironment(val);
                 setState(() {});
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      l10n.debug_environment_changed(val.name.toUpperCase()),
-                    ),
-                  ),
+                AppAlerts.success(
+                  context,
+                  l10n.debug_environment_changed(val.name.toUpperCase()),
                 );
               }
             },
@@ -117,9 +115,7 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
             onPressed: () async {
               await ApiService.instance.clearAllUserData();
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.debug_cache_cleared)),
-              );
+              AppAlerts.success(context, l10n.debug_cache_cleared);
             },
             child: Text(l10n.debug_clear_cache),
           ),

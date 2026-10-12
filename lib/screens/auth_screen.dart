@@ -112,20 +112,42 @@ class _AuthScreenState extends State<AuthScreen> {
         height: 24,
       ),
       text: context.l10n.login_with_google,
-      backgroundColor:
-          isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
-      textColor: colorScheme.onSurface,
-      borderColor: colorScheme.outline,
+      backgroundColor: isDark
+          ? const Color(0xFF141416).withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.88),
+      textColor: isDark ? Colors.white : const Color(0xFF0F172A),
+      borderColor: isDark
+          ? Colors.white.withValues(alpha: 0.15)
+          : Colors.white.withValues(alpha: 0.85),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ],
       onPressed: () => _handleSocialLogin('google'),
     );
 
     final appleButton = _SocialButton(
-      icon: FaIcon(FontAwesomeIcons.apple,
-          size: 24, color: colorScheme.onPrimary),
+      icon: const FaIcon(
+        FontAwesomeIcons.apple,
+        size: 24,
+        color: Colors.white,
+      ),
       text: context.l10n.login_with_apple,
-      backgroundColor: colorScheme.primary,
-      textColor: colorScheme.onPrimary,
-      borderColor: colorScheme.primary,
+      backgroundColor: isDark
+          ? const Color(0xFF18181B).withValues(alpha: 0.90)
+          : const Color(0xFF09090B).withValues(alpha: 0.95),
+      textColor: Colors.white,
+      borderColor: Colors.white.withValues(alpha: isDark ? 0.20 : 0.15),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.15),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ],
       onPressed: () => _handleSocialLogin('apple'),
     );
 
@@ -136,102 +158,190 @@ class _AuthScreenState extends State<AuthScreen> {
         elevation: 0,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-              Icon(Icons.account_circle, size: 80, color: colorScheme.primary),
-              const SizedBox(height: 24),
-              Text(
-                context.l10n.login_or_register,
-                style: textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                isIOS
-                    ? context.l10n.continue_with_apple
-                    : context.l10n.continue_with_google,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-              if (_isLoading)
-                CircularProgressIndicator(color: colorScheme.primary)
-              else if (isIOS)
-                appleButton
-              else
-                googleButton,
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text.rich(
-                  TextSpan(
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    children: [
-                      TextSpan(text: context.l10n.terms_of_use_prefix),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.baseline,
-                        baseline: TextBaseline.alphabetic,
-                        child: GestureDetector(
-                          onTap: () => launchUrl(
-                              Uri.parse(context.l10n.terms_of_use_url)),
-                          child: Text(
-                            context.l10n.terms_of_use_link,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ),
-                      TextSpan(text: context.l10n.terms_of_use_and),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.baseline,
-                        baseline: TextBaseline.alphabetic,
-                        child: GestureDetector(
-                          onTap: () => launchUrl(
-                              Uri.parse(context.l10n.privacy_policy_url)),
-                          child: Text(
-                            context.l10n.privacy_policy_link,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ),
-                      TextSpan(text: context.l10n.terms_of_use_suffix),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
+      body: Stack(
+        children: [
+          // Мягкое фоновое рассеянное свечение для эффекта глубины полированного стекла
+          Positioned(
+            top: -50,
+            left: 0,
+            right: 0,
+            height: 260,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 0.9,
+                  colors: [
+                    const Color(0xFF0F766E)
+                        .withValues(alpha: isDark ? 0.20 : 0.12),
+                    Colors.transparent,
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
-        ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 32),
+                            // Иконка в виде полированного стеклянного медальона
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xFF0F766E).withValues(
+                                        alpha: isDark ? 0.35 : 0.22),
+                                    const Color(0xFF115E59).withValues(
+                                        alpha: isDark ? 0.45 : 0.28),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white
+                                      .withValues(alpha: isDark ? 0.22 : 0.70),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF0F766E).withValues(
+                                        alpha: isDark ? 0.35 : 0.20),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.account_circle_rounded,
+                                  size: 52,
+                                  color: Color(0xFF0F766E),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              context.l10n.login_or_register,
+                              style: textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                                letterSpacing: -0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              isIOS
+                                  ? context.l10n.continue_with_apple
+                                  : context.l10n.continue_with_google,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const Spacer(),
+                            if (_isLoading)
+                              const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Color(0xFF0F766E),
+                                ),
+                              )
+                            else if (isIOS)
+                              appleButton
+                            else
+                              googleButton,
+                            const SizedBox(height: 24),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text.rich(
+                                TextSpan(
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                        text: context.l10n.terms_of_use_prefix),
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.baseline,
+                                      baseline: TextBaseline.alphabetic,
+                                      child: GestureDetector(
+                                        onTap: () => launchUrl(Uri.parse(
+                                            context.l10n.terms_of_use_url)),
+                                        child: Text(
+                                          context.l10n.terms_of_use_link,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.primary,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextSpan(
+                                        text: context.l10n.terms_of_use_and),
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.baseline,
+                                      baseline: TextBaseline.alphabetic,
+                                      child: GestureDetector(
+                                        onTap: () => launchUrl(Uri.parse(
+                                            context.l10n.privacy_policy_url)),
+                                        child: Text(
+                                          context.l10n.privacy_policy_link,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.primary,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TextSpan(
+                                        text: context.l10n.terms_of_use_suffix),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+/// Кнопка авторизации в стиле Liquid Glass с тонкой световой гранью и тенями.
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String text;
   final Color backgroundColor;
   final Color textColor;
   final Color borderColor;
+  final List<BoxShadow>? boxShadow;
   final VoidCallback onPressed;
 
   const _SocialButton({
@@ -240,36 +350,59 @@ class _SocialButton extends StatelessWidget {
     required this.backgroundColor,
     required this.textColor,
     required this.borderColor,
+    this.boxShadow,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
       height: 56,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          foregroundColor: textColor,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: borderColor),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: boxShadow ??
+            [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onPressed,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: borderColor,
+                width: 1.2,
+              ),
             ),
-          ],
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  icon,
+                  const SizedBox(width: 14),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

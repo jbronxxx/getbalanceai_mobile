@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
@@ -230,31 +231,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final textTheme = theme.textTheme;
     final currentMonthName = LanguageManager.monthsNames[_selectedMonth - 1];
 
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+                .copyWith(statusBarColor: Colors.transparent)
+            : SystemUiOverlayStyle.dark
+                .copyWith(statusBarColor: Colors.transparent),
         title: GestureDetector(
           onTap: _showPeriodPicker,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  '$currentMonthName $_selectedYear',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF18181C)
+                  : Colors.black.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : const Color(0xFFCBD5E1),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    '$currentMonthName $_selectedYear',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Icon(Icons.arrow_drop_down, color: colorScheme.onSurface),
-            ],
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.70)
+                      : colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
         centerTitle: true,
@@ -301,108 +331,113 @@ class _DashboardScreenState extends State<DashboardScreen> {
           )
         ],
       ),
-      body: SafeArea(
-        child: CustomPullToRefresh(
-          onRefresh: _handleRefresh,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const ClampingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      BalanceCard(
-                        balance: _totalBalance,
-                        income: _totalIncome,
-                        expense: _totalExpense,
+      body: CustomPullToRefresh(
+        onRefresh: _handleRefresh,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const ClampingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    BalanceCard(
+                      balance: _totalBalance,
+                      income: _totalIncome,
+                      expense: _totalExpense,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      context.l10n.balance,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        context.l10n.balance,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_transactions.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 40.0),
-                          child: Center(
-                            child: Text(
-                              context.l10n.no_transactions,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.outline,
-                              ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_transactions.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 40.0),
+                        child: Center(
+                          child: Text(
+                            context.l10n.no_transactions,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.outline,
                             ),
                           ),
                         ),
-                    ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (_transactions.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final date = _groupedTransactions.keys.elementAt(index);
+                      final categories = _groupedTransactions[date]!;
+
+                      return DayGroupWidget(
+                        date: date,
+                        categories: categories,
+                        showHintOnFirstCategory:
+                            index == 0 && _shouldShowSwipeHint,
+                        onTransactionTap: _openTransactionSheet,
+                        onTransactionDelete: _deleteTransaction,
+                        onHintShown: () {
+                          PreferencesService.instance
+                              .recordHintShown('dashboard');
+                          _swipeHintDismissTimer?.cancel();
+                          _swipeHintDismissTimer = Timer(
+                            const Duration(milliseconds: 2000),
+                            () {
+                              if (mounted) {
+                                setState(() => _shouldShowSwipeHint = false);
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
+                    childCount: _groupedTransactions.length,
                   ),
                 ),
               ),
-              if (_transactions.isNotEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final date = _groupedTransactions.keys.elementAt(index);
-                        final categories = _groupedTransactions[date]!;
-
-                        return DayGroupWidget(
-                          date: date,
-                          categories: categories,
-                          showHintOnFirstCategory:
-                              index == 0 && _shouldShowSwipeHint,
-                          onTransactionTap: _openTransactionSheet,
-                          onTransactionDelete: _deleteTransaction,
-                          onHintShown: () {
-                            PreferencesService.instance
-                                .recordHintShown('dashboard');
-                            _swipeHintDismissTimer?.cancel();
-                            _swipeHintDismissTimer = Timer(
-                              const Duration(milliseconds: 2000),
-                              () {
-                                if (mounted) {
-                                  setState(() => _shouldShowSwipeHint = false);
-                                }
-                              },
-                            );
-                          },
-                        );
-                      },
-                      childCount: _groupedTransactions.length,
+            if (_isLoading && _transactions.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
                     ),
                   ),
                 ),
-              if (_isLoading && _transactions.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
-            ],
-          ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+          ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openTransactionSheet(),
-        child: const Icon(Icons.add, size: 32),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: (MediaQuery.of(context).padding.bottom > 0
+                  ? MediaQuery.of(context).padding.bottom + 6
+                  : 16.0) +
+              68.0,
+        ),
+        child: LiquidGlassFab(
+          onPressed: () => _openTransactionSheet(),
+        ),
       ),
     );
   }

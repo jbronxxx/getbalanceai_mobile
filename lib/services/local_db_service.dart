@@ -492,6 +492,47 @@ class LocalDbService {
     return totalSpent;
   }
 
+  /// Пересчитывает лимиты бюджетов при смене базовой валюты аккаунта.
+  void convertBudgetsCurrency(Currency from, Currency to) {
+    if (from == to) return;
+    try {
+      final budgets = _budgetBox.getAll();
+      if (budgets.isEmpty) return;
+
+      final exchange = CurrencyExchangeService.instance;
+      final updated = <Budget>[];
+
+      for (final b in budgets) {
+        final convertedLimit =
+            exchange.convert(b.limitAmount, from: from, to: to);
+        final roundedLimit = to.defaultDecimalDigits == 0
+            ? convertedLimit.roundToDouble()
+            : double.parse(
+                convertedLimit.toStringAsFixed(to.defaultDecimalDigits));
+
+        final spent = getSpentForCategory(b.month, b.year, b.dbCategory, to);
+
+        updated.add(Budget(
+          localId: b.localId,
+          serverId: b.serverId,
+          dbCategory: b.dbCategory,
+          limitAmount: roundedLimit,
+          month: b.month,
+          year: b.year,
+          spent: spent,
+          remaining: roundedLimit - spent,
+          isModified: b.serverId != null,
+        ));
+      }
+
+      _budgetBox.putMany(updated);
+      AppLogger.d(
+          '[LocalDbService] Converted ${updated.length} budgets from ${from.code} to ${to.code}');
+    } catch (e) {
+      AppLogger.e('[LocalDbService] convertBudgetsCurrency error', e);
+    }
+  }
+
   Future<void> clearAllData() async {
     _transactionBox.removeAll();
     _budgetBox.removeAll();
