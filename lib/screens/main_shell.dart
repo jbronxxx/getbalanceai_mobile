@@ -48,86 +48,96 @@ class _MainShellState extends State<MainShell> {
     context.read<AuthCubit>().logout();
   }
 
-  List<Widget> _getScreens(String email, String name) => [
-        DashboardScreen(
-          onAuthenticated: (_, __) {},
-          onOpenProfile: _openProfileTab,
-        ),
-        const BudgetsScreen(),
-        const InsightsScreen(),
-        ProfileScreen(
-          userEmail: email,
-          userName: name,
-          onLogout: _logout,
-        ),
-      ];
-
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Currency>(
-      valueListenable: CurrencyFormatter.currencyNotifier,
-      builder: (context, currency, child) {
-        return BlocConsumer<AuthCubit, AuthState>(
-          listener: (context, state) {
-            if (state is Unauthenticated) {
-              setState(() {
-                _currentIndex = 0;
-              });
-            }
-          },
-          builder: (context, authState) {
-            String email = '';
-            String name = '';
-            if (authState is Authenticated) {
-              email = authState.email;
-              name = authState.name;
-            }
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is Unauthenticated) {
+          setState(() {
+            _currentIndex = 0;
+          });
+        }
+      },
+      builder: (context, authState) {
+        String email = '';
+        String name = '';
+        if (authState is Authenticated) {
+          email = authState.email;
+          name = authState.name;
+        }
 
-            final theme = Theme.of(context);
+        final theme = Theme.of(context);
 
-            return Scaffold(
-              backgroundColor: theme.colorScheme.surface,
-              body: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  Positioned.fill(
-                    child: _getScreens(email, name)[_currentIndex],
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: LiquidGlassNavBar(
-                      selectedIndex: _currentIndex,
-                      onDestinationSelected: (index) {
-                        setState(() {
-                          _currentIndex = index;
-                        });
-                      },
-                      destinations: [
-                        LiquidGlassNavItem(
-                          icon: Icons.wallet_rounded,
-                          label: context.l10n.balance,
+        return Scaffold(
+          backgroundColor: theme.colorScheme.surface,
+          body: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Positioned.fill(
+                child: ValueListenableBuilder<Currency>(
+                  valueListenable: CurrencyFormatter.currencyNotifier,
+                  builder: (context, currency, _) {
+                    return IndexedStack(
+                      key: const Key('main_shell_indexed_stack'),
+                      index: _currentIndex,
+                      children: [
+                        DashboardScreen(
+                          key: const PageStorageKey('dashboard_tab'),
+                          onAuthenticated: (_, __) {},
+                          onOpenProfile: _openProfileTab,
                         ),
-                        LiquidGlassNavItem(
-                          icon: Icons.donut_small_rounded,
-                          label: context.l10n.limits,
+                        const BudgetsScreen(
+                          key: PageStorageKey('budgets_tab'),
                         ),
-                        LiquidGlassNavItem(
-                          icon: Icons.auto_awesome_rounded,
-                          label: context.l10n.insights,
+                        const InsightsScreen(
+                          key: PageStorageKey('insights_tab'),
                         ),
-                        LiquidGlassNavItem(
-                          icon: Icons.person_rounded,
-                          label: context.l10n.profile,
+                        ProfileScreen(
+                          key: const PageStorageKey('profile_tab'),
+                          userEmail: email,
+                          userName: name,
+                          onLogout: _logout,
                         ),
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            );
-          },
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: LiquidGlassNavBar(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: (index) {
+                    if (_currentIndex != index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    }
+                  },
+                  destinations: [
+                    LiquidGlassNavItem(
+                      icon: Icons.wallet_rounded,
+                      label: context.l10n.balance,
+                    ),
+                    LiquidGlassNavItem(
+                      icon: Icons.donut_small_rounded,
+                      label: context.l10n.limits,
+                    ),
+                    LiquidGlassNavItem(
+                      icon: Icons.auto_awesome_rounded,
+                      label: context.l10n.insights,
+                    ),
+                    LiquidGlassNavItem(
+                      icon: Icons.person_rounded,
+                      label: context.l10n.profile,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

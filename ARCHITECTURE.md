@@ -49,6 +49,7 @@ lib/
 │   ├── currency_exchange_service.dart # Конвертация и актуализация курсов валют (офлайн fallback).
 │   │                                 # При смене базовой валюты Presentation-слой динамически пересчитывает суммы
 │   │                                 # в представлении (on-the-fly) без мутации исторической базы и без ложных флагов isModified.
+│   ├── device_capability_service.dart # Определение аппаратных возможностей устройства (поддержка RenderEffect/BackdropFilter, Android API < 31)
 │   ├── tracing_interceptor.dart  # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
@@ -59,12 +60,12 @@ lib/
 │   ├── dashboard/               # Декомпозированные виджеты экрана дашборда (баннер гостя, тайлы, группы)
 │   ├── budgets/                 # Декомпозированные виджеты экрана бюджетов (селектор периода, карточка, лист)
 │   ├── profile/                 # Декомпозированные виджеты профиля (шапка, синк, настройки, версия с таймером)
-│   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter и световой гранью
-│   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass в стиле One UI / Galaxy Store
+│   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter, RepaintBoundary и непрозрачным fallback
+│   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass (RepaintBoundary, sigma 18, fallback без размытия для Android < 31)
 │   ├── liquid_glass_fab.dart    # Плавающая кнопка действия с градиентным стеклом и неоновым свечением
 │   └── welcome_language_sheet.dart # Выбор стартового языка приложения
 └── screens/
-    ├── main_shell.dart            # Каркас с навигацией и слушателем сессии
+    ├── main_shell.dart            # Каркас с IndexedStack, сохранением состояния вкладок (PageStorageKey) и локализацией слушателя валюты
     ├── dashboard_screen.dart      # Баланс и список операций
     ├── add_transaction_sheet.dart # Форма добавления транзакции
     ├── budgets_screen.dart        # Лимиты бюджета

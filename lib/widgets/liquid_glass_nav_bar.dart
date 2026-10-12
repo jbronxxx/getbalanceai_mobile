@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/services.dart';
 import '../theme/app_theme.dart';
 
 /// Элемент навигации для плавающего островка [LiquidGlassNavBar].
@@ -64,7 +65,18 @@ class LiquidGlassNavBar extends StatelessWidget {
     final glassTheme = GlassTheme.of(context);
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final isBlurSupported = DeviceCapabilityService.instance.isBlurSupported;
+    final shouldUseBlur =
+        !disableAnimations && glassTheme.blurSigma > 0 && isBlurSupported;
     final effectiveBottomMargin = bottomMargin(context);
+
+    // При отключенном размытии (Android < API 31 или отключенных анимациях)
+    // используется непрозрачная заливка, чтобы скроллящийся контент не создавал визуальный шум.
+    final navColors = shouldUseBlur
+        ? [glassTheme.surface, glassTheme.surfaceEnd]
+        : (isDark
+            ? [const Color(0xFF18181C), const Color(0xFF121216)]
+            : [const Color(0xFFFFFFFF), const Color(0xFFF1F5F9)]);
 
     Widget navContent = Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -72,10 +84,7 @@ class LiquidGlassNavBar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            glassTheme.surface,
-            glassTheme.surfaceEnd,
-          ],
+          colors: navColors,
         ),
         borderRadius: BorderRadius.circular(36),
         border: Border.all(
@@ -103,24 +112,18 @@ class LiquidGlassNavBar extends StatelessWidget {
       ),
     );
 
-    Widget glassBody;
-    if (disableAnimations || glassTheme.blurSigma <= 0) {
-      glassBody = ClipRRect(
-        borderRadius: BorderRadius.circular(36),
-        child: navContent,
-      );
-    } else {
-      glassBody = ClipRRect(
-        borderRadius: BorderRadius.circular(36),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: glassTheme.blurSigma,
-            sigmaY: glassTheme.blurSigma,
-          ),
-          child: navContent,
-        ),
-      );
-    }
+    final Widget glassBody = ClipRRect(
+      borderRadius: BorderRadius.circular(36),
+      child: shouldUseBlur
+          ? BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: glassTheme.blurSigma,
+                sigmaY: glassTheme.blurSigma,
+              ),
+              child: navContent,
+            )
+          : navContent,
+    );
 
     return RepaintBoundary(
       child: MediaQuery.withClampedTextScaling(
