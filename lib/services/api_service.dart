@@ -49,6 +49,7 @@ class ApiService {
       dio: _dio,
       authOptions: _authService.authOptions,
       tokenProvider: () => _authService.token,
+      userIdProvider: () => _authService.userId,
       transactionApiService: _transactionApiService,
       budgetApiService: _budgetApiService,
     );
@@ -131,17 +132,26 @@ class ApiService {
   }
 
   static bool _isAuthExcludedPath(String path) {
-    final cleanPath = path.split('?').first;
-    return cleanPath == ApiConfig.refreshToken ||
-        cleanPath == ApiConfig.login ||
-        cleanPath == ApiConfig.register ||
-        cleanPath == ApiConfig.loginGoogle ||
-        cleanPath == ApiConfig.loginApple;
+    final uri = Uri.tryParse(path);
+    if (uri != null && uri.hasScheme && uri.hasAuthority) {
+      final baseUri = Uri.tryParse(ApiConfig.baseUrl);
+      if (baseUri != null && uri.host.isNotEmpty && uri.host != baseUri.host) {
+        return true;
+      }
+    }
+    final pathOnly = uri?.path ?? path.split('?').first;
+    return pathOnly == ApiConfig.refreshToken ||
+        pathOnly == ApiConfig.login ||
+        pathOnly == ApiConfig.register ||
+        pathOnly == ApiConfig.loginGoogle ||
+        pathOnly == ApiConfig.loginApple ||
+        pathOnly == ApiConfig.currencyRates;
   }
 
   static bool _isAuthPath(String path) => path.startsWith('/auth/');
 
-  @visibleForTesting
+  /// Базовый экземпляр Dio с настроенными интерцепторами трассировки,
+  /// безопасной авторизации и логирования.
   Dio get dio => _dio;
 
   AuthApiService get auth => _authService;

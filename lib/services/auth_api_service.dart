@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -19,6 +20,7 @@ class AuthApiService {
   String? _token;
   String? _refreshToken;
   Completer<String?>? _refreshCompleter;
+  String? _userId;
   String? _userName;
   String? _email;
   String? _avatarUrl;
@@ -34,6 +36,7 @@ class AuthApiService {
   Stream<bool> get authStream => _authStream.stream;
   String? get token => _token;
   String? get refreshToken => _refreshToken;
+  String? get userId => _userId;
   String? get userName => _userName;
   String? get email => _email;
   String? get avatarUrl => _avatarUrl;
@@ -49,6 +52,7 @@ class AuthApiService {
   Future<void> init() async {
     _token = await _storage.read(key: 'auth_token');
     _refreshToken = await _storage.read(key: 'refresh_token');
+    _userId = await _storage.read(key: 'auth_user_id');
     _userName = await _storage.read(key: 'auth_user');
     _email = await _storage.read(key: 'auth_email');
     _avatarUrl = await _storage.read(key: 'auth_avatar_url');
@@ -61,9 +65,40 @@ class AuthApiService {
     if (token != null) {
       await _storage.write(key: 'auth_token', value: token);
       await _storage.write(key: 'refresh_token', value: refresh);
+      final extracted = _extractUserIdFromToken(token);
+      if (extracted != null && _userId == null) {
+        await setUserId(extracted);
+      }
     } else {
       await _storage.delete(key: 'auth_token');
       await _storage.delete(key: 'refresh_token');
+      await setUserId(null);
+    }
+  }
+
+  static String? _extractUserIdFromToken(String? token) {
+    if (token == null) return null;
+    try {
+      final parts = token.split('.');
+      if (parts.length >= 2) {
+        final normalized = base64Url.normalize(parts[1]);
+        final payloadString = utf8.decode(base64Url.decode(normalized));
+        final payload = jsonDecode(payloadString);
+        if (payload is Map) {
+          final sub = payload['sub'] ?? payload['user_id'] ?? payload['id'];
+          return sub?.toString();
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> setUserId(String? userId) async {
+    _userId = userId;
+    if (userId != null) {
+      await _storage.write(key: 'auth_user_id', value: userId);
+    } else {
+      await _storage.delete(key: 'auth_user_id');
     }
   }
 
@@ -94,6 +129,7 @@ class AuthApiService {
     try {
       await _storage.delete(key: 'auth_token');
       await _storage.delete(key: 'refresh_token');
+      await _storage.delete(key: 'auth_user_id');
       await _storage.delete(key: 'auth_user');
       await _storage.delete(key: 'auth_email');
       await _storage.delete(key: 'auth_avatar_url');
@@ -111,6 +147,7 @@ class AuthApiService {
 
     _token = null;
     _refreshToken = null;
+    _userId = null;
     _userName = null;
     _email = null;
     _avatarUrl = null;
@@ -246,6 +283,7 @@ class AuthApiService {
       );
 
       final userProfile = AuthMeResponseModel.fromJson(response.data);
+      await setUserId(userProfile.id);
       await setUserName(userProfile.userName);
       await setUserEmail(userProfile.userEmail);
       await setAvatarUrl(userProfile.avatarUrl);

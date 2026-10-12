@@ -95,11 +95,20 @@ class CurrencyFormatter {
   static Currency get currentCurrency => _currentCurrency;
 
   /// Превращает строку из поля ввода в число.
-  /// Удаляет пробелы-разделители и заменяет запятые на точки.
+  /// Удаляет разделители тысяч и нормализует десятичный разделитель.
   static double? parseInput(String input) {
     if (input.isEmpty) return null;
-    final sanitized = input.replaceAll(' ', '').replaceAll(',', '.');
-    return double.tryParse(sanitized);
+    var cleaned = input.replaceAll(' ', '').trim();
+    if (cleaned.contains(',') && cleaned.contains('.')) {
+      if (cleaned.lastIndexOf('.') > cleaned.lastIndexOf(',')) {
+        cleaned = cleaned.replaceAll(',', '');
+      } else {
+        cleaned = cleaned.replaceAll('.', '').replaceAll(',', '.');
+      }
+    } else if (cleaned.contains(',')) {
+      cleaned = cleaned.replaceAll(',', '.');
+    }
+    return double.tryParse(cleaned);
   }
 
   /// Проверяет корректность введенной суммы и соблюдение лимитов.
@@ -118,16 +127,24 @@ class CurrencyFormatter {
   }
 
   /// Основной метод форматирования суммы в строку.
-  /// Добавляет разделители тысяч (пробелы) и символ валюты.
+  /// Добавляет разделители тысяч и символ валюты с учетом выбранной локали.
   static String format(
     double amount, {
     bool showSymbol = true,
     int? decimalDigits,
     bool showSign = false,
     Currency? currency,
+    String? locale,
   }) {
     final targetCurrency = currency ?? _currentCurrency;
     final digits = decimalDigits ?? targetCurrency.defaultDecimalDigits;
+    final langCode =
+        (locale ?? LanguageManager.currentLanguage.code).toLowerCase();
+    final isEn = langCode.startsWith('en');
+
+    final thousandsSeparator = isEn ? ',' : ' ';
+    final decimalSeparator = isEn ? '.' : ',';
+
     String sign = '';
 
     // Добавление знака + или - если требуется
@@ -137,21 +154,24 @@ class CurrencyFormatter {
     }
 
     final absAmount = amount.abs();
-    String formatted = absAmount.toStringAsFixed(digits);
+    final formatted = absAmount.toStringAsFixed(digits);
 
-    // Добавление пробелов как разделителей тысяч (регулярное выражение)
+    // Добавление разделителей тысяч (регулярное выражение)
     final parts = formatted.split('.');
     final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    parts[0] = parts[0].replaceAllMapped(reg, (Match m) => '${m[1]} ');
-    formatted = parts.join(digits > 0 ? ',' : '');
+    parts[0] = parts[0]
+        .replaceAllMapped(reg, (Match m) => '${m[1]}$thousandsSeparator');
+    final formattedNumber = parts.length > 1 && digits > 0
+        ? '${parts[0]}$decimalSeparator${parts[1]}'
+        : parts[0];
 
-    if (!showSymbol) return '$sign$formatted';
+    if (!showSymbol) return '$sign$formattedNumber';
 
     // Позиционирование символа валюты
     if (targetCurrency.symbolBefore) {
-      return '$sign${targetCurrency.localizedSymbol}$formatted';
+      return '$sign${targetCurrency.localizedSymbol}$formattedNumber';
     } else {
-      return '$sign$formatted ${targetCurrency.localizedSymbol}';
+      return '$sign$formattedNumber ${targetCurrency.localizedSymbol}';
     }
   }
 
@@ -166,6 +186,7 @@ class CurrencyFormatter {
     TextAlign textAlign = TextAlign.start,
     bool showSign = false,
     Currency? currency,
+    String? locale,
   }) {
     final text = Text(
       format(
@@ -174,6 +195,7 @@ class CurrencyFormatter {
         decimalDigits: decimalDigits,
         showSign: showSign,
         currency: currency,
+        locale: locale,
       ),
       style: style,
       textAlign: textAlign,
@@ -221,12 +243,19 @@ class CurrencyInputFormatter extends TextInputFormatter {
     final parts = text.split('.');
     String intPart = parts[0];
 
-    // Убираем ведущие нули (например, "005" -> "5", но "0" -> "0")
+    // Убираем ведущие нули безопасно без переполнения int.parse
     if (intPart.length > 1 && intPart.startsWith('0')) {
-      intPart = int.parse(intPart).toString();
+      intPart = intPart.replaceFirst(RegExp(r'^0+(?=\d)'), '');
     }
 
     final targetCurrency = currency ?? CurrencyFormatter.currentCurrency;
+    final maxIntDigits = targetCurrency.maxAmount.toStringAsFixed(0).length;
+
+    // Ограничиваем длину целой части максимальной допустимой суммой
+    if (intPart.length > maxIntDigits) {
+      return oldValue;
+    }
+
     final digitsLimit = targetCurrency.defaultDecimalDigits;
 
     // Если валюта не поддерживает копейки (UZS, KZT), запрещаем точку

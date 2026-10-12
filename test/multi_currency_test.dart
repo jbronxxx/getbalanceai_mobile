@@ -41,6 +41,16 @@ void main() {
   });
 
   group('CurrencyExchangeService Tests', () {
+    late HttpClientAdapter originalAdapter;
+
+    setUp(() {
+      originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    });
+
+    tearDown(() {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+    });
+
     test('Конвертация одинаковой валюты возвращает исходную сумму и курс 1.0',
         () {
       final service = CurrencyExchangeService.instance;
@@ -179,6 +189,232 @@ void main() {
       expect(success, isFalse);
       expect(
           service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+    });
+
+    test(
+        'E2/A4: Невалидные котировки (0, -1, "abc") игнорируются, сохраняются предыдущие значения',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        return ResponseBody.fromString(
+          jsonEncode({
+            'status': 'success',
+            'data': {
+              'base': 'USD',
+              'rates': {
+                'RUB': 0,
+                'UZS': -100.0,
+                'EUR': 'invalid_string',
+                'KZT': 500.0,
+              },
+            },
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isTrue);
+
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+      expect(service.getRate(from: Currency.usd, to: Currency.uzs),
+          equals(12800.0));
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.kzt), equals(500.0));
+      expect(service.getRate(from: Currency.uzs, to: Currency.usd),
+          closeTo(1 / 12800.0, 0.0001));
+    });
+
+    test(
+        'A8: isOutdated возвращает true если lastUpdated null или старше 24 часов',
+        () {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+      expect(service.lastUpdated, isNull);
+      expect(service.isOutdated, isTrue);
+      expect(service.isApproximate, isTrue);
+    });
+
+    test(
+        'B1: Аномальный скачок курса (>2x от baseline) с открытого шлюза игнорируется',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.path.contains('/currencies/rates')) {
+          return ResponseBody.fromString('Not Found', 404);
+        }
+        if (options.path.contains('open.er-api.com')) {
+          return ResponseBody.fromString(
+            jsonEncode({
+              'result': 'success',
+              'rates': {
+                'USD': 1.0,
+                'EUR': 0.93,
+                'RUB': 250.0,
+                'UZS': 1000.0,
+                'KZT': 498.0,
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw DioException(requestOptions: options);
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isTrue);
+
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+      expect(service.getRate(from: Currency.usd, to: Currency.uzs),
+          equals(12800.0));
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.93));
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.kzt), equals(498.0));
+    });
+
+    test('B1: Аномальный скачок курсов всех валют отклоняет всё обновление',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.path.contains('/currencies/rates')) {
+          return ResponseBody.fromString('Server Error', 500);
+        }
+        if (options.path.contains('open.er-api.com')) {
+          return ResponseBody.fromString(
+            jsonEncode({
+              'result': 'success',
+              'rates': {
+                'USD': 10.0,
+                'EUR': 5.0,
+                'RUB': 300.0,
+                'UZS': 100.0,
+                'KZT': 2000.0,
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw DioException(requestOptions: options);
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isFalse);
+
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+      expect(service.getRate(from: Currency.usd, to: Currency.uzs),
+          equals(12800.0));
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
+      expect(service.lastUpdated, isNull);
+    });
+
+    test(
+        'B2: Запрос к открытому шлюзу open.er-api.com не отправляет заголовок Authorization при активной сессии',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      await ApiService.instance
+          .setTokens('secret_jwt_access_token', 'refresh_token');
+      expect(ApiService.instance.isAuthenticated, isTrue);
+
+      Map<String, dynamic>? externalGatewayHeaders;
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.path.contains('/currencies/rates')) {
+          return ResponseBody.fromString('Backend Offline', 503);
+        }
+        if (options.path.contains('open.er-api.com')) {
+          externalGatewayHeaders = options.headers;
+          return ResponseBody.fromString(
+            jsonEncode({
+              'result': 'success',
+              'rates': {
+                'USD': 1.0,
+                'EUR': 0.92,
+                'RUB': 96.0,
+                'UZS': 12800.0,
+                'KZT': 495.0,
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw DioException(requestOptions: options);
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isTrue);
+      expect(externalGatewayHeaders, isNotNull);
+
+      expect(externalGatewayHeaders!.containsKey('Authorization'), isFalse);
+      expect(externalGatewayHeaders!.containsKey('X-Request-ID'), isTrue);
+    });
+
+    test(
+        'B2: Ошибка 401 на внешнем шлюзе не вызывает обновление токенов бэкенда',
+        () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+
+      await ApiService.instance.setTokens('valid_token', 'valid_refresh');
+      var refreshAttempted = false;
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        if (options.path.contains('/currencies/rates')) {
+          return ResponseBody.fromString('Backend 503', 503);
+        }
+        if (options.path.contains('/auth/refresh')) {
+          refreshAttempted = true;
+          return ResponseBody.fromString(
+            jsonEncode({
+              'status': 'success',
+              'data': {
+                'access_token': 'new_token',
+                'refresh_token': 'new_refresh',
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        if (options.path.contains('open.er-api.com')) {
+          return ResponseBody.fromString('Unauthorized external', 401);
+        }
+        throw DioException(requestOptions: options);
+      });
+
+      final success = await service.fetchLatestRates(force: true);
+      expect(success, isFalse);
+      expect(refreshAttempted, isFalse);
     });
   });
 
