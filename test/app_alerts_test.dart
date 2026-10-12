@@ -96,4 +96,132 @@ void main() {
     expect(find.text(expectedText), findsOneWidget);
     expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
   });
+
+  testWidgets(
+      'AppAlerts.showConfirmDialog renders dialog content and handles cancel/confirm',
+      (WidgetTester tester) async {
+    bool? dialogResult;
+
+    await tester.pumpWidget(buildTestApp(
+      Builder(
+        builder: (context) {
+          return ElevatedButton(
+            onPressed: () async {
+              dialogResult = await AppAlerts.showConfirmDialog(
+                context,
+                title: 'Выйти из аккаунта?',
+                message: 'Вы уверены, что хотите выйти?',
+                confirmText: 'Выйти',
+                cancelText: 'Отмена',
+                icon: Icons.logout_rounded,
+              );
+            },
+            child: const Text('Show Dialog'),
+          );
+        },
+      ),
+    ));
+
+    // Нажатие для открытия диалога
+    await tester.tap(find.text('Show Dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Выйти из аккаунта?'), findsOneWidget);
+    expect(find.text('Вы уверены, что хотите выйти?'), findsOneWidget);
+    expect(find.text('Отмена'), findsOneWidget);
+    expect(find.text('Выйти'), findsOneWidget);
+    expect(find.byIcon(Icons.logout_rounded), findsOneWidget);
+
+    // Нажатие Отмена
+    await tester.tap(find.text('Отмена'));
+    await tester.pumpAndSettle();
+
+    expect(dialogResult, isFalse);
+    expect(find.text('Выйти из аккаунта?'), findsNothing);
+
+    // Повторное открытие для проверки подтверждения
+    await tester.tap(find.text('Show Dialog'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Выйти'));
+    await tester.pumpAndSettle();
+
+    expect(dialogResult, isTrue);
+    expect(find.text('Выйти из аккаунта?'), findsNothing);
+  });
+
+  testWidgets(
+      'AppAlerts.showConfirmDialog destructive styling renders correctly',
+      (WidgetTester tester) async {
+    bool? dialogResult;
+
+    await tester.pumpWidget(buildTestApp(
+      Builder(
+        builder: (context) {
+          return ElevatedButton(
+            onPressed: () async {
+              dialogResult = await AppAlerts.showConfirmDialog(
+                context,
+                title: 'Удалить аккаунт?',
+                message: 'Это действие необратимо.',
+                confirmText: 'Удалить',
+                isDestructive: true,
+                icon: Icons.delete_forever_rounded,
+              );
+            },
+            child: const Text('Show Destructive Dialog'),
+          );
+        },
+      ),
+    ));
+
+    await tester.tap(find.text('Show Destructive Dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Удалить аккаунт?'), findsOneWidget);
+    expect(find.text('Это действие необратимо.'), findsOneWidget);
+    expect(find.byIcon(Icons.delete_forever_rounded), findsOneWidget);
+
+    await tester.tap(find.text('Удалить'));
+    await tester.pumpAndSettle();
+
+    expect(dialogResult, isTrue);
+  });
+
+  testWidgets(
+      'AppAlerts.showConfirmDialog adaptively handles long button texts without overflow',
+      (WidgetTester tester) async {
+    bool? dialogResult;
+
+    await tester.pumpWidget(buildTestApp(
+      Builder(
+        builder: (context) {
+          return ElevatedButton(
+            onPressed: () async {
+              dialogResult = await AppAlerts.showConfirmDialog(
+                context,
+                title: 'Выход',
+                message: 'Вы уверены, что хотите выйти из аккаунта?',
+                confirmText: 'Выйти из аккаунта',
+                cancelText: 'Отмена',
+                icon: Icons.logout_rounded,
+              );
+            },
+            child: const Text('Show Long Text Dialog'),
+          );
+        },
+      ),
+    ));
+
+    await tester.tap(find.text('Show Long Text Dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Выйти из аккаунта'), findsOneWidget);
+    expect(find.text('Отмена'), findsOneWidget);
+
+    await tester.tap(find.text('Выйти из аккаунта'));
+    await tester.pumpAndSettle();
+
+    expect(dialogResult, isTrue);
+  });
 }

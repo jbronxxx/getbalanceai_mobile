@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
@@ -95,6 +96,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
     final l10n = context.l10n;
 
     return PopScope(
@@ -121,40 +123,64 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildStepIndicator(0, colorScheme),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               _buildStepIndicator(1, colorScheme),
             ],
           ),
           centerTitle: true,
         ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _buildLanguageStep(
-                      context,
-                      theme,
-                      colorScheme,
-                      textTheme,
-                      l10n,
-                    ),
-                    _buildCurrencyStep(
-                      context,
-                      theme,
-                      colorScheme,
-                      textTheme,
-                      l10n,
-                    ),
-                  ],
+        body: Stack(
+          children: [
+            // Мягкое фоновое рассеянное свечение для эффекта глубины стекла
+            Positioned(
+              top: -40,
+              left: 0,
+              right: 0,
+              height: 240,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.topCenter,
+                    radius: 0.9,
+                    colors: [
+                      const Color(0xFF0F766E)
+                          .withValues(alpha: isDark ? 0.20 : 0.12),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
-              _buildBottomButton(colorScheme, textTheme, l10n),
-            ],
-          ),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        _buildLanguageStep(
+                          context,
+                          theme,
+                          colorScheme,
+                          textTheme,
+                          l10n,
+                        ),
+                        _buildCurrencyStep(
+                          context,
+                          theme,
+                          colorScheme,
+                          textTheme,
+                          l10n,
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildBottomButton(colorScheme, textTheme, l10n),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -167,12 +193,21 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: isActive ? 28 : 12,
-      height: 4,
+      height: 5,
       decoration: BoxDecoration(
         color: (isActive || isDone)
-            ? colorScheme.primary
-            : colorScheme.outlineVariant.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(2),
+            ? const Color(0xFF0F766E)
+            : colorScheme.outlineVariant.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: (isActive || isDone)
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF0F766E).withValues(alpha: 0.45),
+                  blurRadius: 8,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
     );
   }
@@ -184,6 +219,8 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     TextTheme textTheme,
     dynamic l10n,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -194,7 +231,6 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Заголовок изолирован сверху, кнопки не прыгают при смене локали
                   SizedBox(
                     height: 64,
                     child: Align(
@@ -210,52 +246,96 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                     ),
                   ),
                   const Spacer(),
-                  // Кнопки языков в нижней зоне досягаемости пальца
                   ...AppLanguage.values.map((lang) {
                     final isSelected = _selectedLanguage == lang;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.primary.withValues(alpha: 0.08)
-                            : colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant
-                                  .withValues(alpha: 0.3),
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 4,
-                        ),
-                        title: Text(
-                          lang.displayName,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.w500,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
                             color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
+                                ? const Color(0xFF0F766E)
+                                    .withValues(alpha: isDark ? 0.35 : 0.20)
+                                : Colors.black
+                                    .withValues(alpha: isDark ? 0.16 : 0.03),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => _onLanguageSelected(lang),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF0F766E).withValues(
+                                          alpha: isDark ? 0.24 : 0.12)
+                                      : (isDark
+                                          ? const Color(0xFF141416)
+                                              .withValues(alpha: 0.70)
+                                          : Colors.white
+                                              .withValues(alpha: 0.82)),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF0F766E)
+                                            .withValues(alpha: 0.85)
+                                        : (isDark
+                                            ? Colors.white
+                                                .withValues(alpha: 0.12)
+                                            : Colors.white
+                                                .withValues(alpha: 0.75)),
+                                    width: isSelected ? 1.5 : 1.0,
+                                  ),
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 4,
+                                  ),
+                                  title: Text(
+                                    lang.displayName,
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? const Color(0xFF0F766E)
+                                          : colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  trailing: isSelected
+                                      ? Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: const Color(0xFF0F766E)
+                                                .withValues(alpha: 0.20),
+                                          ),
+                                          child: const Icon(
+                                            Icons.check_circle_rounded,
+                                            color: Color(0xFF0F766E),
+                                            size: 22,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.circle_outlined,
+                                          color: colorScheme.outline,
+                                          size: 22,
+                                        ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: colorScheme.primary,
-                                size: 24,
-                              )
-                            : Icon(
-                                Icons.circle_outlined,
-                                color: colorScheme.outline,
-                                size: 24,
-                              ),
-                        onTap: () => _onLanguageSelected(lang),
                       ),
                     );
                   }),
@@ -275,6 +355,8 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     TextTheme textTheme,
     dynamic l10n,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -285,7 +367,6 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Лаконичный заголовок "Основная валюта" без дескрипшена
                   SizedBox(
                     height: 48,
                     child: Align(
@@ -301,53 +382,97 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                     ),
                   ),
                   const Spacer(),
-                  // Список валют в нижней комфортной зоне
                   ...Currency.values.map((currency) {
                     final isSelected = _selectedCurrency == currency;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.primary.withValues(alpha: 0.08)
-                            : colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant
-                                  .withValues(alpha: 0.3),
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: ListTile(
-                        dense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 2,
-                        ),
-                        title: Text(
-                          currency.localizedName,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.w500,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
                             color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
+                                ? const Color(0xFF0F766E)
+                                    .withValues(alpha: isDark ? 0.35 : 0.20)
+                                : Colors.black
+                                    .withValues(alpha: isDark ? 0.16 : 0.03),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => _onCurrencySelected(currency),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF0F766E).withValues(
+                                          alpha: isDark ? 0.24 : 0.12)
+                                      : (isDark
+                                          ? const Color(0xFF141416)
+                                              .withValues(alpha: 0.70)
+                                          : Colors.white
+                                              .withValues(alpha: 0.82)),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF0F766E)
+                                            .withValues(alpha: 0.85)
+                                        : (isDark
+                                            ? Colors.white
+                                                .withValues(alpha: 0.12)
+                                            : Colors.white
+                                                .withValues(alpha: 0.75)),
+                                    width: isSelected ? 1.5 : 1.0,
+                                  ),
+                                ),
+                                child: ListTile(
+                                  dense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 2,
+                                  ),
+                                  title: Text(
+                                    currency.localizedName,
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? const Color(0xFF0F766E)
+                                          : colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  trailing: isSelected
+                                      ? Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: const Color(0xFF0F766E)
+                                                .withValues(alpha: 0.20),
+                                          ),
+                                          child: const Icon(
+                                            Icons.check_circle_rounded,
+                                            color: Color(0xFF0F766E),
+                                            size: 22,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.circle_outlined,
+                                          color: colorScheme.outline,
+                                          size: 22,
+                                        ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: colorScheme.primary,
-                                size: 24,
-                              )
-                            : Icon(
-                                Icons.circle_outlined,
-                                color: colorScheme.outline,
-                                size: 24,
-                              ),
-                        onTap: () => _onCurrencySelected(currency),
                       ),
                     );
                   }),
@@ -367,30 +492,62 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
   ) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: SizedBox(
+      child: Container(
         width: double.infinity,
-        height: 54,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+        height: 56,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F766E).withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
-          ),
-          onPressed: () {
-            if (_currentStep == 0) {
-              _goToStep(1);
-            } else {
-              _finishSetup();
-            }
-          },
-          child: Text(
-            l10n.continue_btn,
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onPrimary,
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () {
+                  if (_currentStep == 0) {
+                    _goToStep(1);
+                  } else {
+                    _finishSetup();
+                  }
+                },
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF0F766E),
+                        Color(0xFF115E59),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      l10n.continue_btn,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

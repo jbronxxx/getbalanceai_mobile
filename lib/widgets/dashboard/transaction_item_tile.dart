@@ -33,7 +33,7 @@ class TransactionItemTile extends StatelessWidget {
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       color: colorScheme.error,
-      child: Icon(Icons.delete, color: colorScheme.onError),
+      child: Icon(Icons.delete_rounded, color: colorScheme.onError),
     );
 
     final item = Dismissible(
@@ -42,7 +42,7 @@ class TransactionItemTile extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       background: background,
       child: Material(
-        color: theme.cardColor,
+        color: Colors.transparent,
         child: ListTile(
           onTap: onTap,
           contentPadding:

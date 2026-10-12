@@ -156,15 +156,29 @@ class _CategoryGroupWidgetState extends State<CategoryGroupWidget> {
     final categoryColor = CategoryGroupWidget.getCategoryColor(widget.category);
     final bgColor = categoryColor.withValues(alpha: 0.12);
 
+    final isDark = theme.brightness == Brightness.dark;
+    final glassBg = isDark
+        ? const Color(0xFF141416).withValues(alpha: 0.70)
+        : Colors.white.withValues(alpha: 0.85);
+    final glassBorder =
+        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: glassBg,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.1),
+          color: glassBorder,
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: ExpansionTile(
         key: Key(
@@ -185,6 +199,10 @@ class _CategoryGroupWidgetState extends State<CategoryGroupWidget> {
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: categoryColor.withValues(alpha: 0.25),
+              width: 0.8,
+            ),
           ),
           child: Icon(categoryIcon, color: categoryColor, size: 20),
         ),

@@ -3,7 +3,7 @@ import '../../cubits/profile/profile_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/language_manager.dart';
 
-/// Карточка статуса облачной синхронизации.
+/// Карточка статуса облачной синхронизации в стиле полированного жидкого стекла.
 class ProfileSyncCard extends StatelessWidget {
   final bool isAuthenticated;
   final SyncStatus status;
@@ -21,28 +21,29 @@ class ProfileSyncCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
     final l10n = context.l10n;
 
     String syncStatusText;
-    IconData syncIcon = Icons.cloud_done;
+    IconData syncIcon = Icons.cloud_done_rounded;
     Color syncColor = colorScheme.primary;
     final bool isSyncing = status == SyncStatus.syncing;
 
     if (status == SyncStatus.noInternet) {
       syncStatusText = l10n.sync_no_internet;
-      syncIcon = Icons.cloud_off;
+      syncIcon = Icons.cloud_off_rounded;
       syncColor = colorScheme.outline;
     } else if (status == SyncStatus.syncing) {
       syncStatusText = l10n.syncing;
-      syncIcon = Icons.sync;
+      syncIcon = Icons.sync_rounded;
       syncColor = AppTheme.warningOrange;
     } else if (status == SyncStatus.error) {
       syncStatusText = l10n.sync_error;
-      syncIcon = Icons.error_outline;
+      syncIcon = Icons.error_outline_rounded;
       syncColor = colorScheme.error;
     } else if (status == SyncStatus.success) {
       syncStatusText = l10n.sync_updated_just_now;
-      syncIcon = Icons.cloud_done;
+      syncIcon = Icons.cloud_done_rounded;
       syncColor = colorScheme.primary;
     } else {
       syncStatusText = l10n.sync_synced;
@@ -50,73 +51,91 @@ class ProfileSyncCard extends StatelessWidget {
 
     final activeColor = isAuthenticated ? syncColor : colorScheme.outline;
 
-    return Material(
-      color: theme.cardColor,
-      shape: RoundedRectangleBorder(
+    final glassBg = isDark
+        ? const Color(0xFF141416).withValues(alpha: 0.70)
+        : Colors.white.withValues(alpha: 0.85);
+    final glassBorder =
+        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: glassBg,
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: theme.dividerColor.withValues(alpha: 0.1),
+        border: Border.all(
+          color: glassBorder,
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isAuthenticated
-            ? (!isSyncing ? onSyncPressed : null)
-            : () => Navigator.of(context).pushNamed('/login'),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: activeColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: isAuthenticated && isSyncing
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: syncColor,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: isAuthenticated
+              ? (!isSyncing ? onSyncPressed : null)
+              : () => Navigator.of(context).pushNamed('/login'),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: activeColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: isAuthenticated && isSyncing
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: syncColor,
+                          ),
+                        )
+                      : Icon(
+                          isAuthenticated ? syncIcon : Icons.cloud_outlined,
+                          color: activeColor,
+                          size: 20,
                         ),
-                      )
-                    : Icon(
-                        isAuthenticated ? syncIcon : Icons.cloud_outlined,
-                        color: activeColor,
-                        size: 20,
-                      ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.sync_status,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isAuthenticated
-                          ? syncStatusText
-                          : l10n.cloud_backup_prompt,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-              if (isAuthenticated)
-                Icon(Icons.sync, color: colorScheme.primary, size: 20)
-              else
-                Icon(Icons.chevron_right, color: colorScheme.outline, size: 20),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.sync_status,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isAuthenticated
+                            ? syncStatusText
+                            : l10n.cloud_backup_prompt,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isAuthenticated)
+                  Icon(Icons.sync_rounded, color: colorScheme.primary, size: 20)
+                else
+                  Icon(Icons.chevron_right_rounded,
+                      color: colorScheme.outline, size: 20),
+              ],
+            ),
           ),
         ),
       ),

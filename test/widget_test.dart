@@ -1,7 +1,6 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,8 @@ import 'package:getbalanceai_mobile/main.dart';
 import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:getbalanceai_mobile/services/preferences_service.dart';
+
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 
 void main() {
   setUpAll(() async {
@@ -54,10 +55,10 @@ void main() {
     await tester.pumpWidget(const FinanceApp());
     await tester.pump();
 
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(LiquidGlassNavBar), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(NavigationBar),
+        of: find.byType(LiquidGlassNavBar),
         matching: find.text('Баланс'),
       ),
       findsOneWidget,

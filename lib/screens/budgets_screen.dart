@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
@@ -113,6 +114,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -126,7 +128,13 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+                .copyWith(statusBarColor: Colors.transparent)
+            : SystemUiOverlayStyle.dark
+                .copyWith(statusBarColor: Colors.transparent),
       ),
       body: CustomPullToRefresh(
         onRefresh: _handleRefresh,
@@ -201,12 +209,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   ),
                 ),
               ),
+            const SliverToBoxAdapter(child: SizedBox(height: 140)),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openAddBudgetSheet(),
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: (MediaQuery.of(context).padding.bottom > 0
+                  ? MediaQuery.of(context).padding.bottom + 6
+                  : 16.0) +
+              68.0,
+        ),
+        child: LiquidGlassFab(
+          onPressed: () => _openAddBudgetSheet(),
+        ),
       ),
     );
   }

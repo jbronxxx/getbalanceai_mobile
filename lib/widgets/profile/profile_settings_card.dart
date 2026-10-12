@@ -44,17 +44,31 @@ class _ProfileSettingsCardState extends State<ProfileSettingsCard> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
     final l10n = context.l10n;
 
-    return Material(
-      color: theme.cardColor,
-      shape: RoundedRectangleBorder(
+    final glassBg = isDark
+        ? const Color(0xFF141416).withValues(alpha: 0.70)
+        : Colors.white.withValues(alpha: 0.85);
+    final glassBorder =
+        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: glassBg,
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: theme.dividerColor.withValues(alpha: 0.1),
+        border: Border.all(
+          color: glassBorder,
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           SwitchListTile(

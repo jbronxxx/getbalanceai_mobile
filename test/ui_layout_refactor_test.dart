@@ -330,6 +330,44 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(find.byType(SingleChildScrollView), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+        'AddTransactionSheet amount field has no dropdown arrow and accepts plain numbers',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          const AddTransactionSheet(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Amount field should not have arrow dropdown suffix icon
+      expect(find.byIcon(Icons.arrow_drop_down_rounded), findsNothing);
+      expect(find.byIcon(Icons.arrow_drop_down), findsNothing);
+
+      // Amount field accepts numbers and formats with thousand separator
+      final amountFieldFinder = find.byType(TextField).first;
+      await tester.enterText(amountFieldFinder, '12500.50');
+      await tester.pumpAndSettle();
+      expect(find.text('12 500,50'), findsOneWidget);
+    });
+
+    testWidgets(
+        'AddTransactionSheet amount field has clickable currency pill suffix that opens picker',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          const AddTransactionSheet(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(CurrencyFormatter.currentCurrency.code), findsOneWidget);
+      await tester.tap(find.text(CurrencyFormatter.currentCurrency.code));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CurrencyPickerSheet), findsOneWidget);
+    });
   });
 
   group('BalanceCard Tests', () {
@@ -350,6 +388,100 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(find.text(LanguageManager.l10n.income_title), findsOneWidget);
       expect(find.text(LanguageManager.l10n.expense_title), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('LiquidGlassNavBar Tests', () {
+    testWidgets('Renders all destinations and triggers tap callback',
+        (tester) async {
+      int selectedIdx = 0;
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          LiquidGlassNavBar(
+            selectedIndex: selectedIdx,
+            onDestinationSelected: (idx) => selectedIdx = idx,
+            destinations: const [
+              LiquidGlassNavItem(
+                icon: Icons.wallet_rounded,
+                label: 'Баланс',
+              ),
+              LiquidGlassNavItem(
+                icon: Icons.donut_small_rounded,
+                label: 'Лимиты',
+              ),
+              LiquidGlassNavItem(
+                icon: Icons.auto_awesome_rounded,
+                label: 'Инсайты',
+              ),
+              LiquidGlassNavItem(
+                icon: Icons.person_rounded,
+                label: 'Профиль',
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Баланс'), findsOneWidget);
+      expect(find.text('Лимиты'), findsOneWidget);
+      expect(find.text('Инсайты'), findsOneWidget);
+      expect(find.text('Профиль'), findsOneWidget);
+
+      await tester.tap(find.text('Лимиты'));
+      await tester.pumpAndSettle();
+      expect(selectedIdx, 1);
+    });
+
+    testWidgets('LiquidGlassNavBar renders destinations and handles selection',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          LiquidGlassNavBar(
+            selectedIndex: 1,
+            onDestinationSelected: (_) {},
+            destinations: const [
+              LiquidGlassNavItem(
+                icon: Icons.wallet_rounded,
+                label: 'Баланс',
+              ),
+              LiquidGlassNavItem(
+                icon: Icons.donut_small_rounded,
+                label: 'Лимиты',
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.wallet_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.donut_small_rounded), findsOneWidget);
+    });
+  });
+
+  group('CurrencyInputFormatter Tests', () {
+    test('Formats thousand separators as 1 000 000 correctly', () {
+      final formatter = CurrencyInputFormatter();
+
+      final res1 = formatter.formatEditUpdate(
+        TextEditingValue.empty,
+        const TextEditingValue(
+          text: '1000000',
+          selection: TextSelection.collapsed(offset: 7),
+        ),
+      );
+      expect(res1.text, '1 000 000');
+
+      final res2 = formatter.formatEditUpdate(
+        const TextEditingValue(text: '1 000 000'),
+        const TextEditingValue(
+          text: '10000000',
+          selection: TextSelection.collapsed(offset: 8),
+        ),
+      );
+      expect(res2.text, '10 000 000');
     });
   });
 }
