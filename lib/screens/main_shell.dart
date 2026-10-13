@@ -51,9 +51,12 @@ class _MainShellState extends State<MainShell> {
         }
 
         final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final shellBg =
+            isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
 
         return Scaffold(
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: shellBg,
           body: Stack(
             alignment: Alignment.bottomCenter,
             children: [

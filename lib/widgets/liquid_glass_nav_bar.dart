@@ -70,13 +70,20 @@ class LiquidGlassNavBar extends StatelessWidget {
         !disableAnimations && glassTheme.blurSigma > 0 && isBlurSupported;
     final effectiveBottomMargin = bottomMargin(context);
 
-    // При отключенном размытии (Android < API 31 или отключенных анимациях)
-    // используется непрозрачная заливка, чтобы скроллящийся контент не создавал визуальный шум.
+    // С такой же полупрозрачностью и блюром Liquid Glass, как и хэдер
     final navColors = shouldUseBlur
-        ? [glassTheme.surface, glassTheme.surfaceEnd]
+        ? (isDark
+            ? [
+                glassTheme.surface.withValues(alpha: 0.35),
+                glassTheme.surfaceEnd.withValues(alpha: 0.45),
+              ]
+            : [
+                glassTheme.surface.withValues(alpha: 0.45),
+                glassTheme.surfaceEnd.withValues(alpha: 0.55),
+              ])
         : (isDark
-            ? [const Color(0xFF18181C), const Color(0xFF121216)]
-            : [const Color(0xFFFFFFFF), const Color(0xFFF1F5F9)]);
+            ? [const Color(0xDD18181C), const Color(0xDD121216)]
+            : [const Color(0xDDFFFFFF), const Color(0xDDF1F5F9)]);
 
     Widget navContent = Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),

@@ -182,27 +182,21 @@ class _AuthScreenState extends State<AuthScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
-      ),
       body: Stack(
         children: [
-          // Мягкое фоновое рассеянное свечение для эффекта глубины полированного стекла
+          // Мягкое фоновое рассеянное свечение от верхней кромки экрана
           Positioned(
-            top: -50,
+            top: -60,
             left: 0,
             right: 0,
-            height: 260,
+            height: 280,
             child: Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
                   radius: 0.9,
                   colors: [
-                    const Color(0xFF0F766E)
-                        .withValues(alpha: isDark ? 0.20 : 0.12),
+                    colorScheme.primary.withValues(alpha: isDark ? 0.20 : 0.12),
                     Colors.transparent,
                   ],
                 ),
@@ -222,7 +216,25 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 32),
+                            if (Navigator.of(context).canPop())
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 4.0,
+                                    bottom: 4.0,
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.arrow_back),
+                                    color: colorScheme.onSurface,
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                  ),
+                                ),
+                              )
+                            else
+                              const SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             // Иконка в виде полированного стеклянного медальона
                             Container(
                               width: 88,

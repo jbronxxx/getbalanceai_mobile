@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/auth/auth_cubit.dart';
 import '../cubits/profile/profile_cubit.dart';
@@ -243,124 +242,123 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         final currentUserEmail =
             authState is Authenticated ? authState.email : widget.userEmail;
 
+        final scaffoldBg =
+            isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+
         return Scaffold(
-          backgroundColor: colorScheme.surface,
-          appBar: AppBar(
+          backgroundColor: scaffoldBg,
+          extendBodyBehindAppBar: true,
+          appBar: LiquidGlassAppBar(
             title: Text(
               context.l10n.profile,
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
+                color: colorScheme.onSurface,
               ),
             ),
             centerTitle: true,
-            backgroundColor: Colors.transparent,
-            scrolledUnderElevation: 0,
-            elevation: 0,
-            systemOverlayStyle: isDark
-                ? SystemUiOverlayStyle.light
-                    .copyWith(statusBarColor: Colors.transparent)
-                : SystemUiOverlayStyle.dark
-                    .copyWith(statusBarColor: Colors.transparent),
           ),
-          body: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                top: 16.0,
-                bottom: LiquidGlassNavBar.bottomContentPadding(context),
-              ),
-              child: Column(
-                children: [
-                  ProfileHeader(
-                    userName: currentUserName,
-                    userEmail: currentUserEmail,
-                    avatarUrl: currentAvatarUrl,
-                    isAuthenticated: isAuthenticated,
-                  ),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader(context.l10n.cloud),
-                  ProfileSyncCard(
-                    isAuthenticated: isAuthenticated,
-                    status: state.syncStatus,
-                    onSyncPressed: context.read<ProfileCubit>().startSync,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader(context.l10n.interface),
-                  ProfileSettingsCard(
-                    onLanguageChanged: () {
-                      if (mounted) setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: isAuthenticated
-                        ? TextButton.icon(
-                            style: TextButton.styleFrom(
-                              foregroundColor: colorScheme.error,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+          body: ScreenBodyCard(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20.0,
+                  right: 20.0,
+                  top: LiquidGlassAppBar.topContentPadding(context) + 24.0,
+                  bottom: LiquidGlassNavBar.bottomContentPadding(context),
+                ),
+                child: Column(
+                  children: [
+                    ProfileHeader(
+                      userName: currentUserName,
+                      userEmail: currentUserEmail,
+                      avatarUrl: currentAvatarUrl,
+                      isAuthenticated: isAuthenticated,
+                    ),
+                    const SizedBox(height: 32),
+                    _buildSectionHeader(context.l10n.cloud),
+                    ProfileSyncCard(
+                      isAuthenticated: isAuthenticated,
+                      status: state.syncStatus,
+                      onSyncPressed: context.read<ProfileCubit>().startSync,
+                    ),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader(context.l10n.interface),
+                    ProfileSettingsCard(
+                      onLanguageChanged: () {
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: isAuthenticated
+                          ? TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: colorScheme.error,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: _handleLogout,
+                              icon: const Icon(Icons.logout),
+                              label: Text(
+                                context.l10n.logout,
+                                style: textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.error,
+                                ),
+                              ),
+                            )
+                          : FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: () =>
+                                  Navigator.of(context).pushNamed('/login'),
+                              icon: const Icon(Icons.login),
+                              label: Text(
+                                context.l10n.login_or_register,
+                                style: textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onPrimary,
+                                ),
                               ),
                             ),
-                            onPressed: _handleLogout,
-                            icon: const Icon(Icons.logout),
-                            label: Text(
-                              context.l10n.logout,
-                              style: textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.error,
-                              ),
-                            ),
-                          )
-                        : FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            onPressed: () =>
-                                Navigator.of(context).pushNamed('/login'),
-                            icon: const Icon(Icons.login),
-                            label: Text(
-                              context.l10n.login_or_register,
-                              style: textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onPrimary,
-                              ),
+                    ),
+                    if (isAuthenticated) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: colorScheme.outline,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 8,
                             ),
                           ),
-                  ),
-                  if (isAuthenticated) ...[
-                    const SizedBox(height: 8),
-                    Center(
-                      child: TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: colorScheme.outline,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 8,
-                          ),
-                        ),
-                        onPressed: _handleDeleteAccount,
-                        child: Text(
-                          context.l10n.delete_account_btn,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.outline,
-                            decoration: TextDecoration.underline,
+                          onPressed: _handleDeleteAccount,
+                          child: Text(
+                            context.l10n.delete_account_btn,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.outline,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
+                    const SizedBox(height: 8),
+                    ProfileAppVersion(appVersion: _appVersion),
+                    const SizedBox(height: 16),
                   ],
-                  const SizedBox(height: 8),
-                  ProfileAppVersion(appVersion: _appVersion),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
             ),
           ),
