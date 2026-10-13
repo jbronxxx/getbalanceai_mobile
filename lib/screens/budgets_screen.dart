@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -104,7 +105,13 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   /// Удаляет лимит бюджета локально и на сервере.
   void _deleteBudget(Budget budget) {
-    ApiService.instance.deleteBudgetEverywhere(budget);
+    unawaited(
+      ApiService.instance.deleteBudgetEverywhere(budget).catchError(
+        (Object e, StackTrace s) {
+          AppLogger.w('[Budgets] Delete budget everywhere failed', e, s);
+        },
+      ),
+    );
     _loadBudgets();
     AppAlerts.info(context, context.l10n.budget_deleted);
   }
