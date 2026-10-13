@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 
-/// Кастомный виджет Pull-to-Refresh с эффектом «протягивания» всего контента
-/// и отображением подложки под ним.
+/// Кастомный виджет Pull-to-Refresh в стиле Liquid Glass / Material 3.
+///
+/// Основной контент (карточки и списки) зафиксирован на месте и не съезжает вниз,
+/// а индикатор обновления отображается в виде элегантной плавающей стеклянной капсулы
+/// непосредственно под хэдером экрана.
 class CustomPullToRefresh extends StatefulWidget {
   final Widget child;
   final Future<void> Function() onRefresh;
@@ -14,6 +17,7 @@ class CustomPullToRefresh extends StatefulWidget {
   final Color backgroundColor;
   final Color foregroundColor;
   final bool releaseImmediately;
+  final double? topPadding;
 
   const CustomPullToRefresh({
     super.key,
@@ -25,6 +29,7 @@ class CustomPullToRefresh extends StatefulWidget {
     this.backgroundColor = const Color(0xFFF1F5F9),
     this.foregroundColor = const Color(0xFF0F766E),
     this.releaseImmediately = false,
+    this.topPadding,
   });
 
   @override
@@ -34,6 +39,7 @@ class CustomPullToRefresh extends StatefulWidget {
 class _CustomPullToRefreshState extends State<CustomPullToRefresh>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Animation<double>? _animTween;
   double _dragOffset = 0.0;
   bool _isRefreshing = false;
   bool _canRefresh = false;
@@ -48,9 +54,15 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(
-          milliseconds: 600), // Плавная кинематографическая анимация возврата
+      duration: const Duration(milliseconds: 350),
     );
+    _controller.addListener(() {
+      if (_animTween != null) {
+        setState(() {
+          _dragOffset = _animTween!.value;
+        });
+      }
+    });
   }
 
   @override
@@ -93,6 +105,13 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
               .clamp(0.0, _maxDragOffset);
           if (_dragOffset <= 0) _canRefresh = false;
         });
+      }
+    } else if (notification is ScrollEndNotification) {
+      // Гарантированно отлавливает завершение жеста на всех платформах
+      if (_canRefresh) {
+        _startRefresh();
+      } else if (_dragOffset > 0) {
+        _animateTo(0.0);
       }
     } else if (notification is UserScrollNotification) {
       // Срабатывает ровно в момент, когда пользователь полностью убрал палец с экрана (состояние idle)
@@ -147,106 +166,131 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
 
   void _animateTo(double target) {
     final double start = _dragOffset;
-    _controller.reset();
+    if ((start - target).abs() < 0.1) {
+      setState(() => _dragOffset = target);
+      return;
+    }
 
-    // Используем более плавную и вязкую кривую вместо прыгучего elasticOut
-    final curve = target == 0.0 ? Curves.easeOutBack : Curves.easeOutCubic;
-
-    final animation = Tween<double>(begin: start, end: target).animate(
-      CurvedAnimation(parent: _controller, curve: curve),
+    _animTween = Tween<double>(begin: start, end: target).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
-    animation.addListener(() {
-      setState(() {
-        _dragOffset = animation.value;
-      });
-    });
-    _controller.forward();
+    _controller.forward(from: 0.0);
   }
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTopPadding = (widget.topPadding ?? 20.0) + 8.0;
+    final bool showIndicator = _dragOffset > 0 || _isRefreshing;
+    final double progress = (_dragOffset / _refreshThreshold).clamp(0.0, 1.0);
+    final double indicatorTop = effectiveTopPadding + (progress * 18.0);
+
     return Stack(
       children: [
-        // Нижний слой (Подложка)
-        Container(
-          color: widget.backgroundColor == const Color(0xFFF1F5F9)
-              ? Theme.of(context).colorScheme.surface
-              : widget.backgroundColor,
-          width: double.infinity,
-          height: double.infinity,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: _maxDragOffset,
-              padding: const EdgeInsets.only(top: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedRotation(
-                    duration: const Duration(milliseconds: 200),
-                    turns: _canRefresh ? 0.5 : 0.0,
-                    child: Icon(
-                      _isRefreshing ? Icons.sync : Icons.arrow_downward,
-                      color: widget.foregroundColor.withValues(alpha: 0.7),
-                      size: 28,
-                    ),
+        // Основной контент экрана: остается зафиксированным на месте без сдвига вниз
+        NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: widget.child,
+        ),
+        // Плавающая стеклянная капсула обновления (Liquid Glass / Material 3 Pill)
+        if (showIndicator)
+          Positioned(
+            top: indicatorTop,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Center(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity:
+                      _isRefreshing ? 1.0 : (progress * 1.5).clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: 0.85 + (progress * 0.15),
+                    child: _buildFloatingPill(context),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isRefreshing
-                        ? (widget.refreshingText ??
-                            context.l10n.refreshing_data)
-                        : (_canRefresh
-                            ? (widget.releaseText ??
-                                context.l10n.release_to_refresh)
-                            : (widget.pullText ??
-                                context.l10n.pull_to_refresh)),
-                    style: TextStyle(
-                      color: widget.foregroundColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-        // Верхний слой (Контент), который сдвигается
-        Transform.translate(
-          offset: Offset(0, _dragOffset),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                if (_dragOffset > 0)
-                  BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .shadow
-                        .withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                    offset: const Offset(0, -2),
-                  ),
-              ],
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular((_dragOffset / 5).clamp(0.0, 32.0)),
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular((_dragOffset / 5).clamp(0.0, 32.0)),
-              ),
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _onScrollNotification,
-                child: widget.child,
-              ),
-            ),
-          ),
-        ),
       ],
+    );
+  }
+
+  Widget _buildFloatingPill(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    final pillBg = isDark
+        ? const Color(0xFF1E293B).withValues(alpha: 0.92)
+        : Colors.white.withValues(alpha: 0.94);
+
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.16)
+        : const Color(0xFF0F766E).withValues(alpha: 0.22);
+
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.35)
+        : Colors.black.withValues(alpha: 0.08);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: pillBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isRefreshing)
+            SizedBox(
+              width: 15,
+              height: 15,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  widget.foregroundColor,
+                ),
+              ),
+            )
+          else
+            AnimatedRotation(
+              duration: const Duration(milliseconds: 200),
+              turns: _canRefresh ? 0.5 : 0.0,
+              child: Icon(
+                Icons.arrow_downward_rounded,
+                color: widget.foregroundColor,
+                size: 16,
+              ),
+            ),
+          const SizedBox(width: 8),
+          Text(
+            _isRefreshing
+                ? (widget.refreshingText ?? context.l10n.refreshing_data)
+                : (_canRefresh
+                    ? (widget.releaseText ?? context.l10n.release_to_refresh)
+                    : (widget.pullText ?? context.l10n.pull_to_refresh)),
+            style: textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -279,6 +279,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: ScreenBodyCard(
         child: CustomPullToRefresh(
+          topPadding: LiquidGlassAppBar.topContentPadding(context),
           onRefresh: _handleRefresh,
           child: CustomScrollView(
             key: const PageStorageKey('dashboard_custom_scroll_view'),
