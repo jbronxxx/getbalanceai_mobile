@@ -8,6 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
 
 /// Экран входа/регистрации через соцсети (Google, Apple).
@@ -36,8 +37,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (provider == 'google') {
+        final nonce = const Uuid().v4();
         await GoogleSignIn.instance.initialize(
           serverClientId: ApiConfig.googleServerClientId,
+          nonce: nonce,
         );
         final GoogleSignInAccount googleUser =
             await GoogleSignIn.instance.authenticate();

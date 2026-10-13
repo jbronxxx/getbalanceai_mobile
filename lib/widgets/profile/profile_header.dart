@@ -7,12 +7,14 @@ import '../user_avatar.dart';
 class ProfileHeader extends StatelessWidget {
   final String userName;
   final String userEmail;
+  final String? avatarUrl;
   final bool isAuthenticated;
 
   const ProfileHeader({
     super.key,
     required this.userName,
     required this.userEmail,
+    this.avatarUrl,
     required this.isAuthenticated,
   });
 
@@ -21,7 +23,7 @@ class ProfileHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final avatarUrl = ApiService.instance.avatarUrl;
+    final effectiveAvatarUrl = avatarUrl ?? ApiService.instance.avatarUrl;
 
     final l10n = context.l10n;
     final initialLetter = isAuthenticated && userName.isNotEmpty
@@ -52,7 +54,7 @@ class ProfileHeader extends StatelessWidget {
           ),
           child: UserAvatar(
             radius: 48,
-            avatarUrl: avatarUrl,
+            avatarUrl: effectiveAvatarUrl,
             initials:
                 isAuthenticated && userName.isNotEmpty ? initialLetter : null,
             defaultIcon: Icons.person_outline_rounded,

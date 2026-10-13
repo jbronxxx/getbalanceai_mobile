@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../config/api_config.dart';
@@ -113,11 +114,17 @@ class AuthApiService {
   }
 
   Future<void> setAvatarUrl(String? avatarUrl) async {
+    final oldUrl = _avatarUrl;
     _avatarUrl = avatarUrl;
     if (avatarUrl != null) {
       await _storage.write(key: 'auth_avatar_url', value: avatarUrl);
     } else {
       await _storage.delete(key: 'auth_avatar_url');
+    }
+    if (oldUrl != null && oldUrl != avatarUrl) {
+      try {
+        PaintingBinding.instance.imageCache.evict(NetworkImage(oldUrl));
+      } catch (_) {}
     }
     if (isAuthenticated) {
       _authStream.add(true);
