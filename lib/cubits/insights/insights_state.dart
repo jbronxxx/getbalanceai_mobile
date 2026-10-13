@@ -1,29 +1,65 @@
 part of 'insights_cubit.dart';
 
 @immutable
-abstract class InsightsState {}
+abstract class InsightsState {
+  final int selectedMonth;
+  final int selectedYear;
 
-class InsightsInitial extends InsightsState {}
+  const InsightsState({
+    required this.selectedMonth,
+    required this.selectedYear,
+  });
+}
 
-class InsightsLoading extends InsightsState {}
+class InsightsInitial extends InsightsState {
+  const InsightsInitial({
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
+}
+
+class InsightsLoading extends InsightsState {
+  const InsightsLoading({
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
+}
 
 class InsightsLoaded extends InsightsState {
   final List<String> insights;
   final DateTime? generatedAt;
 
-  InsightsLoaded({required this.insights, this.generatedAt});
+  const InsightsLoaded({
+    required this.insights,
+    this.generatedAt,
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
 }
 
 class InsightsError extends InsightsState {
   final String message;
 
-  InsightsError(this.message);
+  const InsightsError(
+    this.message, {
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
 }
 
-class InsightsNetworkError extends InsightsState {}
+class InsightsNetworkError extends InsightsState {
+  const InsightsNetworkError({
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
+}
 
 class InsightsUnauthenticated extends InsightsState {
   final String hint;
 
-  InsightsUnauthenticated(this.hint);
+  const InsightsUnauthenticated(
+    this.hint, {
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
 }

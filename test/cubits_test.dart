@@ -91,6 +91,8 @@ void main() {
         when(() => api.getInsights(
               currency: any(named: 'currency'),
               locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
               cancelToken: any(named: 'cancelToken'),
             )).thenAnswer((_) async => {
               'insights': ['Tip A', 'Tip B'],
@@ -116,6 +118,8 @@ void main() {
         when(() => api.getInsights(
               currency: any(named: 'currency'),
               locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
               cancelToken: any(named: 'cancelToken'),
             )).thenAnswer((_) async => {'insights': <String>[]});
       },
@@ -135,6 +139,8 @@ void main() {
         when(() => api.getInsights(
               currency: any(named: 'currency'),
               locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
               cancelToken: any(named: 'cancelToken'),
             )).thenThrow(DioException(
           requestOptions: RequestOptions(path: '/insights/'),
@@ -156,6 +162,8 @@ void main() {
         when(() => api.getInsights(
               currency: any(named: 'currency'),
               locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
               cancelToken: any(named: 'cancelToken'),
             )).thenThrow(DioException(
           requestOptions: RequestOptions(path: '/insights/'),
@@ -174,6 +182,8 @@ void main() {
       when(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((invocation) {
         captured = invocation.namedArguments[#cancelToken] as CancelToken;
@@ -254,6 +264,8 @@ void main() {
       when(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Synced tip'],
@@ -267,6 +279,8 @@ void main() {
       verify(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
       expect(cubit.state, isA<InsightsLoaded>());
@@ -299,6 +313,8 @@ void main() {
       when(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Fallback tip'],
@@ -312,6 +328,8 @@ void main() {
       verify(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
       expect(cubit.state, isA<InsightsLoaded>());
@@ -330,6 +348,8 @@ void main() {
       when(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Tip without sync'],
@@ -343,9 +363,76 @@ void main() {
       verify(() => api.getInsights(
             currency: any(named: 'currency'),
             locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
       expect(cubit.state, isA<InsightsLoaded>());
+
+      await cubit.close();
+    });
+
+    blocTest<InsightsCubit, InsightsState>(
+      'setPeriod updates selectedMonth and selectedYear and calls getInsights with new period',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(true);
+        when(() => api.getInsights(
+              currency: any(named: 'currency'),
+              locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
+              cancelToken: any(named: 'cancelToken'),
+            )).thenAnswer((_) async => {
+              'insights': ['May 2025 insight'],
+              'generated_at': '2025-05-01T10:00:00Z',
+            });
+      },
+      build: build,
+      act: (cubit) => cubit.setPeriod(month: 5, year: 2025),
+      expect: () => [
+        isA<InsightsLoading>()
+            .having((s) => s.selectedMonth, 'selectedMonth', 5)
+            .having((s) => s.selectedYear, 'selectedYear', 2025),
+        isA<InsightsLoaded>()
+            .having((s) => s.selectedMonth, 'selectedMonth', 5)
+            .having((s) => s.selectedYear, 'selectedYear', 2025)
+            .having((s) => s.insights, 'insights', ['May 2025 insight']),
+      ],
+      verify: (_) {
+        verify(() => api.getInsights(
+              currency: any(named: 'currency'),
+              locale: any(named: 'locale'),
+              month: 5,
+              year: 2025,
+              cancelToken: any(named: 'cancelToken'),
+            )).called(1);
+      },
+    );
+
+    test('setPeriod does not reload if period has not changed', () async {
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((_) async => {
+            'insights': ['Initial']
+          });
+
+      final cubit = build();
+      await cubit.loadInsights();
+      clearInteractions(api);
+
+      cubit.setPeriod(month: cubit.selectedMonth, year: cubit.selectedYear);
+      verifyNever(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
+            cancelToken: any(named: 'cancelToken'),
+          ));
 
       await cubit.close();
     });

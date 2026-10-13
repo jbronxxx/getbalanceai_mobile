@@ -311,6 +311,8 @@ class ApiService {
   Future<Map<String, dynamic>> getInsights({
     String? currency,
     String? locale,
+    int? month,
+    int? year,
     CancelToken? cancelToken,
   }) async {
     try {
@@ -319,6 +321,8 @@ class ApiService {
         queryParameters: {
           if (currency != null) 'currency': currency,
           if (locale != null) 'locale': locale,
+          if (month != null) 'month': month,
+          if (year != null) 'year': year,
         },
         options: Options(
           receiveTimeout: const Duration(seconds: 30),

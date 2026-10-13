@@ -17,13 +17,28 @@ class InsightsCubit extends Cubit<InsightsState> {
   StreamSubscription<bool>? _authSub;
   bool _hasLoadedOnce = false;
 
+  int _selectedMonth;
+  int _selectedYear;
+
   /// Флаг, указывающий, была ли уже инициирована хотя бы одна загрузка инсайтов.
   bool get hasLoadedOnce => _hasLoadedOnce;
 
-  InsightsCubit({ApiService? api, Connectivity? connectivity})
-      : _api = api ?? ApiService.instance,
+  int get selectedMonth => _selectedMonth;
+  int get selectedYear => _selectedYear;
+
+  InsightsCubit({
+    ApiService? api,
+    Connectivity? connectivity,
+    int? initialMonth,
+    int? initialYear,
+  })  : _api = api ?? ApiService.instance,
         _connectivity = connectivity ?? Connectivity(),
-        super(InsightsInitial()) {
+        _selectedMonth = initialMonth ?? DateTime.now().month,
+        _selectedYear = initialYear ?? DateTime.now().year,
+        super(InsightsInitial(
+          selectedMonth: initialMonth ?? DateTime.now().month,
+          selectedYear: initialYear ?? DateTime.now().year,
+        )) {
     CurrencyFormatter.currencyNotifier
         .addListener(_onCurrencyOrLanguageChanged);
     LanguageManager.languageNotifier.addListener(_onCurrencyOrLanguageChanged);
@@ -35,7 +50,11 @@ class InsightsCubit extends Cubit<InsightsState> {
         }
       } else {
         _cancelToken?.cancel();
-        emit(InsightsUnauthenticated(LanguageManager.l10n.insight_login_hint));
+        emit(InsightsUnauthenticated(
+          LanguageManager.l10n.insight_login_hint,
+          selectedMonth: _selectedMonth,
+          selectedYear: _selectedYear,
+        ));
       }
     });
   }
@@ -45,19 +64,36 @@ class InsightsCubit extends Cubit<InsightsState> {
     loadInsights();
   }
 
+  /// Устанавливает период и перезапускает загрузку аналитики.
+  void setPeriod({int? month, int? year}) {
+    final newMonth = month ?? _selectedMonth;
+    final newYear = year ?? _selectedYear;
+    if (newMonth == _selectedMonth && newYear == _selectedYear) return;
+    _selectedMonth = newMonth;
+    _selectedYear = newYear;
+    loadInsights();
+  }
+
   /// Запрашивает инсайты, отменяя предыдущий незавершённый запрос.
   Future<void> loadInsights() async {
     _hasLoadedOnce = true;
 
     if (!_api.isAuthenticated) {
-      emit(InsightsUnauthenticated(LanguageManager.l10n.insight_login_hint));
+      emit(InsightsUnauthenticated(
+        LanguageManager.l10n.insight_login_hint,
+        selectedMonth: _selectedMonth,
+        selectedYear: _selectedYear,
+      ));
       return;
     }
 
     final connectivityResult = await _connectivity.checkConnectivity();
     if (isClosed) return;
     if (connectivityResult.contains(ConnectivityResult.none)) {
-      emit(InsightsNetworkError());
+      emit(InsightsNetworkError(
+        selectedMonth: _selectedMonth,
+        selectedYear: _selectedYear,
+      ));
       return;
     }
 
@@ -65,7 +101,10 @@ class InsightsCubit extends Cubit<InsightsState> {
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
 
-    emit(InsightsLoading());
+    emit(InsightsLoading(
+      selectedMonth: _selectedMonth,
+      selectedYear: _selectedYear,
+    ));
 
     try {
       if (LocalDbService.isInitialized &&
@@ -82,10 +121,13 @@ class InsightsCubit extends Cubit<InsightsState> {
 
       if (isClosed || cancelToken.isCancelled) return;
 
-      AppLogger.d('[Insights] Loading insights');
+      AppLogger.d(
+          '[Insights] Loading insights for $_selectedMonth/$_selectedYear');
       final data = await _api.getInsights(
         currency: CurrencyFormatter.currentCurrency.code,
         locale: LanguageManager.code,
+        month: _selectedMonth,
+        year: _selectedYear,
         cancelToken: cancelToken,
       );
       if (isClosed || cancelToken.isCancelled) return;
@@ -96,13 +138,19 @@ class InsightsCubit extends Cubit<InsightsState> {
             ? parsed.insights
             : [LanguageManager.l10n.insight_no_data],
         generatedAt: parsed.generatedAt,
+        selectedMonth: _selectedMonth,
+        selectedYear: _selectedYear,
       ));
     } catch (e) {
       if (isClosed || (e is DioException && CancelToken.isCancel(e))) {
         return;
       }
       AppLogger.e('[Insights] Failed to load insights', e);
-      emit(InsightsError(LanguageManager.l10n.insights_assistants_busy));
+      emit(InsightsError(
+        LanguageManager.l10n.insights_assistants_busy,
+        selectedMonth: _selectedMonth,
+        selectedYear: _selectedYear,
+      ));
     }
   }
 

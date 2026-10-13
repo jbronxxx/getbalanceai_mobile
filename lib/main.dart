@@ -1,6 +1,7 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -44,7 +45,14 @@ void main() async {
     try {
       await dotenv.load(fileName: '.env');
     } catch (e) {
-      AppLogger.w('[Config] .env not loaded: $e');
+      try {
+        final envFile = File('.env');
+        if (envFile.existsSync()) {
+          dotenv.testLoad(fileInput: envFile.readAsStringSync());
+        }
+      } catch (_) {
+        AppLogger.w('[Config] .env not loaded: $e');
+      }
     }
   }
 
