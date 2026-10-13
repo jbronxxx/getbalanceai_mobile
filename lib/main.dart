@@ -11,6 +11,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
+import 'screens/welcome_setup_screen.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -57,6 +58,7 @@ void main() async {
   unawaited(CurrencyExchangeService.instance.fetchLatestRates());
   await LanguageManager.loadSavedLanguage();
   LanguageManager.initFallback();
+  await PreferencesService.instance.loadSavedOnboardingStatus();
   await PreferencesService.instance.loadSavedThemeMode();
 
   // На планшетах и iPad поддерживаем все ориентации согласно требованиям App Store,
@@ -116,7 +118,19 @@ class FinanceApp extends StatelessWidget {
                   GlobalCupertinoLocalizations.delegate,
                 ],
                 routes: {
-                  '/': (context) => const MainShell(),
+                  '/': (context) =>
+                      PreferencesService.instance.isOnboardingCompletedSync
+                          ? const MainShell()
+                          : WelcomeSetupScreen(
+                              onFinish: () {
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (_) => const MainShell(),
+                                  ),
+                                );
+                              },
+                            ),
+                  '/main': (context) => const MainShell(),
                   '/login': (context) => const AuthScreen(),
                   '/service-unavailable': (context) =>
                       const ServiceUnavailableScreen(),

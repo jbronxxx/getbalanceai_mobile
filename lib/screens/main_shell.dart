@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/auth/auth_cubit.dart';
-import '../services/services.dart';
 import '../utils/utils.dart';
 import 'budgets_screen.dart';
 import 'dashboard_screen.dart';
@@ -9,7 +8,6 @@ import 'insights_screen.dart';
 import 'profile_screen.dart';
 
 import '../widgets/widgets.dart';
-import 'welcome_setup_screen.dart';
 
 /// Каркас приложения с нижней навигацией в виде плавающего островка жидкого стекла.
 class MainShell extends StatefulWidget {
@@ -21,22 +19,6 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkFirstRunLanguageSelection();
-    });
-  }
-
-  Future<void> _checkFirstRunLanguageSelection() async {
-    final isCompleted =
-        await PreferencesService.instance.isOnboardingCompleted();
-    if (!isCompleted && mounted) {
-      WelcomeSetupScreen.show(context);
-    }
-  }
 
   void _openProfileTab() {
     setState(() {

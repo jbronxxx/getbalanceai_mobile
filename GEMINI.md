@@ -14,6 +14,7 @@ Production-grade финансовое приложение iOS/Android. Исто
 Screens/Widgets (UI M3, без логики) → Cubits (состояние, без `BuildContext`) → Services (Dio, ObjectBox, SecureStorage) → Models (DTO, `@Entity()`). Config/Utils: `EnvironmentConfig`, `AppLogger`.
 
 ## 3. Флоу задачи
+0. **Анализ архитектуры (Mandatory First Step)**: При старте новой сессии или получении новой задачи **первым шагом всегда читать `ARCHITECTURE.md`** для определения структуры модулей, существующих экранов, сервисов и зависимостей слоёв. Запрещен «слепой» хаотичный перебор файлов (`grep`/`list_dir` по всему проекту) до изучения архитектурного описания.
 1. **Ветка** от свежего `main`: `git checkout main && git pull origin main && git checkout -b <type>/<name>`; типы: `feat|fix|refactor|test|docs|chore`. Коммиты в `main` запрещены.
 2. **Код** по границам слоёв и локальным правилам.
 3. **Тесты**: обновить/добавить unit, `bloc_test`, widget-тесты; happy path + негатив (валидация, 401/403/404, 429, 503, офлайн).

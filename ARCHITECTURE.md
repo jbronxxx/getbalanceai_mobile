@@ -74,6 +74,7 @@ lib/
     ├── insights_screen.dart       # AI-инсайты
     ├── profile_screen.dart        # Профиль пользователя и настройки приложения
     ├── auth_screen.dart           # Вход и регистрация
+    ├── welcome_setup_screen.dart  # Экран пошагового онбординга (выбор языка интерфейса и базовой валюты)
     ├── debug_menu_screen.dart     # Скрытое меню отладки (локализовано, токены Material 3)
     └── service_unavailable_screen.dart # Экран технических работ (HTTP 503)
 ```
@@ -186,13 +187,25 @@ main.dart`. Это было исправлено переносом состоя
   - Ошибка автоматически очищается в реальном времени при вводе символов пользователем или смене валюты.
   - Формы ввода в модальных листах (`AddTransactionSheet`, `AddBudgetSheet`) защищены от переполнения экрана при появлении ошибки и клавиатуры через `SingleChildScrollView`.
 
-- **Декомпозиция крупных экранов**:
-  - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget`, `DashboardPeriodPickerSheet` (директория `lib/widgets/dashboard/`).
+- **Декомпозиция крупных экранов и полировка UI/UX**:
+  - `WelcomeSetupScreen`: экраны онбординга (выбор языка и валюты) выполнены в цельном виде без отдельного верхнего хэдера/AppBar; блок заголовка и описания выбора языка зафиксирован по высоте (`SizedBox(height: 120)`), а кнопки выбора отделены комфортным отступом (`SizedBox(height: 40)`), что полностью исключает «скачки» кнопок вверх-вниз при смене языка и переносе строк; кнопка возврата назад на шаге валюты выровнена по левому краю экрана. При первом запуске приложение проверяет статус онбординга синхронно (`PreferencesService.isOnboardingCompletedSync`) и открывает `WelcomeSetupScreen` сразу в качестве корневого экрана (`routes['/']`), исключая предварительное мелькание или показ главного экрана.
+  - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget` (директория `lib/widgets/dashboard/`).
+    - Выбор периода (месяц и год) перемещен из хэдера AppBar непосредственно под виджет `BalanceCard` с переиспользованием `BudgetPeriodSelector`.
+    - Добавлен лаконичный заголовок «Баланс» по центру в AppBar; цвет фона AppBar и экрана строго синхронизированы (`colorScheme.surface`, `surfaceTintColor: transparent`).
+    - Тень виджета `BalanceCard` уменьшена во избежание визуального наложения на расположенный ниже `BudgetPeriodSelector`.
+    - Подложка скролла и `CustomPullToRefresh` согласованы с цветом `colorScheme.surface`, исключая расхождение оттенков шапки и списка транзакций.
+    - `TransactionItemTile`: поверхность строки транзакции сделана непрозрачной (`tileBgColor`), исключая просвечивание красной подложки удаления при анимации свайпа.
     - `CategoryGroupWidget` суммирует итог категории строго в базовой валюте пользователя (`effectiveBaseAmount`) со знаком валюты, обеспечивая 100% сходимость с общим балансом дашборда. При наличии мультивалютных трат выводит подстроку с оригинальной валютой чека, счетчик операций с корректным склонением (`LanguageManager.formatOperationsCount`) и анимированный шеврон раскрытия аккордеона (`AnimatedRotation`). Для внутреннего `ExpansionTile` используется изолированный `PageStorageKey<String>`, исключающий коллизию типов (`type 'double' is not a subtype of type 'bool?'`) с сохраненным смещением скролла родительского `CustomScrollView`.
   - `BudgetsScreen`: декомпозирован на `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
+    - Пустое состояние лимитов оформлено в контурном стиле без бирюзовой заливки (прозрачный фон с тонкой рамкой и иконкой).
+    - В `BudgetItemCard` фон карточки сделан непрозрачным (`Color.alphaBlend`), а фоновая подложка удаления расширена на всю ширину записи (`Positioned.fill`), полностью устраняя дефект просвечивания красного фона сквозь запись при анимации подсказки.
+  - `AddTransactionSheet` & `AddBudgetSheet`:
+    - В `AddBudgetSheet` поле ввода суммы лимита расположено первым перед выбором категории.
+    - Поле «Описание» настроено на ввод с заглавной первой буквы (`textCapitalization: TextCapitalization.sentences`).
+    - Поле ввода суммы бюджета унифицировано с транзакциями: отображает краткую метку «Сумма» без валюты в скобках.
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
-  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка (`BackdropFilter`, тонкая скругленная тень с `spreadRadius: -3`), под которую плавно скользит список ответов при скролле; анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»);
+  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику»); анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»);
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
 
 - **Жизненный цикл провайдеров в `main.dart`**:

@@ -473,6 +473,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _descriptionController,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     labelText: context.l10n.description_label,
                     border: OutlineInputBorder(

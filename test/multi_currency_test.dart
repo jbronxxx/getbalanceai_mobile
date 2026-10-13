@@ -552,6 +552,8 @@ void main() {
 
       // Шаг 1: отображается выбор языка без флагов и без иконки настроек
       expect(find.byIcon(Icons.tune_rounded), findsNothing);
+      expect(find.text('Выберите язык / Tanlang'), findsOneWidget);
+      expect(find.text('Для комфортной работы с приложением'), findsOneWidget);
       expect(find.text('Русский'), findsOneWidget);
       expect(find.text('O\'zbekcha'), findsOneWidget);
       expect(find.text('English'), findsOneWidget);
@@ -562,6 +564,11 @@ void main() {
 
       // Шаг 2: отображается выбор валюты словами
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.text('Основная валюта'), findsOneWidget);
+      expect(
+        find.text('В этой валюте рассчитывается общий баланс и бюджеты'),
+        findsOneWidget,
+      );
       expect(find.text('Российский рубль'), findsOneWidget);
       expect(find.text('Узбекский сум'), findsOneWidget);
       expect(find.text('Казахстанский тенге'), findsOneWidget);

@@ -96,38 +96,29 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
   Widget build(BuildContext context) {
     if (!_hasStarted || _isCompleted) return widget.child;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return AnimatedBuilder(
-          animation: _animation,
-          builder: (context, _) {
-            final dx = -_animation.value.dx;
-            final hasOffset = dx > 0.001;
-            final uncoveredWidth = hasOffset ? constraints.maxWidth * dx : 0.0;
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, _) {
+        final dx = -_animation.value.dx;
+        final hasOffset = dx > 0.001;
 
-            return Stack(
-              clipBehavior: Clip.hardEdge,
-              children: [
-                if (widget.background != null && hasOffset)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: uncoveredWidth + 2,
-                    child: widget.borderRadius != null
-                        ? ClipRRect(
-                            borderRadius: widget.borderRadius!,
-                            child: widget.background!,
-                          )
-                        : widget.background!,
-                  ),
-                SlideTransition(
-                  position: _animation,
-                  child: widget.child,
-                ),
-              ],
-            );
-          },
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            if (widget.background != null && hasOffset)
+              Positioned.fill(
+                child: widget.borderRadius != null
+                    ? ClipRRect(
+                        borderRadius: widget.borderRadius!,
+                        child: widget.background!,
+                      )
+                    : widget.background!,
+              ),
+            SlideTransition(
+              position: _animation,
+              child: widget.child,
+            ),
+          ],
         );
       },
     );

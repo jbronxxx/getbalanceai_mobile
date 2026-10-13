@@ -43,18 +43,21 @@ class BudgetItemCard extends StatelessWidget {
     final background = Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: const BoxDecoration(
-        color: Color(0xFFEF4444),
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEF4444),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Icon(Icons.delete_rounded, color: colorScheme.onError),
     );
 
-    final glassBg = isExceeded
-        ? exceededColor.withValues(alpha: isDark ? 0.14 : 0.08)
-        : (isDark
-            ? const Color(0xFF141416).withValues(alpha: 0.70)
-            : Colors.white.withValues(alpha: 0.85));
+    final baseBg = theme.cardTheme.color ??
+        (isDark ? const Color(0xFF141416) : Colors.white);
+    final cardBg = isExceeded
+        ? Color.alphaBlend(
+            exceededColor.withValues(alpha: isDark ? 0.16 : 0.08),
+            baseBg,
+          )
+        : baseBg;
 
     final glassBorder = isExceeded
         ? exceededColor.withValues(alpha: isDark ? 0.40 : 0.35)
@@ -64,7 +67,7 @@ class BudgetItemCard extends StatelessWidget {
 
     final cardContent = Container(
       decoration: BoxDecoration(
-        color: glassBg,
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: glassBorder,
@@ -192,8 +195,7 @@ class BudgetItemCard extends StatelessWidget {
         ? SwipeHintWrapper(
             showHint: showSwipeHint,
             background: background,
-            borderRadius:
-                const BorderRadius.horizontal(right: Radius.circular(24)),
+            borderRadius: BorderRadius.circular(24),
             onHintShown: onHintShown,
             child: dismissibleItem,
           )

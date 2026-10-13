@@ -29,6 +29,7 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      scaffoldBackgroundColor: lightSurface,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryTeal,
         primary: primaryTeal,
@@ -85,6 +86,7 @@ class AppTheme {
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
@@ -200,6 +202,7 @@ class AppTheme {
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle(

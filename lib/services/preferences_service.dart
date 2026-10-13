@@ -68,8 +68,20 @@ class PreferencesService {
     return await _storage.read(key: _keyCurrency);
   }
 
+  bool _isOnboardingCompleted = false;
+
+  /// Синхронное значение статуса завершения онбординга.
+  bool get isOnboardingCompletedSync => _isOnboardingCompleted;
+
+  /// Загружает сохраненный статус онбординга при старте приложения.
+  Future<bool> loadSavedOnboardingStatus() async {
+    _isOnboardingCompleted = await isOnboardingCompleted();
+    return _isOnboardingCompleted;
+  }
+
   /// Сохраняет выбранный язык.
   Future<void> saveLanguage(String languageCode) async {
+    _isOnboardingCompleted = true;
     await _storage.write(key: _keyLanguage, value: languageCode);
   }
 
@@ -81,11 +93,23 @@ class PreferencesService {
   /// Проверяет, был ли полностью завершен первоначальный онбординг.
   Future<bool> isOnboardingCompleted() async {
     final val = await _storage.read(key: _keyOnboardingCompleted);
-    return val == 'true';
+    if (val != null) {
+      _isOnboardingCompleted = val == 'true';
+      return _isOnboardingCompleted;
+    }
+    // Если ранее уже был сохранен язык, считаем онбординг пройденным
+    final lang = await _storage.read(key: _keyLanguage);
+    if (lang != null && lang.isNotEmpty) {
+      _isOnboardingCompleted = true;
+      return true;
+    }
+    _isOnboardingCompleted = false;
+    return false;
   }
 
   /// Фиксирует успешное завершение первоначального онбординга.
   Future<void> setOnboardingCompleted() async {
+    _isOnboardingCompleted = true;
     await _storage.write(key: _keyOnboardingCompleted, value: 'true');
   }
 
