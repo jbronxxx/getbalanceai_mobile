@@ -9,6 +9,7 @@ import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
+import 'package:getbalanceai_mobile/widgets/budgets/budget_period_selector.dart';
 
 void main() {
   final storageData = <String, String>{};
@@ -152,17 +153,51 @@ void main() {
   });
 
   test(
-      'ApiService getInsights method accepts cancelToken, currency, locale, and custom timeouts',
+      'ApiService getInsights method accepts cancelToken, currency, locale, month, year, and custom timeouts',
       () async {
     final cancelToken = CancelToken();
     try {
       await ApiService.instance.getInsights(
         currency: 'USD',
         locale: 'en',
+        month: 10,
+        year: 2026,
         cancelToken: cancelToken,
       );
     } catch (_) {
       // Expected without backend server
+    }
+  });
+
+  test('ApiService getInsights sends month and year in queryParameters',
+      () async {
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    RequestOptions? capturedOptions;
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      capturedOptions = options;
+      return ResponseBody.fromString(
+        jsonEncode({
+          'status': 'success',
+          'data': {'insights': []}
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    });
+
+    try {
+      await ApiService.instance.getInsights(month: 11, year: 2025);
+      expect(capturedOptions?.queryParameters['month'], 11);
+      expect(capturedOptions?.queryParameters['year'], 2025);
+
+      await ApiService.instance.getInsights();
+      expect(capturedOptions?.queryParameters.containsKey('month'), isFalse);
+      expect(capturedOptions?.queryParameters.containsKey('year'), isFalse);
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
     }
   });
 
@@ -403,6 +438,58 @@ void main() {
 
       expect(requestCount, 1);
       expect(find.text('Ленивый инсайт'), findsOneWidget);
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
+  });
+
+  testWidgets(
+      'InsightsScreen renders BudgetPeriodSelector and requests insights with selected month and year',
+      (tester) async {
+    await ApiService.instance.setTokens('test_token', 'test_refresh');
+
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    int requestedMonth = 0;
+    int requestedYear = 0;
+
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      if (options.path.contains('/insights/')) {
+        requestedMonth = options.queryParameters['month'] as int? ?? 0;
+        requestedYear = options.queryParameters['year'] as int? ?? 0;
+        return ResponseBody.fromString(
+          jsonEncode({
+            'status': 'success',
+            'data': {
+              'insights': ['Анализ за $requestedMonth/$requestedYear'],
+            }
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      }
+      return ResponseBody.fromString('{}', 404);
+    });
+
+    try {
+      await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen(),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BudgetPeriodSelector), findsOneWidget);
+      expect(requestedMonth, DateTime.now().month);
+      expect(requestedYear, DateTime.now().year);
+      expect(
+        find.text('Анализ за ${DateTime.now().month}/${DateTime.now().year}'),
+        findsOneWidget,
+      );
     } finally {
       ApiService.instance.dio.httpClientAdapter = originalAdapter;
       await ApiService.instance.clearAllUserData();

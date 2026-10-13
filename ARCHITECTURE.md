@@ -26,7 +26,7 @@ lib/
 ├── main.dart                    # Точка входа: config -> локальная БД -> ApiService.init -> runApp (адаптивная ориентация, AppTheme, GetBalance AI)
 ├── config/
 │   ├── api_config.dart          # Пути эндпоинтов; ApiConfig.baseUrl делегирует в EnvironmentConfig
-│   └── environment.dart         # Окружения prod/dev/local (--dart-define приоритетно, .env fallback), в release всегда prod
+│   └── environment.dart         # Окружения prod/dev/local (.env в debug, --dart-define в release), в release всегда prod
 ├── theme/
 │   ├── app_theme.dart           # Конфигурация светлой и тёмной тем (Material 3, ColorScheme, палитра)
 │   └── theme.dart               # Barrel-файл экспорта темы
@@ -54,7 +54,7 @@ lib/
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
 │   ├── auth/                    # AuthCubit: глобальное состояние авторизации
-│   ├── insights/                # InsightsCubit: загрузка AI-инсайтов, отмена запросов, реакция на смену валюты/языка/авторизации
+│   ├── insights/                # InsightsCubit: загрузка AI-инсайтов с фильтрацией по периоду (month, year), отмена запросов, реакция на смену валюты/языка/авторизации
 │   └── profile/                 # ProfileCubit: статус авторизации, облачная синхронизация, выход
 ├── widgets/
 │   ├── dashboard/               # Декомпозированные виджеты экрана дашборда (баннер гостя, тайлы, группы)
@@ -143,7 +143,7 @@ main.dart`. Это было исправлено переносом состоя
   - `syncBackendDataToLocal`: Загружает актуальные данные с сервера и сверяет с локальными. Процесс сверки (`reconcileTransactions`, `reconcileBudgets`) оптимизирован по потреблению памяти: поиск устаревших локальных записей выполняется таргетированными запросами ObjectBox, минуя загрузку всей базы в Dart heap.
   - `PendingDeletionsStore`: Хранит ID удаленных локально транзакций и бюджетов (tombstones), чтобы синхронизировать удаление на сервере при появлении сети.
   - **Автоматическая фоновая выгрузка (Automatic Background Push)**: При сохранении транзакции (`AddTransactionSheet`) или лимита бюджета (`AddBudgetSheet`) в авторизованном состоянии (`ApiService.isAuthenticated`) запускается неблокирующий фоновый синк `unawaited(ApiService.instance.syncLocalDataToBackend().catchError(...))`. При удалении записей методы `deleteTransactionEverywhere` и `deleteBudgetEverywhere` сохраняют tombstones в `PendingDeletionsStore` и обрабатываются асинхронно без блокировки UI.
-  - **Предварительная дозагрузка перед расчетом AI-аналитики (Pre-insights Push Sync)**: Перед выполнением запроса `GET /insights/` в `InsightsCubit.loadInsights()` клиент проверяет наличие локальных невыгруженных записей (`LocalDbService.isInitialized && (LocalDbService.instance.getUnsyncedTransactions().isNotEmpty || LocalDbService.instance.getUnsyncedBudgets().isNotEmpty)`). При их обнаружении сначала выполняется `await _api.syncLocalDataToBackend()`, что гарантирует учет свежих транзакций на бэкенде до генерации рекомендаций. Возможные сбои синка логируются через `AppLogger.w` и не прерывают запрос аналитики.
+  - **Предварительная дозагрузка перед расчетом AI-аналитики (Pre-insights Push Sync)**: Перед выполнением запроса `GET /insights/` (с параметрами `currency`, `locale`, `month`, `year`) в `InsightsCubit.loadInsights()` клиент проверяет наличие локальных невыгруженных записей (`LocalDbService.isInitialized && (LocalDbService.instance.getUnsyncedTransactions().isNotEmpty || LocalDbService.instance.getUnsyncedBudgets().isNotEmpty)`). При их обнаружении сначала выполняется `await _api.syncLocalDataToBackend()`, что гарантирует учет свежих транзакций на бэкенде до генерации рекомендаций. Возможные сбои синка логируются через `AppLogger.w` и не прерывают запрос аналитики.
 
 ## Наблюдаемость и обработка сбоев (Observability & Error Handling)
 
@@ -224,7 +224,7 @@ main.dart`. Это было исправлено переносом состоя
     - Поле ввода суммы бюджета унифицировано с транзакциями: отображает краткую метку «Сумма» без валюты в скобках.
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
-  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику»); анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»); оптимизирован для работы внутри `IndexedStack` (`MainShell` передает `isActive: _currentIndex == 2`), выполняет ленивую загрузку строго при первом открытии вкладки или явном Pull-to-Refresh, игнорируя фоновые смены языка/валюты до первого входа.
+  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику») и размещенным непосредственно под ней селектором периода `BudgetPeriodSelector` (с отступом `topOffset`), синхронизированным с фильтром на экранах «Баланс» и «Лимиты»; анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»); оптимизирован для работы внутри `IndexedStack` (`MainShell` передает `isActive: _currentIndex == 2`), выполняет ленивую загрузку строго при первом открытии вкладки, смене периода пользователем (`setPeriod`) или явном Pull-to-Refresh, игнорируя фоновые смены языка/валюты до первого входа.
   - `AuthScreen`: устранен отдельный AppBar/хэдер, экран выполнен в виде целостного холста с верхним радиальным свечением темы, центрированным стеклянным медальоном, комфортной типографикой и аккуратной встроенной кнопкой возврата назад (при наличии стека навигации) по аналогии с `WelcomeSetupScreen` и `WelcomeLanguageSheet`.
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
 

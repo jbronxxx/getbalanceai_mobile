@@ -125,5 +125,23 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(EnvironmentConfig.current, Environment.local);
       expect(EnvironmentConfig.baseUrl, 'http://localhost:8000/api/v1');
     });
+
+    test(
+        'switching between environments in debug build resolves URLs from dotenv',
+        () async {
+      dotenv.testLoad(fileInput: '''
+PROD_API_BASE_URL=https://api.getbalanceai.app/api/v1
+DEV_API_BASE_URL=http://192.168.203.61:8000/api/v1
+API_BASE_URL=http://192.168.1.93:8000/api/v1
+''');
+      await EnvironmentConfig.setEnvironment(Environment.prod);
+      expect(EnvironmentConfig.baseUrl, 'https://api.getbalanceai.app/api/v1');
+
+      await EnvironmentConfig.setEnvironment(Environment.dev);
+      expect(EnvironmentConfig.baseUrl, 'http://192.168.203.61:8000/api/v1');
+
+      await EnvironmentConfig.setEnvironment(Environment.local);
+      expect(EnvironmentConfig.baseUrl, 'http://192.168.1.93:8000/api/v1');
+    });
   });
 }

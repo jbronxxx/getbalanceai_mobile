@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
 import '../utils/utils.dart';
+import '../widgets/budgets/budgets.dart';
 import '../widgets/widgets.dart';
 
 /// Экран AI-инсайтов.
@@ -74,7 +75,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
 }
 
 class _InsightsScreenView extends StatelessWidget {
-  static const double _topContentPadding = 94.0;
+  static const double _topContentPadding = 168.0;
 
   const _InsightsScreenView();
 
@@ -411,8 +412,43 @@ class _InsightsScreenView extends StatelessWidget {
                 top: topOffset + 8,
                 left: 16,
                 right: 16,
-                child: IgnorePointer(
-                  child: _buildFloatingTopBanner(context),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IgnorePointer(
+                          child: _buildFloatingTopBanner(context),
+                        ),
+                        BlocBuilder<InsightsCubit, InsightsState>(
+                          buildWhen: (prev, curr) =>
+                              prev.selectedMonth != curr.selectedMonth ||
+                              prev.selectedYear != curr.selectedYear,
+                          builder: (context, state) {
+                            return BudgetPeriodSelector(
+                              padding: const EdgeInsets.only(
+                                top: 10.0,
+                                bottom: 6.0,
+                              ),
+                              selectedMonth: state.selectedMonth,
+                              selectedYear: state.selectedYear,
+                              onMonthChanged: (val) {
+                                context
+                                    .read<InsightsCubit>()
+                                    .setPeriod(month: val);
+                              },
+                              onYearChanged: (val) {
+                                context
+                                    .read<InsightsCubit>()
+                                    .setPeriod(year: val);
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

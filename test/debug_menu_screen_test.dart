@@ -112,4 +112,31 @@ API_BASE_URL=http://localhost:8000/api/v1
 
     expect(find.byType(TalkerScreen), findsOneWidget);
   });
+
+  testWidgets(
+      'DebugMenuScreen displays updated base URL from dotenv when switching environments',
+      (tester) async {
+    await tester.pumpWidget(_buildTestApp());
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Base URL: https://dev.example.com/api/v1'), findsOneWidget);
+
+    // Switch to PROD
+    await tester.tap(find.byType(DropdownButton<Environment>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PROD').last);
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Base URL: https://prod.example.com/api/v1'), findsOneWidget);
+
+    // Switch to LOCAL
+    await tester.tap(find.byType(DropdownButton<Environment>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('LOCAL').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Base URL: http://localhost:8000/api/v1'), findsOneWidget);
+  });
 }

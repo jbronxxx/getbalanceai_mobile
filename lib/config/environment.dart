@@ -97,7 +97,8 @@ class EnvironmentConfig {
 
     switch (_current) {
       case Environment.prod:
-        return _resolve(_definedProdUrl, 'PROD_API_BASE_URL');
+        final prodUrl = _resolve(_definedProdUrl, 'PROD_API_BASE_URL');
+        return prodUrl.isNotEmpty ? prodUrl : _definedProdUrl;
       case Environment.dev:
         final devUrl = _resolve(_definedDevUrl, 'DEV_API_BASE_URL');
         if (devUrl.isNotEmpty) return devUrl;
@@ -110,9 +111,15 @@ class EnvironmentConfig {
   }
 
   static String _resolve(String defined, String envKey) {
+    if (!kReleaseMode && dotenv.isInitialized) {
+      final envVal = dotenv.maybeGet(envKey);
+      if (envVal != null && envVal.isNotEmpty) {
+        return envVal;
+      }
+    }
     if (defined.isNotEmpty) return defined;
-    if (!dotenv.isInitialized) return '';
-    return dotenv.maybeGet(envKey) ?? '';
+    if (dotenv.isInitialized) return dotenv.maybeGet(envKey) ?? '';
+    return '';
   }
 
   /// Проверяет release-URL на корректность и протокол https.
