@@ -11,8 +11,8 @@ enum Environment {
 /// Выбор окружения и базового URL бэкенда.
 ///
 /// В release-сборке всегда используется prod, URL берется только из
-/// `--dart-define=PROD_API_BASE_URL=...`; `.env` не читается.
-/// В debug/profile значение ищется в `--dart-define`, затем в `.env`.
+/// `--dart-define=PROD_API_BASE_URL=...`; `.env` не читается и не упаковывается в бандл.
+/// В debug/profile значение ищется в `--dart-define` (приоритетно), затем в `.env`.
 class EnvironmentConfig {
   static const String _envKey = 'selected_environment';
   static const String _definedProdUrl =
@@ -23,7 +23,7 @@ class EnvironmentConfig {
   static const bool _debugMenuFlag = bool.fromEnvironment('ENABLE_DEBUG_MENU');
   static const String _defaultLocalUrl = 'http://10.0.2.2:8000/api/v1';
   static const String _definedDefaultEnv =
-      String.fromEnvironment('DEFAULT_ENVIRONMENT', defaultValue: 'dev');
+      String.fromEnvironment('DEFAULT_ENVIRONMENT');
 
   static Environment _current = Environment.prod;
   static final List<Future<void> Function(Environment)> _listeners = [];
@@ -31,8 +31,10 @@ class EnvironmentConfig {
   static Environment get current => _current;
 
   static Environment get _defaultNonReleaseEnvironment {
+    final raw = _resolve(_definedDefaultEnv, 'DEFAULT_ENVIRONMENT');
+    final envName = raw.isNotEmpty ? raw : 'dev';
     return Environment.values.firstWhere(
-      (e) => e.name.toLowerCase() == _definedDefaultEnv.toLowerCase(),
+      (e) => e.name.toLowerCase() == envName.toLowerCase(),
       orElse: () => Environment.dev,
     );
   }

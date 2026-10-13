@@ -81,5 +81,49 @@ API_BASE_URL=http://localhost:8000/api/v1
 
       expect(EnvironmentConfig.baseUrl, 'http://localhost:8000/api/v1');
     });
+
+    test('baseUrl falls back to defaultLocalUrl when dotenv is uninitialized',
+        () async {
+      dotenv = DotEnv();
+      await EnvironmentConfig.setEnvironment(Environment.dev);
+      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
+
+      await EnvironmentConfig.setEnvironment(Environment.local);
+      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
+    });
+
+    test(
+        'baseUrl falls back to defaultLocalUrl when dotenv has empty configuration',
+        () async {
+      dotenv.testLoad(fileInput: '');
+      await EnvironmentConfig.setEnvironment(Environment.dev);
+      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
+
+      await EnvironmentConfig.setEnvironment(Environment.local);
+      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
+    });
+
+    test('init safely defaults to Environment.dev when dotenv is uninitialized',
+        () async {
+      dotenv = DotEnv();
+      SharedPreferences.setMockInitialValues({});
+
+      await EnvironmentConfig.init();
+      expect(EnvironmentConfig.current, Environment.dev);
+      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
+    });
+
+    test('init respects DEFAULT_ENVIRONMENT from dotenv when available',
+        () async {
+      dotenv.testLoad(fileInput: '''
+DEFAULT_ENVIRONMENT=local
+API_BASE_URL=http://localhost:8000/api/v1
+''');
+      SharedPreferences.setMockInitialValues({});
+
+      await EnvironmentConfig.init();
+      expect(EnvironmentConfig.current, Environment.local);
+      expect(EnvironmentConfig.baseUrl, 'http://localhost:8000/api/v1');
+    });
   });
 }

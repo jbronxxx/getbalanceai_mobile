@@ -38,9 +38,14 @@ fvm flutter pub get
 ## Переменные окружения (`.env`)
 
 Приложение не хранит адреса бэкенда, ключи и прочие настройки окружения в
-коде — они читаются из `.env` через `flutter_dotenv`
-(см. `lib/config/environment.dart` и `lib/config/api_config.dart`). Файл `.env` **не коммитится**
-(в `.gitignore`), в репозитории лежит только шаблон.
+коде — они конфигурируются через флаги `--dart-define` / `--dart-define-from-file`
+с возможностью резервного чтения из локального `.env` в debug/profile-режимах
+(см. `lib/config/environment.dart` и `lib/config/api_config.dart`).
+
+> **Безопасность релизного бандла**: Файл `.env` **исключён из ассетов `pubspec.yaml`**
+> и не упаковывается в открытом виде в `flutter_assets/.env` внутри релизного `.aab`/`.apk`.
+> В релизной сборке значения передаются строго через `--dart-define` или `--dart-define-from-file`.
+> Локальный `.env` не коммитится (в `.gitignore`), в репозитории лежит только шаблон `.env.example`.
 
 ```bash
 cp .env.example .env
@@ -59,7 +64,7 @@ cp .env.example .env
 (5 тапов по версии приложения на экране профиля; смена требует перезапуска).
 В release-сборке всегда используется `prod`, Debug-меню недоступно.
 
-Если `.env` отсутствует, приложение не падает — используется дефолтный
+Если `.env` отсутствует или не передан, приложение не падает — используется дефолтный
 адрес для Android-эмулятора (см. `ApiConfig`). Для iOS-симулятора и
 реальных устройств адрес почти наверняка нужно поменять (см. комментарии
 в `.env.example`).
@@ -105,7 +110,12 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 
 ```bash
 fvm flutter devices          # посмотреть доступные устройства/эмуляторы
-fvm flutter run              # запуск в debug на выбранном/единственном устройстве
+
+# Запуск с чтением конфигурации из локального .env через dart-define:
+fvm flutter run --dart-define-from-file=.env
+
+# Стандартный запуск (fallback на значения по умолчанию):
+fvm flutter run
 ```
 
 ## Сборки
@@ -118,16 +128,19 @@ fvm flutter build apk --debug
 
 # Release APK
 fvm flutter build apk --release --dart-define=PROD_API_BASE_URL=https://api.your-domain.com/api/v1
+# или с передачей параметров через файл:
+fvm flutter build apk --release --dart-define-from-file=.env.prod
 
 # Release App Bundle (для публикации в Google Play)
 fvm flutter build appbundle --release --dart-define=PROD_API_BASE_URL=https://api.your-domain.com/api/v1
+# или с передачей параметров через файл:
+fvm flutter build appbundle --release --dart-define-from-file=.env.prod
 ```
 
-> Перед публикацией в Google Play замените `applicationId` в
-> `android/app/build.gradle.kts` (сейчас `com.example.getbalanceai_mobile` —
-> шаблонное значение) и настройте боевой ключ подписи вместо debug-ключа,
-> которым сейчас подписывается release-сборка (см. `signingConfig` там же).
-> Ключ подписи и его пароли храните вне репозитория — например,
+> `namespace` и `applicationId` в `android/app/build.gradle.kts` настроены на
+> `com.getbalanceai.mobile`. Перед публикацией в Google Play настройте боевой ключ
+> подписи вместо debug-ключа, которым сейчас подписывается release-сборка
+> (см. `signingConfig` там же). Ключ подписи и его пароли храните вне репозитория — например,
 > `android/key.properties` (уже в `.gitignore`) и переменные окружения CI.
 
 ### iOS
@@ -211,8 +224,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/objectbox/objectbox-dart/v4.
 
 ## Безопасность / работа с репозиторием
 
-- Секреты для локальной разработки хранятся в `.env`, но в релизной сборке этот файл **игнорируется полностью**.
-- Секреты для релиза передаются только через аргументы командной строки сборки: `--dart-define=...`.
+- Секреты для локальной разработки хранятся в `.env`, но в релизной сборке этот файл **игнорируется полностью и исключён из assets бандла**.
+- Секреты для релиза передаются только через аргументы командной строки сборки: `--dart-define=...` или `--dart-define-from-file=...`.
 - Никогда не оставляйте секреты прямо в коде или в коммитах.
 - Если нужно поделиться доступом к бэкенду для локальной разработки,
   передавайте `.env` вне git (менеджер паролей, защищённый чат) — не
