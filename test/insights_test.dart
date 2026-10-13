@@ -352,6 +352,62 @@ void main() {
     expect(find.text(LanguageManager.l10n.insight_login_hint), findsOneWidget);
     expect(find.byKey(const Key('insights_cache_hint')), findsNothing);
   });
+
+  testWidgets(
+      'InsightsScreen does not call getInsights when isActive is false and loads lazily when isActive becomes true',
+      (tester) async {
+    await ApiService.instance.setTokens('test_token', 'test_refresh');
+
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    int requestCount = 0;
+
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      if (options.path.contains('/insights/')) {
+        requestCount++;
+        return ResponseBody.fromString(
+          jsonEncode({
+            'status': 'success',
+            'data': {
+              'insights': ['Ленивый инсайт'],
+            }
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      }
+      return ResponseBody.fromString('{}', 404);
+    });
+
+    try {
+      await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen(isActive: false),
+      ));
+      await tester.pump();
+
+      expect(requestCount, 0);
+      expect(find.text('Ленивый инсайт'), findsNothing);
+
+      await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen(isActive: true),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(requestCount, 1);
+      expect(find.text('Ленивый инсайт'), findsOneWidget);
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
+  });
 }
 
 class _MockHttpClientAdapter implements HttpClientAdapter {

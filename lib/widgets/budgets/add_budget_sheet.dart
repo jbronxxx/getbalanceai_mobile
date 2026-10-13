@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
@@ -121,6 +122,17 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     );
 
     LocalDbService.instance.saveBudget(newBudget);
+    if (ApiService.instance.isAuthenticated == true) {
+      unawaited(
+        ApiService.instance.syncLocalDataToBackend().catchError((
+          Object e,
+          StackTrace s,
+        ) {
+          AppLogger.w('[Sync] Background push failed', e, s);
+          return <String, dynamic>{};
+        }),
+      );
+    }
     Navigator.pop(context);
     widget.onSaved();
   }

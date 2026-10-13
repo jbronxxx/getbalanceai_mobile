@@ -76,8 +76,9 @@ class _MainShellState extends State<MainShell> {
                         const BudgetsScreen(
                           key: PageStorageKey('budgets_tab'),
                         ),
-                        const InsightsScreen(
-                          key: PageStorageKey('insights_tab'),
+                        InsightsScreen(
+                          key: const PageStorageKey('insights_tab'),
+                          isActive: _currentIndex == 2,
                         ),
                         ProfileScreen(
                           key: const PageStorageKey('profile_tab'),

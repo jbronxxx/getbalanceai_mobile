@@ -26,7 +26,7 @@ class LocalDbService {
     return _instance!;
   }
 
-  static set instance(LocalDbService value) => _instance = value;
+  static set instance(LocalDbService? value) => _instance = value;
   static bool get isInitialized => _instance != null;
 
   late final Store _store;

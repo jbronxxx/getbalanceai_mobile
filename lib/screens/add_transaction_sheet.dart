@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
@@ -155,6 +156,18 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         dateCreatedMilliseconds: 0,
       );
       LocalDbService.instance.saveTransaction(newTransaction);
+    }
+
+    if (ApiService.instance.isAuthenticated == true) {
+      unawaited(
+        ApiService.instance.syncLocalDataToBackend().catchError((
+          Object e,
+          StackTrace s,
+        ) {
+          AppLogger.w('[Sync] Background push failed', e, s);
+          return <String, dynamic>{};
+        }),
+      );
     }
 
     Navigator.pop(context, true);

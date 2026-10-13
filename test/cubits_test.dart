@@ -8,14 +8,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/cubits/auth/auth_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/profile/profile_cubit.dart';
-import 'package:getbalanceai_mobile/models/auth_model.dart';
+import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/services/local_db_service.dart';
+import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockApiService extends Mock implements ApiService {}
 
 class MockConnectivity extends Mock implements Connectivity {}
+
+class MockLocalDbService extends Mock implements LocalDbService {}
 
 void main() {
   late MockApiService api;
@@ -45,6 +49,7 @@ void main() {
 
   tearDown(() {
     authStreamController.close();
+    LocalDbService.instance = null;
   });
 
   group('InsightsCubit', () {
@@ -190,9 +195,32 @@ void main() {
       expect(cubit.state, isA<InsightsLoading>());
     });
 
-    test('reloads insights when language changes', () async {
+    test(
+        'ignores language and currency change if insights were never loaded (_hasLoadedOnce is false)',
+        () async {
       when(() => api.isAuthenticated).thenReturn(false);
       final cubit = build();
+
+      LanguageManager.setLanguage(AppLanguage.en);
+      CurrencyFormatter.setCurrency(Currency.eur);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, isA<InsightsInitial>());
+      expect(cubit.hasLoadedOnce, isFalse);
+
+      await cubit.close();
+      LanguageManager.setLanguage(AppLanguage.ru);
+      CurrencyFormatter.setCurrency(Currency.rub);
+    });
+
+    test('reloads insights on language change if already loaded once',
+        () async {
+      when(() => api.isAuthenticated).thenReturn(false);
+      final cubit = build();
+
+      await cubit.loadInsights();
+      expect(cubit.state, isA<InsightsUnauthenticated>());
+      expect(cubit.hasLoadedOnce, isTrue);
 
       LanguageManager.setLanguage(AppLanguage.en);
       await Future<void>.delayed(Duration.zero);
@@ -200,6 +228,126 @@ void main() {
 
       await cubit.close();
       LanguageManager.setLanguage(AppLanguage.ru);
+    });
+
+    test(
+        'calls syncLocalDataToBackend before getInsights when unsynced data exists',
+        () async {
+      final mockDb = MockLocalDbService();
+      LocalDbService.instance = mockDb;
+
+      when(() => mockDb.getUnsyncedTransactions()).thenReturn([
+        Transaction(
+          localId: 1,
+          amount: 100,
+          description: 'Coffee',
+          dbCategory: Category.food.name,
+          dbType: TransactionType.expense.name,
+          currencyCode: 'USD',
+          dateMilliseconds: 1000,
+          dateCreatedMilliseconds: 0,
+        ),
+      ]);
+      when(() => mockDb.getUnsyncedBudgets()).thenReturn(<Budget>[]);
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.syncLocalDataToBackend()).thenAnswer((_) async => {});
+      when(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((_) async => {
+            'insights': ['Synced tip'],
+            'generated_at': '2026-10-02T13:45:00Z',
+          });
+
+      final cubit = build();
+      await cubit.loadInsights();
+
+      verify(() => api.syncLocalDataToBackend()).called(1);
+      verify(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            cancelToken: any(named: 'cancelToken'),
+          )).called(1);
+      expect(cubit.state, isA<InsightsLoaded>());
+
+      await cubit.close();
+    });
+
+    test(
+        'proceeds with getInsights even if pre-sync syncLocalDataToBackend throws',
+        () async {
+      final mockDb = MockLocalDbService();
+      LocalDbService.instance = mockDb;
+
+      when(() => mockDb.getUnsyncedTransactions()).thenReturn([
+        Transaction(
+          localId: 2,
+          amount: 50,
+          description: 'Lunch',
+          dbCategory: Category.food.name,
+          dbType: TransactionType.expense.name,
+          currencyCode: 'USD',
+          dateMilliseconds: 1000,
+          dateCreatedMilliseconds: 0,
+        ),
+      ]);
+      when(() => mockDb.getUnsyncedBudgets()).thenReturn(<Budget>[]);
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.syncLocalDataToBackend())
+          .thenThrow(Exception('Network error during sync'));
+      when(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((_) async => {
+            'insights': ['Fallback tip'],
+            'generated_at': '2026-10-02T13:45:00Z',
+          });
+
+      final cubit = build();
+      await cubit.loadInsights();
+
+      verify(() => api.syncLocalDataToBackend()).called(1);
+      verify(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            cancelToken: any(named: 'cancelToken'),
+          )).called(1);
+      expect(cubit.state, isA<InsightsLoaded>());
+
+      await cubit.close();
+    });
+
+    test('does not call syncLocalDataToBackend when there is no unsynced data',
+        () async {
+      final mockDb = MockLocalDbService();
+      LocalDbService.instance = mockDb;
+
+      when(() => mockDb.getUnsyncedTransactions()).thenReturn(<Transaction>[]);
+      when(() => mockDb.getUnsyncedBudgets()).thenReturn(<Budget>[]);
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((_) async => {
+            'insights': ['Tip without sync'],
+            'generated_at': '2026-10-02T13:45:00Z',
+          });
+
+      final cubit = build();
+      await cubit.loadInsights();
+
+      verifyNever(() => api.syncLocalDataToBackend());
+      verify(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            cancelToken: any(named: 'cancelToken'),
+          )).called(1);
+      expect(cubit.state, isA<InsightsLoaded>());
+
+      await cubit.close();
     });
   });
 

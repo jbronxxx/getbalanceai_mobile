@@ -190,7 +190,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _deleteTransaction(Transaction transaction) {
-    ApiService.instance.deleteTransactionEverywhere(transaction);
+    unawaited(
+      ApiService.instance.deleteTransactionEverywhere(transaction).catchError(
+        (Object e, StackTrace s) {
+          AppLogger.w('[Dashboard] Delete transaction everywhere failed', e, s);
+        },
+      ),
+    );
     _loadTransactions();
     AppAlerts.info(context, context.l10n.transaction_deleted);
   }

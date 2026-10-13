@@ -15,17 +15,24 @@ class InsightsCubit extends Cubit<InsightsState> {
   final Connectivity _connectivity;
   CancelToken? _cancelToken;
   StreamSubscription<bool>? _authSub;
+  bool _hasLoadedOnce = false;
+
+  /// Флаг, указывающий, была ли уже инициирована хотя бы одна загрузка инсайтов.
+  bool get hasLoadedOnce => _hasLoadedOnce;
 
   InsightsCubit({ApiService? api, Connectivity? connectivity})
       : _api = api ?? ApiService.instance,
         _connectivity = connectivity ?? Connectivity(),
         super(InsightsInitial()) {
-    CurrencyFormatter.currencyNotifier.addListener(loadInsights);
-    LanguageManager.languageNotifier.addListener(loadInsights);
+    CurrencyFormatter.currencyNotifier
+        .addListener(_onCurrencyOrLanguageChanged);
+    LanguageManager.languageNotifier.addListener(_onCurrencyOrLanguageChanged);
     _authSub = _api.authStream.listen((isAuthenticated) {
       if (isClosed) return;
       if (isAuthenticated) {
-        loadInsights();
+        if (_hasLoadedOnce) {
+          loadInsights();
+        }
       } else {
         _cancelToken?.cancel();
         emit(InsightsUnauthenticated(LanguageManager.l10n.insight_login_hint));
@@ -33,8 +40,15 @@ class InsightsCubit extends Cubit<InsightsState> {
     });
   }
 
+  void _onCurrencyOrLanguageChanged() {
+    if (!_hasLoadedOnce) return;
+    loadInsights();
+  }
+
   /// Запрашивает инсайты, отменяя предыдущий незавершённый запрос.
   Future<void> loadInsights() async {
+    _hasLoadedOnce = true;
+
     if (!_api.isAuthenticated) {
       emit(InsightsUnauthenticated(LanguageManager.l10n.insight_login_hint));
       return;
@@ -54,6 +68,20 @@ class InsightsCubit extends Cubit<InsightsState> {
     emit(InsightsLoading());
 
     try {
+      if (LocalDbService.isInitialized &&
+          (LocalDbService.instance.getUnsyncedTransactions().isNotEmpty ||
+              LocalDbService.instance.getUnsyncedBudgets().isNotEmpty)) {
+        try {
+          AppLogger.d(
+              '[Insights] Syncing local data to backend before loading insights');
+          await _api.syncLocalDataToBackend();
+        } catch (e, s) {
+          AppLogger.w('[Insights] Pre-insights sync failed, continuing', e, s);
+        }
+      }
+
+      if (isClosed || cancelToken.isCancelled) return;
+
       AppLogger.d('[Insights] Loading insights');
       final data = await _api.getInsights(
         currency: CurrencyFormatter.currentCurrency.code,
@@ -80,8 +108,10 @@ class InsightsCubit extends Cubit<InsightsState> {
 
   @override
   Future<void> close() {
-    CurrencyFormatter.currencyNotifier.removeListener(loadInsights);
-    LanguageManager.languageNotifier.removeListener(loadInsights);
+    CurrencyFormatter.currencyNotifier
+        .removeListener(_onCurrencyOrLanguageChanged);
+    LanguageManager.languageNotifier
+        .removeListener(_onCurrencyOrLanguageChanged);
     _authSub?.cancel();
     _cancelToken?.cancel();
     return super.close();

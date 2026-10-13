@@ -6,24 +6,68 @@ import '../utils/utils.dart';
 import '../widgets/widgets.dart';
 
 /// Экран AI-инсайтов.
-class InsightsScreen extends StatelessWidget {
+class InsightsScreen extends StatefulWidget {
   final InsightsCubit? cubit;
+  final bool isActive;
 
   const InsightsScreen({
     super.key,
     this.cubit,
+    this.isActive = true,
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (cubit != null) {
-      return BlocProvider.value(
-        value: cubit!,
-        child: const _InsightsScreenView(),
-      );
+  State<InsightsScreen> createState() => _InsightsScreenState();
+}
+
+class _InsightsScreenState extends State<InsightsScreen> {
+  late InsightsCubit _cubit;
+  bool _isLocalCubit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.cubit != null) {
+      _cubit = widget.cubit!;
+    } else {
+      _cubit = InsightsCubit();
+      _isLocalCubit = true;
     }
-    return BlocProvider(
-      create: (_) => InsightsCubit()..loadInsights(),
+
+    if (widget.isActive && !_cubit.hasLoadedOnce) {
+      _cubit.loadInsights();
+    }
+  }
+
+  @override
+  void didUpdateWidget(InsightsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.cubit != oldWidget.cubit && widget.cubit != null) {
+      if (_isLocalCubit) {
+        _cubit.close();
+        _isLocalCubit = false;
+      }
+      _cubit = widget.cubit!;
+    }
+    if (widget.isActive && !oldWidget.isActive) {
+      if (!_cubit.hasLoadedOnce) {
+        _cubit.loadInsights();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_isLocalCubit) {
+      _cubit.close();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider.value(
+      value: _cubit,
       child: const _InsightsScreenView(),
     );
   }
@@ -312,8 +356,10 @@ class _InsightsScreenView extends StatelessWidget {
               Positioned.fill(
                 child: BlocBuilder<InsightsCubit, InsightsState>(
                   builder: (context, state) {
-                    if (state is InsightsLoading || state is InsightsInitial) {
+                    if (state is InsightsLoading) {
                       return _buildLoadingPlaceholder(effectiveTopPadding);
+                    } else if (state is InsightsInitial) {
+                      return const SizedBox.shrink();
                     } else if (state is InsightsNetworkError) {
                       return _buildNoNetworkPlaceholder(
                           context, effectiveTopPadding);
