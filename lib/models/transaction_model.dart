@@ -20,7 +20,7 @@ class TransactionModel {
     required this.type,
     required this.date,
     this.createdAt,
-    this.currency = 'RUB',
+    this.currency = 'USD',
     this.exchangeRate = 1.0,
     this.baseAmount = 0.0,
   });
@@ -37,7 +37,7 @@ class TransactionModel {
     final parsedAmount = parseAmount(json['amount']);
     final parsedCurrency = (json['currency'] as String?) ??
         (json['currency_code'] as String?) ??
-        'RUB';
+        'USD';
     final parsedRate = json['exchange_rate'] != null
         ? parseAmount(json['exchange_rate'], 1.0)
         : 1.0;

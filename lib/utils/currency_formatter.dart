@@ -8,7 +8,6 @@ enum Currency {
   uzs('UZS', 'сум', 'Узбекский сум', false, 0, 100000000000), // Лимит 100 млрд
   kzt('KZT', '₸', 'Казахстанский тенге', false, 0,
       10000000000), // Лимит 10 млрд
-  rub('RUB', '₽', 'Российский рубль', false, 2, 1000000000), // Лимит 1 млрд
   eur('EUR', '€', 'Евро', true, 2, 100000000), // Лимит 100 млн
   usd('USD', r'$', 'Доллар США', true, 2, 100000000); // Лимит 100 млн
 
@@ -33,11 +32,9 @@ enum Currency {
       ? LanguageManager.l10n.uzs_name
       : this == Currency.kzt
           ? LanguageManager.l10n.kzt_name
-          : this == Currency.rub
-              ? LanguageManager.l10n.rub_name
-              : this == Currency.eur
-                  ? LanguageManager.l10n.eur_name
-                  : LanguageManager.l10n.usd_name;
+          : this == Currency.eur
+              ? LanguageManager.l10n.eur_name
+              : LanguageManager.l10n.usd_name;
 }
 
 /// Специализированный ValueNotifier с поддержкой принудительного уведомления слушателей.
@@ -50,11 +47,11 @@ class CurrencyValueNotifier extends ValueNotifier<Currency> {
 
 /// Утилита для форматирования и валидации денежных сумм.
 class CurrencyFormatter {
-  static Currency _currentCurrency = Currency.rub;
+  static Currency _currentCurrency = Currency.usd;
 
   /// Уведомляет слушателей (UI) об изменении выбранной валюты.
   static final CurrencyValueNotifier currencyNotifier =
-      CurrencyValueNotifier(Currency.rub);
+      CurrencyValueNotifier(Currency.usd);
 
   /// Принудительно уведомляет слушателей о необходимости обновить отображение валюты.
   static void notifyCurrencyChanged() {
@@ -87,7 +84,10 @@ class CurrencyFormatter {
         _currentCurrency = saved;
         currencyNotifier.value = saved;
       } catch (_) {
-        // Если сохраненный код не найден, оставляем дефолтную (RUB)
+        // Если сохраненный код не найден (например, устаревший RUB), переключаем на дефолтную USD
+        _currentCurrency = Currency.usd;
+        currencyNotifier.value = Currency.usd;
+        await PreferencesService.instance.saveCurrency(Currency.usd.code);
       }
     }
   }

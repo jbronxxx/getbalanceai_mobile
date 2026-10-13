@@ -12,7 +12,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     LanguageManager.initFallback();
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
-    CurrencyFormatter.setCurrency(Currency.rub);
+    CurrencyFormatter.setCurrency(Currency.usd);
   });
 
   Widget buildTestWidget({

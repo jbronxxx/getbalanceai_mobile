@@ -193,7 +193,7 @@ class Transaction {
     required this.dateMilliseconds,
     required this.dateCreatedMilliseconds,
     this.isModified = false,
-    this.currencyCode = 'RUB',
+    this.currencyCode = 'USD',
     this.exchangeRate = 1.0,
     this.baseAmount = 0.0,
   });

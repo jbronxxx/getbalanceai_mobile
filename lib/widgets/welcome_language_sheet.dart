@@ -137,7 +137,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
                           if (lang == AppLanguage.uz) {
                             selectedCurrency = Currency.uzs;
                           } else if (lang == AppLanguage.ru) {
-                            selectedCurrency = Currency.rub;
+                            selectedCurrency = Currency.usd;
                           } else if (lang == AppLanguage.en) {
                             selectedCurrency = Currency.usd;
                           }

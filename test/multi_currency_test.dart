@@ -55,34 +55,34 @@ void main() {
         () {
       final service = CurrencyExchangeService.instance;
       expect(
-          service.getRate(from: Currency.rub, to: Currency.rub), equals(1.0));
+          service.getRate(from: Currency.usd, to: Currency.usd), equals(1.0));
       expect(
-        service.convert(1500, from: Currency.rub, to: Currency.rub),
+        service.convert(1500, from: Currency.usd, to: Currency.usd),
         equals(1500.0),
       );
     });
 
-    test('Корректный расчет кросс-курса UZS к RUB и RUB к UZS', () {
+    test('Корректный расчет кросс-курса UZS к USD и USD к UZS', () {
       final service = CurrencyExchangeService.instance;
-      final uzsToRub = service.getRate(from: Currency.uzs, to: Currency.rub);
-      final rubToUzs = service.getRate(from: Currency.rub, to: Currency.uzs);
+      final uzsToUsd = service.getRate(from: Currency.uzs, to: Currency.usd);
+      final usdToUzs = service.getRate(from: Currency.usd, to: Currency.uzs);
 
-      expect(uzsToRub, greaterThan(0.0));
-      expect(rubToUzs, greaterThan(0.0));
+      expect(uzsToUsd, greaterThan(0.0));
+      expect(usdToUzs, greaterThan(0.0));
       // Произведение кросс-курсов должно быть близко к 1.0
-      expect((uzsToRub * rubToUzs - 1.0).abs(), lessThan(0.001));
+      expect((uzsToUsd * usdToUzs - 1.0).abs(), lessThan(0.001));
 
-      // 1 000 000 сум в рублях должно быть разумной суммой (~7000-8000 руб)
-      final convertedRub =
-          service.convert(1000000, from: Currency.uzs, to: Currency.rub);
-      expect(convertedRub, greaterThan(5000));
-      expect(convertedRub, lessThan(12000));
+      // 1 000 000 сум в долларах должно быть разумной суммой (~70-90 USD)
+      final convertedUsd =
+          service.convert(1000000, from: Currency.uzs, to: Currency.usd);
+      expect(convertedUsd, greaterThan(50));
+      expect(convertedUsd, lessThan(120));
     });
 
     test('Форматирование текстового описания курса', () {
       final service = CurrencyExchangeService.instance;
       final desc =
-          service.formatRateDescription(from: Currency.uzs, to: Currency.rub);
+          service.formatRateDescription(from: Currency.uzs, to: Currency.usd);
       expect(desc, contains('сум'));
       expect(desc, contains('≈'));
     });
@@ -103,7 +103,6 @@ void main() {
                 'rates': {
                   'USD': 1.0,
                   'EUR': 0.90,
-                  'RUB': 100.0,
                   'UZS': 13000.0,
                   'KZT': 500.0,
                 },
@@ -125,13 +124,13 @@ void main() {
       final success = await service.fetchLatestRates(force: true);
       expect(success, isTrue);
       expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(100.0));
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.90));
       expect(service.getRate(from: Currency.usd, to: Currency.uzs),
           equals(13000.0));
 
       final cached = await PreferencesService.instance.getExchangeRates();
       expect(cached, isNotNull);
-      expect(cached, contains('100'));
+      expect(cached, contains('13000'));
     });
 
     test(
@@ -151,7 +150,6 @@ void main() {
               'rates': {
                 'USD': 1.0,
                 'EUR': 0.93,
-                'RUB': 98.5,
                 'UZS': 12950.0,
                 'KZT': 498.0,
               },
@@ -168,7 +166,7 @@ void main() {
       final success = await service.fetchLatestRates(force: true);
       expect(success, isTrue);
       expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(98.5));
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.93));
     });
 
     test(
@@ -188,7 +186,7 @@ void main() {
       final success = await service.fetchLatestRates(force: true);
       expect(success, isFalse);
       expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
     });
 
     test(
@@ -197,7 +195,7 @@ void main() {
       final service = CurrencyExchangeService.instance;
       service.resetForTesting();
       expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
 
       service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
         return ResponseBody.fromString(
@@ -206,9 +204,8 @@ void main() {
             'data': {
               'base': 'USD',
               'rates': {
-                'RUB': 0,
-                'UZS': -100.0,
                 'EUR': 'invalid_string',
+                'UZS': -100.0,
                 'KZT': 500.0,
               },
             },
@@ -224,11 +221,9 @@ void main() {
       expect(success, isTrue);
 
       expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
+          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
       expect(service.getRate(from: Currency.usd, to: Currency.uzs),
           equals(12800.0));
-      expect(
-          service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
       expect(
           service.getRate(from: Currency.usd, to: Currency.kzt), equals(500.0));
       expect(service.getRate(from: Currency.uzs, to: Currency.usd),
@@ -262,7 +257,6 @@ void main() {
               'rates': {
                 'USD': 1.0,
                 'EUR': 0.93,
-                'RUB': 250.0,
                 'UZS': 1000.0,
                 'KZT': 498.0,
               },
@@ -279,8 +273,6 @@ void main() {
       final success = await service.fetchLatestRates(force: true);
       expect(success, isTrue);
 
-      expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
       expect(service.getRate(from: Currency.usd, to: Currency.uzs),
           equals(12800.0));
       expect(
@@ -305,7 +297,6 @@ void main() {
               'rates': {
                 'USD': 10.0,
                 'EUR': 5.0,
-                'RUB': 300.0,
                 'UZS': 100.0,
                 'KZT': 2000.0,
               },
@@ -322,12 +313,12 @@ void main() {
       final success = await service.fetchLatestRates(force: true);
       expect(success, isFalse);
 
-      expect(
-          service.getRate(from: Currency.usd, to: Currency.rub), equals(96.0));
       expect(service.getRate(from: Currency.usd, to: Currency.uzs),
           equals(12800.0));
       expect(
           service.getRate(from: Currency.usd, to: Currency.eur), equals(0.92));
+      expect(
+          service.getRate(from: Currency.usd, to: Currency.kzt), equals(495.0));
       expect(service.lastUpdated, isNull);
     });
 
@@ -355,7 +346,6 @@ void main() {
               'rates': {
                 'USD': 1.0,
                 'EUR': 0.92,
-                'RUB': 96.0,
                 'UZS': 12800.0,
                 'KZT': 495.0,
               },
@@ -422,10 +412,10 @@ void main() {
     test('Transaction корректно парсит данные с полями валюты', () {
       final json = {
         'id': 'tx-123',
-        'amount': 120000.0,
+        'amount': 128000.0,
         'currency': 'UZS',
-        'exchange_rate': 0.0075,
-        'base_amount': 900.0,
+        'exchange_rate': 1 / 12800.0,
+        'base_amount': 10.0,
         'description': 'Кафе в Ташкенте',
         'category': 'food',
         'type': 'expense',
@@ -433,17 +423,17 @@ void main() {
       };
 
       final tx = Transaction.fromJson(json);
-      expect(tx.amount, equals(120000.0));
+      expect(tx.amount, equals(128000.0));
       expect(tx.currencyCode, equals('UZS'));
       expect(tx.currency, equals(Currency.uzs));
-      expect(tx.exchangeRate, equals(0.0075));
-      expect(tx.baseAmount, equals(900.0));
-      expect(tx.effectiveBaseAmount, equals(900.0));
+      expect(tx.exchangeRate, equals(1 / 12800.0));
+      expect(tx.baseAmount, equals(10.0));
+      expect(tx.effectiveBaseAmount, equals(10.0));
 
       final serialized = tx.toJson();
       expect(serialized['currency'], equals('UZS'));
-      expect(serialized['exchange_rate'], equals(0.0075));
-      expect(serialized['base_amount'], equals(900.0));
+      expect(serialized['exchange_rate'], equals(1 / 12800.0));
+      expect(serialized['base_amount'], equals(10.0));
     });
 
     test(
@@ -471,9 +461,9 @@ void main() {
       final json = {
         'id': 'tx-dto',
         'amount': 50.0,
-        'currency': 'USD',
-        'exchange_rate': 96.0,
-        'base_amount': 4800.0,
+        'currency': 'EUR',
+        'exchange_rate': 1.09,
+        'base_amount': 54.5,
         'description': 'Книга',
         'category': 'shopping',
         'type': 'expense',
@@ -481,13 +471,13 @@ void main() {
       };
 
       final model = TransactionModel.fromJson(json);
-      expect(model.currency, equals('USD'));
-      expect(model.exchangeRate, equals(96.0));
-      expect(model.baseAmount, equals(4800.0));
+      expect(model.currency, equals('EUR'));
+      expect(model.exchangeRate, equals(1.09));
+      expect(model.baseAmount, equals(54.5));
 
       final serialized = model.toJson();
-      expect(serialized['currency'], equals('USD'));
-      expect(serialized['base_amount'], equals(4800.0));
+      expect(serialized['currency'], equals('EUR'));
+      expect(serialized['base_amount'], equals(54.5));
     });
   });
 
@@ -527,9 +517,11 @@ void main() {
       expect(find.textContaining('English'), findsOneWidget);
 
       // Проверяем наличие чипов валют
-      expect(find.text('RUB'), findsOneWidget);
+      expect(find.text('RUB'), findsNothing);
       expect(find.text('UZS'), findsOneWidget);
       expect(find.text('USD'), findsOneWidget);
+      expect(find.text('EUR'), findsOneWidget);
+      expect(find.text('KZT'), findsOneWidget);
 
       // Проверяем наличие кнопки продолжения
       expect(find.text('Продолжить'), findsOneWidget);
@@ -569,9 +561,11 @@ void main() {
         find.text('В этой валюте рассчитывается общий баланс и бюджеты'),
         findsOneWidget,
       );
-      expect(find.text('Российский рубль'), findsOneWidget);
+      expect(find.text('Российский рубль'), findsNothing);
+      expect(find.text('Доллар США'), findsOneWidget);
       expect(find.text('Узбекский сум'), findsOneWidget);
       expect(find.text('Казахстанский тенге'), findsOneWidget);
+      expect(find.text('Евро'), findsOneWidget);
 
       // Проверяем возврат на шаг 1 по кнопке назад
       await tester.tap(find.byIcon(Icons.arrow_back));
@@ -670,7 +664,7 @@ void main() {
         'Отображает сумму в базовой валюте со знаком валюты, оригинальную валюту чека, количество операций и шеврон',
         (WidgetTester tester) async {
       LanguageManager.setLanguage(AppLanguage.ru, save: false);
-      CurrencyFormatter.setCurrency(Currency.rub);
+      CurrencyFormatter.setCurrency(Currency.usd);
 
       final foreignTx = Transaction(
         localId: 1,
@@ -681,8 +675,8 @@ void main() {
         dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
         dateCreatedMilliseconds: DateTime.now().millisecondsSinceEpoch,
         currencyCode: 'UZS',
-        exchangeRate: 0.00716155,
-        baseAmount: 7161.55,
+        exchangeRate: 1 / 12800.0,
+        baseAmount: 78.125,
       );
 
       await tester.pumpWidget(
@@ -734,19 +728,19 @@ void main() {
         'Для операций только в базовой валюте не показывает подстроку иностранной валюты',
         (WidgetTester tester) async {
       LanguageManager.setLanguage(AppLanguage.ru, save: false);
-      CurrencyFormatter.setCurrency(Currency.rub);
+      CurrencyFormatter.setCurrency(Currency.usd);
 
-      final rubTx = Transaction(
+      final usdTx = Transaction(
         localId: 2,
-        amount: 500,
+        amount: 50,
         description: 'Кофе',
         dbCategory: Category.food.name,
         dbType: TransactionType.expense.name,
         dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
         dateCreatedMilliseconds: DateTime.now().millisecondsSinceEpoch,
-        currencyCode: 'RUB',
+        currencyCode: 'USD',
         exchangeRate: 1.0,
-        baseAmount: 500.0,
+        baseAmount: 50.0,
       );
 
       await tester.pumpWidget(
@@ -757,7 +751,7 @@ void main() {
           home: Scaffold(
             body: CategoryGroupWidget(
               category: Category.food,
-              transactions: [rubTx],
+              transactions: [usdTx],
               onTransactionTap: (_) {},
               onTransactionDelete: (_) {},
             ),
@@ -769,9 +763,9 @@ void main() {
 
       expect(find.text('Питание'), findsOneWidget);
       expect(find.text('1 операция'), findsOneWidget);
-      expect(find.text('-500,00 ₽'), findsOneWidget);
+      expect(find.text(r'-$50,00'), findsOneWidget);
       // Нет подстроки иностранной валюты
-      expect(find.text('-500 сум'), findsNothing);
+      expect(find.text('-50 сум'), findsNothing);
     });
   });
 
@@ -779,8 +773,8 @@ void main() {
     testWidgets(
         'CurrencyPickerSheet с updateGlobalCurrency: false не меняет глобальную валюту аккаунта',
         (WidgetTester tester) async {
-      CurrencyFormatter.setCurrency(Currency.rub);
-      expect(CurrencyFormatter.currentCurrency, equals(Currency.rub));
+      CurrencyFormatter.setCurrency(Currency.usd);
+      expect(CurrencyFormatter.currentCurrency, equals(Currency.usd));
 
       Currency? selected;
       await tester.pumpWidget(
@@ -794,7 +788,7 @@ void main() {
                 onPressed: () async {
                   selected = await CurrencyPickerSheet.show(
                     context,
-                    selectedCurrency: Currency.rub,
+                    selectedCurrency: Currency.usd,
                     updateGlobalCurrency: false,
                   );
                 },
@@ -815,15 +809,15 @@ void main() {
 
       // Проверяем, что результат возвращен
       expect(selected, equals(Currency.uzs));
-      // Глобальная валюта осталась RUB!
-      expect(CurrencyFormatter.currentCurrency, equals(Currency.rub));
+      // Глобальная валюта осталась USD!
+      expect(CurrencyFormatter.currentCurrency, equals(Currency.usd));
     });
 
     testWidgets(
         'CurrencyPickerSheet по умолчанию (для профиля) обновляет глобальную валюту аккаунта',
         (WidgetTester tester) async {
-      CurrencyFormatter.setCurrency(Currency.rub);
-      expect(CurrencyFormatter.currentCurrency, equals(Currency.rub));
+      CurrencyFormatter.setCurrency(Currency.usd);
+      expect(CurrencyFormatter.currentCurrency, equals(Currency.usd));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -856,23 +850,23 @@ void main() {
 
   group('Recalculation on Base Currency Change Tests', () {
     test(
-        'При смене базовой валюты с RUB на UZS транзакция в KZT пересчитывается корректно',
+        'При смене базовой валюты с USD на UZS транзакция в KZT пересчитывается корректно',
         () async {
       await LocalDbService.instance.clearAllData();
-      await CurrencyFormatter.setCurrency(Currency.rub);
+      await CurrencyFormatter.setCurrency(Currency.usd);
 
-      // Добавляем транзакцию в 1 000 000 тенге (KZT) при базовой валюте RUB
+      // Добавляем транзакцию в 1 000 000 тенге (KZT) при базовой валюте USD
       const kztAmount = 1000000.0;
-      final rateKztToRub = CurrencyExchangeService.instance
-          .getRate(from: Currency.kzt, to: Currency.rub);
-      final baseInRub = CurrencyExchangeService.instance
-          .convert(kztAmount, from: Currency.kzt, to: Currency.rub);
+      final rateKztToUsd = CurrencyExchangeService.instance
+          .getRate(from: Currency.kzt, to: Currency.usd);
+      final baseInUsd = CurrencyExchangeService.instance
+          .convert(kztAmount, from: Currency.kzt, to: Currency.usd);
 
       final tx = Transaction(
         amount: kztAmount,
         currencyCode: 'KZT',
-        exchangeRate: rateKztToRub,
-        baseAmount: baseInRub,
+        exchangeRate: rateKztToUsd,
+        baseAmount: baseInUsd,
         description: 'Покупка в Алматы',
         dbCategory: Category.shopping.name,
         dbType: TransactionType.expense.name,
@@ -882,15 +876,15 @@ void main() {
 
       LocalDbService.instance.saveTransaction(tx);
 
-      // В базе сумма в RUB (~180-210 тыс. руб)
+      // В базе сумма в USD (~2020 USD)
       final totalsBefore = LocalDbService.instance
           .getMonthTotals(DateTime.now().month, DateTime.now().year);
-      expect(totalsBefore['expense']!, closeTo(baseInRub, 0.01));
+      expect(totalsBefore['expense']!, closeTo(baseInUsd, 0.01));
 
       // Сменяем базовую валюту аккаунта на UZS (сум)
       await CurrencyFormatter.setCurrency(Currency.uzs);
 
-      // Итоги месяца динамически пересчитываются в UZS (~25-27 млн сум, а НЕ остаются 189 тыс!)
+      // Итоги месяца динамически пересчитываются в UZS (~25-27 млн сум, а НЕ остаются в USD!)
       final expectedBaseInUzs = CurrencyExchangeService.instance
           .convert(kztAmount, from: Currency.kzt, to: Currency.uzs);
       final totalsAfter = LocalDbService.instance
@@ -907,6 +901,54 @@ void main() {
       expect(
           savedTxs.first.effectiveBaseAmount, closeTo(expectedBaseInUzs, 0.01));
       expect(savedTxs.first.isModified, isFalse);
+    });
+  });
+
+  group('Legacy RUB Deprecation & Migration Tests', () {
+    test(
+        'Безопасный fallback на USD и перезапись настройки при чтении устаревшего кода RUB из PreferencesService',
+        () async {
+      await PreferencesService.instance.saveCurrency('RUB');
+      expect(await PreferencesService.instance.getCurrency(), equals('RUB'));
+
+      await CurrencyFormatter.loadSavedCurrency();
+
+      expect(CurrencyFormatter.currentCurrency, equals(Currency.usd));
+      expect(CurrencyFormatter.currencyNotifier.value, equals(Currency.usd));
+      // Настройка в PreferencesService должна быть безопасно перезаписана на USD
+      expect(await PreferencesService.instance.getCurrency(), equals('USD'));
+    });
+
+    test(
+        'Миграция legacy транзакций с currencyCode == RUB в текущую базовую валюту',
+        () async {
+      await LocalDbService.instance.clearAllData();
+      await CurrencyFormatter.setCurrency(Currency.usd);
+
+      final legacyTx = Transaction(
+        amount: 5000.0,
+        description: 'Старая покупка в рублях',
+        dbCategory: Category.food.name,
+        dbType: TransactionType.expense.name,
+        dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
+        dateCreatedMilliseconds: DateTime.now().millisecondsSinceEpoch,
+        currencyCode: 'RUB',
+        exchangeRate: 1.0,
+        baseAmount: 5000.0,
+      );
+
+      LocalDbService.instance.saveTransaction(legacyTx);
+
+      // Проверяем, что в БД сохранилась транзакция с кодом RUB
+      var txs = LocalDbService.instance.getAllTransactions();
+      expect(txs.first.currencyCode, equals('RUB'));
+
+      // Запускаем миграцию
+      LocalDbService.instance.migrateLegacyTransactionsForTesting();
+
+      // После миграции currencyCode должен стать USD (текущая базовая валюта)
+      txs = LocalDbService.instance.getAllTransactions();
+      expect(txs.first.currencyCode, equals('USD'));
     });
   });
 
