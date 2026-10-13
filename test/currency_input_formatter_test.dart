@@ -15,7 +15,7 @@ void main() {
         (MethodCall methodCall) async => null,
       );
       formatter = CurrencyInputFormatter();
-      CurrencyFormatter.setCurrency(Currency.rub); // 2 decimal places
+      CurrencyFormatter.setCurrency(Currency.usd); // 2 decimal places
     });
 
     TextEditingValue formatValue(String oldText, String newText) {
@@ -48,7 +48,7 @@ void main() {
     });
 
     test('limits decimal places based on currency', () {
-      CurrencyFormatter.setCurrency(Currency.rub); // 2 decimal places
+      CurrencyFormatter.setCurrency(Currency.usd); // 2 decimal places
       expect(formatValue('10,0', '10,00').text, '10,00');
       expect(formatValue('10,00', '10,005').text,
           '10,00'); // should reject 3rd decimal place
@@ -106,10 +106,10 @@ void main() {
       // Russian locale: space as thousand separator, comma as decimal separator
       final ruResult = CurrencyFormatter.format(
         1234.56,
-        currency: Currency.rub,
+        currency: Currency.usd,
         locale: 'ru',
       );
-      expect(ruResult, '1 234,56 ₽');
+      expect(ruResult, r'$1 234,56');
     });
 
     test(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -51,8 +52,9 @@ class LocalDbService {
   /// Количество бюджетов в локальной базе.
   int get budgetsCount => _budgetBox.count();
 
-  /// Мигрирует старые транзакции, созданные до внедрения мультивалютности.
+  /// Мигрирует старые транзакции, созданные до внедрения мультивалютности или с устаревшей валютой RUB.
   /// Если baseAmount равен 0, заполняет его на основе amount и текущей валюты.
+  /// Если currencyCode равен RUB, переводит его в текущую базовую валюту.
   void _migrateLegacyTransactions() {
     try {
       final legacyQuery = _transactionBox
@@ -69,7 +71,7 @@ class LocalDbService {
           tx.baseAmount = tx.amount;
           tx.exchangeRate = 1.0;
           if (tx.currencyCode.isEmpty) {
-            tx.currencyCode = 'RUB';
+            tx.currencyCode = 'USD';
           }
           updated.add(tx);
         }
@@ -78,10 +80,30 @@ class LocalDbService {
           '[LocalDbService] Migrated ${updated.length} legacy transactions with baseAmount',
         );
       }
+
+      final rubQuery = _transactionBox
+          .query(Transaction_.currencyCode.equals('RUB', caseSensitive: false))
+          .build();
+      final rubTxs = rubQuery.find();
+      rubQuery.close();
+
+      if (rubTxs.isNotEmpty) {
+        final currentCode = CurrencyFormatter.currentCurrency.code;
+        for (final tx in rubTxs) {
+          tx.currencyCode = currentCode;
+        }
+        _transactionBox.putMany(rubTxs);
+        AppLogger.i(
+          '[LocalDbService] Migrated ${rubTxs.length} legacy RUB transactions to $currentCode',
+        );
+      }
     } catch (e) {
       AppLogger.w('[LocalDbService] Legacy transactions migration skipped: $e');
     }
   }
+
+  @visibleForTesting
+  void migrateLegacyTransactionsForTesting() => _migrateLegacyTransactions();
 
   /// Открывает (или создаёт) файл базы данных в директории документов
   /// приложения и инициализирует [instance]. Должен быть вызван один раз
@@ -185,7 +207,7 @@ class LocalDbService {
       transaction.baseAmount = transaction.amount * rate;
     }
     if (transaction.currencyCode.isEmpty) {
-      transaction.currencyCode = 'RUB';
+      transaction.currencyCode = 'USD';
     }
   }
 

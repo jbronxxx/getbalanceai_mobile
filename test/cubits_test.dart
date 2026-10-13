@@ -210,7 +210,7 @@ void main() {
 
       await cubit.close();
       LanguageManager.setLanguage(AppLanguage.ru);
-      CurrencyFormatter.setCurrency(Currency.rub);
+      CurrencyFormatter.setCurrency(Currency.usd);
     });
 
     test('reloads insights on language change if already loaded once',

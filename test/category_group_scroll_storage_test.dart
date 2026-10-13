@@ -29,7 +29,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     LanguageManager.initFallback();
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
-    CurrencyFormatter.setCurrency(Currency.rub);
+    CurrencyFormatter.setCurrency(Currency.usd);
   });
 
   Transaction createSampleTx(int id, Category category, double amount) {
@@ -41,7 +41,7 @@ void main() {
       dbType: TransactionType.expense.name,
       dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
       dateCreatedMilliseconds: DateTime.now().millisecondsSinceEpoch,
-      currencyCode: 'RUB',
+      currencyCode: 'USD',
       exchangeRate: 1.0,
       baseAmount: amount,
     );
