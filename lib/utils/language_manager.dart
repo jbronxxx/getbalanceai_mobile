@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 enum AppLanguage {
   ru('ru', 'Русский', '🇷🇺'),
   uz('uz', "O'zbekcha", '🇺🇿'),
+  kk('kk', 'Қазақша', '🇰🇿'),
   en('en', 'English', '🇬🇧');
 
   final String code;
@@ -141,6 +142,8 @@ class LanguageManager {
         return '$day $monthGen';
       case AppLanguage.uz:
         return '$day-$monthGen';
+      case AppLanguage.kk:
+        return '$day $monthGen';
       case AppLanguage.en:
         return '$monthGen $day';
     }
@@ -160,6 +163,8 @@ class LanguageManager {
           return '$dayMonth ${date.year}, $timeStr';
         case AppLanguage.uz:
           return '${date.year}-yil $dayMonth, $timeStr';
+        case AppLanguage.kk:
+          return '${date.year} ж. $dayMonth, $timeStr';
         case AppLanguage.en:
           return '$dayMonth, ${date.year}, $timeStr';
       }
@@ -194,6 +199,8 @@ class LanguageManager {
         return '$count операций';
       case AppLanguage.uz:
         return '$count ta operatsiya';
+      case AppLanguage.kk:
+        return '$count операция';
       case AppLanguage.en:
         return count == 1 ? '1 transaction' : '$count transactions';
     }

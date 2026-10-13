@@ -66,6 +66,8 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
       if (!_currencyManuallyChanged) {
         if (lang == AppLanguage.uz) {
           _selectedCurrency = Currency.uzs;
+        } else if (lang == AppLanguage.kk) {
+          _selectedCurrency = Currency.kzt;
         } else if (lang == AppLanguage.ru) {
           _selectedCurrency = Currency.usd;
         } else if (lang == AppLanguage.en) {

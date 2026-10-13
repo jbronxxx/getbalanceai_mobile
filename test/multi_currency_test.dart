@@ -548,6 +548,7 @@ void main() {
       expect(find.text('Для комфортной работы с приложением'), findsOneWidget);
       expect(find.text('Русский'), findsOneWidget);
       expect(find.text('O\'zbekcha'), findsOneWidget);
+      expect(find.text('Қазақша'), findsOneWidget);
       expect(find.text('English'), findsOneWidget);
 
       // Нажимаем продолжить для перехода на шаг 2

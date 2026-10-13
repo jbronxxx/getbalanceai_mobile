@@ -118,6 +118,7 @@ class FinanceApp extends StatelessWidget {
                   Locale('ru'),
                   Locale('uz'),
                   Locale('en'),
+                  Locale('kk'),
                 ],
                 localizationsDelegates: const [
                   AppLocalizations.delegate,
