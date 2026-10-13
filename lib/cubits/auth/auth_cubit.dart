@@ -27,10 +27,16 @@ class AuthCubit extends Cubit<AuthState> {
       emit(Authenticated(
         email: _apiService.email ?? '',
         name: _apiService.userName ?? '',
+        avatarUrl: _apiService.avatarUrl,
       ));
     } else {
       emit(Unauthenticated());
     }
+  }
+
+  /// Обновить текущее состояние из сервиса авторизации
+  void refresh() {
+    _updateState(_apiService.isAuthenticated);
   }
 
   void logout() {

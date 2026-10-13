@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:getbalanceai_mobile/cubits/auth/auth_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/profile/profile_cubit.dart';
 import 'package:getbalanceai_mobile/models/auth_model.dart';
@@ -311,6 +312,82 @@ void main() {
       expect(withError.syncError, error);
       expect(
           withError.copyWith(syncStatus: SyncStatus.syncing).syncError, isNull);
+    });
+  });
+
+  group('AuthCubit', () {
+    test('emits Unauthenticated initially when user is not authenticated', () {
+      when(() => api.isAuthenticated).thenReturn(false);
+      final cubit = AuthCubit(apiService: api);
+      expect(cubit.state, isA<Unauthenticated>());
+      cubit.close();
+    });
+
+    test(
+        'emits Authenticated with email, name and avatarUrl when authenticated',
+        () {
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.email).thenReturn('user@example.com');
+      when(() => api.userName).thenReturn('Google User');
+      when(() => api.avatarUrl)
+          .thenReturn('https://lh3.googleusercontent.com/avatar');
+
+      final cubit = AuthCubit(apiService: api);
+      expect(cubit.state, isA<Authenticated>());
+      final authState = cubit.state as Authenticated;
+      expect(authState.email, 'user@example.com');
+      expect(authState.name, 'Google User');
+      expect(authState.avatarUrl, 'https://lh3.googleusercontent.com/avatar');
+      cubit.close();
+    });
+
+    blocTest<AuthCubit, AuthState>(
+      'reacts to authStream emitting false by emitting Unauthenticated',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(true);
+        when(() => api.email).thenReturn('u@example.com');
+        when(() => api.userName).thenReturn('User');
+        when(() => api.avatarUrl).thenReturn(null);
+      },
+      build: () => AuthCubit(apiService: api),
+      act: (cubit) {
+        when(() => api.isAuthenticated).thenReturn(false);
+        authStreamController.add(false);
+      },
+      expect: () => [isA<Unauthenticated>()],
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'reacts to authStream emitting true with updated avatarUrl',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(false);
+      },
+      build: () => AuthCubit(apiService: api),
+      act: (cubit) {
+        when(() => api.isAuthenticated).thenReturn(true);
+        when(() => api.email).thenReturn('u@example.com');
+        when(() => api.userName).thenReturn('User');
+        when(() => api.avatarUrl)
+            .thenReturn('https://lh3.googleusercontent.com/new_avatar');
+        authStreamController.add(true);
+      },
+      expect: () => [
+        isA<Authenticated>().having((s) => s.avatarUrl, 'avatarUrl',
+            'https://lh3.googleusercontent.com/new_avatar'),
+      ],
+    );
+
+    test('logout delegates to performLogout', () {
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.email).thenReturn('u@example.com');
+      when(() => api.userName).thenReturn('User');
+      when(() => api.avatarUrl).thenReturn(null);
+      when(() => api.performLogout()).thenAnswer((_) async {});
+
+      final cubit = AuthCubit(apiService: api);
+      cubit.logout();
+      verify(() => api.performLogout()).called(1);
+      cubit.close();
     });
   });
 }

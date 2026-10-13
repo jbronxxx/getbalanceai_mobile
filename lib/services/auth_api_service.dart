@@ -106,6 +106,9 @@ class AuthApiService {
     if (userName != null) {
       _userName = userName;
       await _storage.write(key: 'auth_user', value: userName);
+      if (isAuthenticated) {
+        _authStream.add(true);
+      }
     }
   }
 
@@ -115,6 +118,9 @@ class AuthApiService {
       await _storage.write(key: 'auth_avatar_url', value: avatarUrl);
     } else {
       await _storage.delete(key: 'auth_avatar_url');
+    }
+    if (isAuthenticated) {
+      _authStream.add(true);
     }
   }
 
@@ -140,6 +146,14 @@ class AuthApiService {
     }
 
     try {
+      try {
+        await GoogleSignIn.instance.initialize(
+          serverClientId: ApiConfig.googleServerClientId,
+        );
+      } catch (e) {
+        AppLogger.w(
+            '[AuthApiService] Google initialize before signOut error: $e');
+      }
       await GoogleSignIn.instance.signOut();
     } catch (e) {
       AppLogger.w('[AuthApiService] Google signOut error: $e');
@@ -227,11 +241,25 @@ class AuthApiService {
     }
   }
 
-  Future<LoginResponseModel> loginWithGoogle(String idToken) async {
+  Future<LoginResponseModel> loginWithGoogle(
+    String idToken, {
+    String? avatarUrl,
+    String? name,
+  }) async {
     try {
+      final payload = <String, dynamic>{
+        'id_token': idToken,
+      };
+      if (avatarUrl != null && avatarUrl.isNotEmpty) {
+        payload['avatar_url'] = avatarUrl;
+      }
+      if (name != null && name.isNotEmpty) {
+        payload['name'] = name;
+      }
+
       final response = await _dio.post(
         ApiConfig.loginGoogle,
-        data: {'id_token': idToken},
+        data: payload,
       );
 
       return _handleLoginResponse(response.data);
@@ -269,7 +297,32 @@ class AuthApiService {
     }
 
     await setTokens(token, refreshToken);
-    await fetchAndSaveUserProfile();
+
+    if (data?['user'] != null && data['user'] is Map<String, dynamic>) {
+      try {
+        final userProfile =
+            AuthMeResponseModel.fromJson({'data': data['user']});
+        await setUserId(userProfile.id);
+        await setUserName(userProfile.userName);
+        await setUserEmail(userProfile.userEmail);
+        await setAvatarUrl(userProfile.avatarUrl);
+        if (userProfile.baseCurrency != null) {
+          final currency = Currency.values.firstWhere(
+            (c) =>
+                c.code.toUpperCase() == userProfile.baseCurrency!.toUpperCase(),
+            orElse: () => CurrencyFormatter.currentCurrency,
+          );
+          await CurrencyFormatter.setCurrency(currency);
+        }
+        AppLogger.i(
+            '[AuthApiService] Profile populated from login tokens for: ${userProfile.userName}');
+      } catch (e) {
+        AppLogger.w('[AuthApiService] Token profile parse error: $e');
+        await fetchAndSaveUserProfile();
+      }
+    } else {
+      await fetchAndSaveUserProfile();
+    }
 
     _authStream.add(true);
     return LoginResponseModel.fromJson(responseData);
