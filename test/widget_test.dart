@@ -1,6 +1,7 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,9 @@ void main() {
     ApiService.instance.dio.httpClientAdapter = _MockHttpClientAdapter();
     await tester.pumpWidget(const FinanceApp());
     await tester.pump();
+
+    final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(materialApp.title, 'GetBalance AI');
 
     expect(find.byType(LiquidGlassNavBar), findsOneWidget);
     expect(

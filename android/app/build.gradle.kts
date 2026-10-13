@@ -16,7 +16,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.finance_app_mobile"
+    namespace = "com.getbalanceai.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 

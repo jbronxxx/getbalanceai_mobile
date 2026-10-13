@@ -102,7 +102,7 @@ class FinanceApp extends StatelessWidget {
             builder: (context, currentLanguage, child) {
               return MaterialApp(
                 navigatorKey: navigatorKey,
-                title: 'Family Budget',
+                title: 'GetBalance AI',
                 debugShowCheckedModeBanner: false,
                 themeMode: themeMode,
                 locale: Locale(currentLanguage.code),
