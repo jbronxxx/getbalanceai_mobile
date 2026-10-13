@@ -21,6 +21,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   int _selectedYear = DateTime.now().year;
 
   List<Budget> _budgets = [];
+  double _totalIncome = 0;
+  double _totalExpense = 0;
+  Map<Category, double> _categoryExpenses = {};
   bool _shouldShowSwipeHint = false;
 
   @override
@@ -53,11 +56,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
-  /// Загружает лимиты бюджета за текущие выбранные месяц/год.
+  /// Загружает лимиты бюджета и данные расходов/доходов за выбранный период.
   void _loadBudgets() {
+    final totals =
+        LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
+    final catExpenses = LocalDbService.instance
+        .getCategoryExpensesForPeriod(_selectedMonth, _selectedYear);
     setState(() {
       _budgets = LocalDbService.instance
           .getBudgetsForPeriod(_selectedMonth, _selectedYear);
+      _totalIncome = totals['income'] ?? 0;
+      _totalExpense = totals['expense'] ?? 0;
+      _categoryExpenses = catExpenses;
     });
   }
 
@@ -195,6 +205,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       ),
       body: ScreenBodyCard(
         child: CustomPullToRefresh(
+          topPadding: LiquidGlassAppBar.topContentPadding(context),
           onRefresh: _handleRefresh,
           child: CustomScrollView(
             key: const PageStorageKey('budgets_custom_scroll_view'),
@@ -203,25 +214,40 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             ),
             slivers: [
               SliverToBoxAdapter(
-                child: BudgetPeriodSelector(
+                child: Padding(
                   padding: EdgeInsets.only(
                     top: LiquidGlassAppBar.topContentPadding(context) + 8.0,
+                    left: 16.0,
+                    right: 16.0,
                     bottom: 8.0,
                   ),
-                  selectedMonth: _selectedMonth,
-                  selectedYear: _selectedYear,
-                  onMonthChanged: (val) {
-                    setState(() {
-                      _selectedMonth = val;
-                      _loadBudgets();
-                    });
-                  },
-                  onYearChanged: (val) {
-                    setState(() {
-                      _selectedYear = val;
-                      _loadBudgets();
-                    });
-                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BudgetExpenseRatioCard(
+                        totalIncome: _totalIncome,
+                        totalExpense: _totalExpense,
+                        categoryExpenses: _categoryExpenses,
+                      ),
+                      BudgetPeriodSelector(
+                        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                        selectedMonth: _selectedMonth,
+                        selectedYear: _selectedYear,
+                        onMonthChanged: (val) {
+                          setState(() {
+                            _selectedMonth = val;
+                            _loadBudgets();
+                          });
+                        },
+                        onYearChanged: (val) {
+                          setState(() {
+                            _selectedYear = val;
+                            _loadBudgets();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
               if (_budgets.isEmpty)

@@ -305,6 +305,7 @@ class _InsightsScreenView extends StatelessWidget {
       body: ScreenBodyCard(
         child: CustomPullToRefresh(
           releaseImmediately: true,
+          topPadding: topOffset,
           onRefresh: () => context.read<InsightsCubit>().loadInsights(),
           child: Stack(
             children: [

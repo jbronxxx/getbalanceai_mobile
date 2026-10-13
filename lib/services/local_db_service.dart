@@ -146,6 +146,28 @@ class LocalDbService {
     return {'income': income, 'expense': expense};
   }
 
+  /// Считает расходы по всем категориям за выбранный месяц с динамической
+  /// конвертацией в текущую валюту аккаунта.
+  Map<Category, double> getCategoryExpensesForPeriod(int month, int year,
+      [Currency? targetCurrency]) {
+    final transactions = getTransactionsForPeriod(month, year);
+    final currency = targetCurrency ?? CurrencyFormatter.currentCurrency;
+    final exchange = CurrencyExchangeService.instance;
+
+    final Map<Category, double> result = {};
+
+    for (final t in transactions) {
+      if (t.type == TransactionType.expense) {
+        final converted = t.currency == currency
+            ? t.amount
+            : exchange.convert(t.amount, from: t.currency, to: currency);
+        result[t.category] = (result[t.category] ?? 0.0) + converted;
+      }
+    }
+
+    return result;
+  }
+
   /// Возвращает все транзакции, отсортированные от новых к старым.
   List<Transaction> getAllTransactions() {
     final query = _transactionBox.query()
