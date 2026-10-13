@@ -191,4 +191,119 @@ void main() {
       expect(find.byType(GlassContainer), findsOneWidget);
     });
   });
+
+  group('LiquidGlassAppBar Tests', () {
+    testWidgets('Рендерит заголовок, действия и стеклянный flexibleSpace',
+        (tester) async {
+      bool actionTapped = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          Scaffold(
+            appBar: LiquidGlassAppBar(
+              title: const Text('Тестовый заголовок'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () => actionTapped = true,
+                ),
+              ],
+            ),
+            body: const SizedBox(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Тестовый заголовок'), findsOneWidget);
+      expect(find.byType(LiquidGlassAppBar), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.settings));
+      await tester.pump();
+      expect(actionTapped, isTrue);
+    });
+
+    testWidgets('Корректно работает в темной теме', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const Scaffold(
+            appBar: LiquidGlassAppBar(
+              title: Text('Темный заголовок'),
+            ),
+            body: SizedBox(),
+          ),
+          theme: AppTheme.darkTheme,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Темный заголовок'), findsOneWidget);
+      expect(find.byType(LiquidGlassAppBar), findsOneWidget);
+    });
+
+    testWidgets(
+        'topContentPadding рассчитывается и хэдер не содержит нижней границы',
+        (tester) async {
+      late double topPadding;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          Builder(
+            builder: (context) {
+              topPadding = LiquidGlassAppBar.topContentPadding(context);
+              return const Scaffold(
+                appBar: LiquidGlassAppBar(
+                  title: Text('Без полоски'),
+                ),
+                body: SizedBox(),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(topPadding, greaterThanOrEqualTo(kToolbarHeight));
+      // Проверяем, что подложка хэдера не содержит Border
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(LiquidGlassAppBar),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.border, isNull);
+      expect(
+        decoration.borderRadius,
+        equals(const BorderRadius.vertical(bottom: Radius.circular(20.0))),
+      );
+    });
+  });
+
+  group('ScreenBodyCard Tests', () {
+    testWidgets('Рендерит контент со скругленными верхними углами без границы',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const ScreenBodyCard(
+            child: Text('Контент внутри карточки экрана'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Контент внутри карточки экрана'), findsOneWidget);
+      final container = tester.widget<Container>(find.byType(Container).first);
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.borderRadius, isNotNull);
+      expect(
+        decoration.borderRadius,
+        equals(const BorderRadius.vertical(top: Radius.circular(28.0))),
+      );
+      expect(decoration.border, isNull);
+    });
+  });
 }

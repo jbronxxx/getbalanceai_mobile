@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
@@ -177,100 +176,103 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final textTheme = theme.textTheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    final scaffoldBg =
+        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
+      backgroundColor: scaffoldBg,
+      extendBodyBehindAppBar: true,
+      appBar: LiquidGlassAppBar(
         title: Text(
           context.l10n.budgets_title,
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 18,
+            color: colorScheme.onSurface,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-        elevation: 0,
-        systemOverlayStyle: isDark
-            ? SystemUiOverlayStyle.light
-                .copyWith(statusBarColor: Colors.transparent)
-            : SystemUiOverlayStyle.dark
-                .copyWith(statusBarColor: Colors.transparent),
       ),
-      body: CustomPullToRefresh(
-        onRefresh: _handleRefresh,
-        child: CustomScrollView(
-          key: const PageStorageKey('budgets_custom_scroll_view'),
-          physics: const ClampingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            SliverToBoxAdapter(
-              child: BudgetPeriodSelector(
-                selectedMonth: _selectedMonth,
-                selectedYear: _selectedYear,
-                onMonthChanged: (val) {
-                  setState(() {
-                    _selectedMonth = val;
-                    _loadBudgets();
-                  });
-                },
-                onYearChanged: (val) {
-                  setState(() {
-                    _selectedYear = val;
-                    _loadBudgets();
-                  });
-                },
-              ),
+      body: ScreenBodyCard(
+        child: CustomPullToRefresh(
+          onRefresh: _handleRefresh,
+          child: CustomScrollView(
+            key: const PageStorageKey('budgets_custom_scroll_view'),
+            physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
-            if (_budgets.isEmpty)
+            slivers: [
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+                child: BudgetPeriodSelector(
+                  padding: EdgeInsets.only(
+                    top: LiquidGlassAppBar.topContentPadding(context) + 8.0,
+                    bottom: 8.0,
                   ),
-                  child: _buildEmptyBudgetsBubble(context),
+                  selectedMonth: _selectedMonth,
+                  selectedYear: _selectedYear,
+                  onMonthChanged: (val) {
+                    setState(() {
+                      _selectedMonth = val;
+                      _loadBudgets();
+                    });
+                  },
+                  onYearChanged: (val) {
+                    setState(() {
+                      _selectedYear = val;
+                      _loadBudgets();
+                    });
+                  },
                 ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  bottom: 16.0,
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final b = _budgets[index];
-                      final currentSpent = LocalDbService.instance
-                          .getSpentForCategory(
-                              _selectedMonth, _selectedYear, b.dbCategory);
+              ),
+              if (_budgets.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: _buildEmptyBudgetsBubble(context),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.only(
+                    left: 16.0,
+                    right: 16.0,
+                    bottom: 16.0,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final b = _budgets[index];
+                        final currentSpent = LocalDbService.instance
+                            .getSpentForCategory(
+                                _selectedMonth, _selectedYear, b.dbCategory);
 
-                      return BudgetItemCard(
-                        budget: b,
-                        currentSpent: currentSpent,
-                        isFirst: index == 0,
-                        showSwipeHint: index == 0 && _shouldShowSwipeHint,
-                        onTap: () => _openAddBudgetSheet(b),
-                        onDelete: () => _deleteBudget(b),
-                        onHintShown: () {
-                          PreferencesService.instance
-                              .recordHintShown('budgets');
-                        },
-                      );
-                    },
-                    childCount: _budgets.length,
+                        return BudgetItemCard(
+                          budget: b,
+                          currentSpent: currentSpent,
+                          isFirst: index == 0,
+                          showSwipeHint: index == 0 && _shouldShowSwipeHint,
+                          onTap: () => _openAddBudgetSheet(b),
+                          onDelete: () => _deleteBudget(b),
+                          onHintShown: () {
+                            PreferencesService.instance
+                                .recordHintShown('budgets');
+                          },
+                        );
+                      },
+                      childCount: _budgets.length,
+                    ),
                   ),
                 ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: LiquidGlassNavBar.bottomContentPadding(context),
+                ),
               ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: LiquidGlassNavBar.bottomContentPadding(context),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: Padding(

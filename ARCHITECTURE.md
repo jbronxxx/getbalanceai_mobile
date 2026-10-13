@@ -63,8 +63,10 @@ lib/
 │   ├── ai_sparkles_loader.dart  # Анимированный лоадер генерации ИИ (пульсирующие звёздочки)
 │   ├── custom_pull_to_refresh.dart # Кастомный Pull-to-Refresh со шторкой и режимом releaseImmediately
 │   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter, RepaintBoundary и непрозрачным fallback
-│   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass (RepaintBoundary, sigma 18, fallback без размытия для Android < 31)
+│   ├── liquid_glass_app_bar.dart# Хэдер экрана из полированного полупрозрачного стекла со скругленным низом (20px, BackdropFilter, topContentPadding)
+│   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass с единой полупрозрачностью и блюром (RepaintBoundary, sigma 18)
 │   ├── liquid_glass_fab.dart    # Плавающая кнопка действия с градиентным стеклом и неоновым свечением
+│   ├── screen_body_card.dart    # Каркас контента экрана со скругленными верхними краями (28px) и бесшовным скольжением под хэдер
 │   └── welcome_language_sheet.dart # Выбор стартового языка приложения
 └── screens/
     ├── main_shell.dart            # Каркас с IndexedStack, сохранением состояния вкладок (PageStorageKey) и локализацией слушателя валюты
@@ -180,6 +182,14 @@ main.dart`. Это было исправлено переносом состоя
   - **Плавающая кнопка действия (`LiquidGlassFab`)**:
     - Стилизована через палитру темы (`colorScheme.primary`/`secondary`/`onPrimary`) без хардкода цветов.
     - Включает полную поддержку доступности (`Tooltip`, `Semantics`) с локализованными подсказками.
+  - **Хэдер экрана Liquid Glass (`LiquidGlassAppBar`)**:
+    - Хэдеры экранов транзакций, лимитов, инсайтов и профиля выполнены в виде полированного полупрозрачного стекла.
+    - Реализует `PreferredSizeWidget`, оборачивает `flexibleSpace` в `RepaintBoundary` с размытием `BackdropFilter` (`sigma = 18.0`), градиентной подложкой (`GlassTheme.surface` / `surfaceEnd`), тонкой световой гранью `rim` и рассеянной тенью.
+    - Предусмотрен безопасный непрозрачный fallback для устройств без поддержки размытия (Android < API 31).
+  - **Каркас экрана с закругленными верхними краями (`ScreenBodyCard`)**:
+    - Верхние края основных экранов (транзакции, лимиты, инсайты, профиль) обрамлены скруглением углов `BorderRadius.vertical(top: Radius.circular(28.0))` в стиле M3 Expressive / Sheet.
+    - Имеет деликатную верхнюю световую грань и мягкую тень; скроллируемый контент изолирован через `clipBehavior: Clip.antiAlias`, что сохраняет скругления углов при прокрутке.
+    - Фоновый цвет каркаса экрана согласуется с `scaffoldBg`, обеспечивая плавный контрастный переход в скругленных углах под стеклянным хэдером.
 
 - **Инлайн-валидация полей ввода (Inline Input Validation & Error Styling)**:
   - Вывод ошибок валидации полей ввода отвязан от всплывающих алертов и тостов (`AppAlerts.warning`/`SnackBar`).
@@ -206,6 +216,7 @@ main.dart`. Это было исправлено переносом состоя
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
   - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику»); анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»);
+  - `AuthScreen`: устранен отдельный AppBar/хэдер, экран выполнен в виде целостного холста с верхним радиальным свечением темы, центрированным стеклянным медальоном, комфортной типографикой и аккуратной встроенной кнопкой возврата назад (при наличии стека навигации) по аналогии с `WelcomeSetupScreen` и `WelcomeLanguageSheet`.
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
 
 - **Жизненный цикл провайдеров в `main.dart`**:

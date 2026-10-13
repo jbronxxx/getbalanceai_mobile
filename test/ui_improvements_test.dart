@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/main.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
+import 'package:getbalanceai_mobile/screens/auth_screen.dart';
 import 'package:getbalanceai_mobile/screens/budgets_screen.dart';
 import 'package:getbalanceai_mobile/screens/dashboard_screen.dart';
 import 'package:getbalanceai_mobile/screens/welcome_setup_screen.dart';
@@ -222,7 +223,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(Icons.pie_chart_outline_rounded), findsOneWidget);
-      expect(find.byType(BackdropFilter), findsOneWidget);
+      // Присутствуют BackdropFilter в LiquidGlassAppBar и в пустом пузыре подсказки
+      expect(find.byType(BackdropFilter), findsNWidgets(2));
     });
   });
 
@@ -339,6 +341,34 @@ void main() {
       expect(
           LanguageManager.l10n.insights_header_title, equals('AI-Аналитика'));
       expect(LanguageManager.l10n.insights, equals('Аналитика'));
+    });
+  });
+
+  group('AuthScreen & Glass Headers Polish Tests', () {
+    testWidgets('AuthScreen не содержит отдельного AppBar и хэдера',
+        (tester) async {
+      await tester.pumpWidget(_buildTestApp(const AuthScreen()));
+      await tester.pumpAndSettle();
+
+      // Проверяем отсутствие AppBar на экране логина
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.text('Войти или создать аккаунт'), findsOneWidget);
+    });
+
+    testWidgets(
+        'DashboardScreen и BudgetsScreen используют LiquidGlassAppBar и ScreenBodyCard',
+        (tester) async {
+      await tester.pumpWidget(_buildTestApp(const DashboardScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LiquidGlassAppBar), findsOneWidget);
+      expect(find.byType(ScreenBodyCard), findsOneWidget);
+
+      await tester.pumpWidget(_buildTestApp(const BudgetsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LiquidGlassAppBar), findsOneWidget);
+      expect(find.byType(ScreenBodyCard), findsOneWidget);
     });
   });
 }

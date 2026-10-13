@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
@@ -218,9 +217,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final isDark = theme.brightness == Brightness.dark;
 
+    final scaffoldBg =
+        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
+      backgroundColor: scaffoldBg,
+      extendBodyBehindAppBar: true,
+      appBar: LiquidGlassAppBar(
         title: Text(
           context.l10n.balance,
           style: textTheme.titleMedium?.copyWith(
@@ -230,15 +233,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: colorScheme.surface,
-        surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-        elevation: 0,
-        systemOverlayStyle: isDark
-            ? SystemUiOverlayStyle.light
-                .copyWith(statusBarColor: Colors.transparent)
-            : SystemUiOverlayStyle.dark
-                .copyWith(statusBarColor: Colors.transparent),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -283,113 +277,119 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: CustomPullToRefresh(
-        onRefresh: _handleRefresh,
-        child: CustomScrollView(
-          key: const PageStorageKey('dashboard_custom_scroll_view'),
-          controller: _scrollController,
-          physics: const ClampingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    BalanceCard(
-                      balance: _totalBalance,
-                      income: _totalIncome,
-                      expense: _totalExpense,
-                    ),
-                    BudgetPeriodSelector(
-                      selectedMonth: _selectedMonth,
-                      selectedYear: _selectedYear,
-                      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                      onMonthChanged: (month) {
-                        setState(() {
-                          _selectedMonth = month;
-                          _loadTransactions();
-                        });
-                      },
-                      onYearChanged: (year) {
-                        setState(() {
-                          _selectedYear = year;
-                          _loadTransactions();
-                        });
-                      },
-                    ),
-                    if (_transactions.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40.0),
-                        child: Center(
-                          child: Text(
-                            context.l10n.no_transactions,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.outline,
+      body: ScreenBodyCard(
+        child: CustomPullToRefresh(
+          onRefresh: _handleRefresh,
+          child: CustomScrollView(
+            key: const PageStorageKey('dashboard_custom_scroll_view'),
+            controller: _scrollController,
+            physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: LiquidGlassAppBar.topContentPadding(context) + 8.0,
+                    left: 16.0,
+                    right: 16.0,
+                    bottom: 8.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BalanceCard(
+                        balance: _totalBalance,
+                        income: _totalIncome,
+                        expense: _totalExpense,
+                      ),
+                      BudgetPeriodSelector(
+                        selectedMonth: _selectedMonth,
+                        selectedYear: _selectedYear,
+                        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                        onMonthChanged: (month) {
+                          setState(() {
+                            _selectedMonth = month;
+                            _loadTransactions();
+                          });
+                        },
+                        onYearChanged: (year) {
+                          setState(() {
+                            _selectedYear = year;
+                            _loadTransactions();
+                          });
+                        },
+                      ),
+                      if (_transactions.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 40.0),
+                          child: Center(
+                            child: Text(
+                              context.l10n.no_transactions,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.outline,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            if (_transactions.isNotEmpty)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final date = _groupedTransactions.keys.elementAt(index);
-                      final categories = _groupedTransactions[date]!;
-
-                      return DayGroupWidget(
-                        date: date,
-                        categories: categories,
-                        showHintOnFirstCategory:
-                            index == 0 && _shouldShowSwipeHint,
-                        onTransactionTap: _openTransactionSheet,
-                        onTransactionDelete: _deleteTransaction,
-                        onHintShown: () {
-                          PreferencesService.instance
-                              .recordHintShown('dashboard');
-                          _swipeHintDismissTimer?.cancel();
-                          _swipeHintDismissTimer = Timer(
-                            const Duration(milliseconds: 2000),
-                            () {
-                              if (mounted) {
-                                setState(() => _shouldShowSwipeHint = false);
-                              }
-                            },
-                          );
-                        },
-                      );
-                    },
-                    childCount: _groupedTransactions.length,
+                    ],
                   ),
                 ),
               ),
-            if (_isLoading && _transactions.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colorScheme.primary,
+              if (_transactions.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final date = _groupedTransactions.keys.elementAt(index);
+                        final categories = _groupedTransactions[date]!;
+
+                        return DayGroupWidget(
+                          date: date,
+                          categories: categories,
+                          showHintOnFirstCategory:
+                              index == 0 && _shouldShowSwipeHint,
+                          onTransactionTap: _openTransactionSheet,
+                          onTransactionDelete: _deleteTransaction,
+                          onHintShown: () {
+                            PreferencesService.instance
+                                .recordHintShown('dashboard');
+                            _swipeHintDismissTimer?.cancel();
+                            _swipeHintDismissTimer = Timer(
+                              const Duration(milliseconds: 2000),
+                              () {
+                                if (mounted) {
+                                  setState(() => _shouldShowSwipeHint = false);
+                                }
+                              },
+                            );
+                          },
+                        );
+                      },
+                      childCount: _groupedTransactions.length,
                     ),
                   ),
                 ),
+              if (_isLoading && _transactions.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: LiquidGlassNavBar.bottomContentPadding(context),
+                ),
               ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: LiquidGlassNavBar.bottomContentPadding(context),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: Padding(
