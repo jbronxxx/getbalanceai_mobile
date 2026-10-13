@@ -8,6 +8,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
+import '../config/api_config.dart';
 
 /// Экран входа/регистрации через соцсети (Google, Apple).
 class AuthScreen extends StatefulWidget {
@@ -35,9 +37,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (provider == 'google') {
+        final nonce = const Uuid().v4();
         await GoogleSignIn.instance.initialize(
-          serverClientId:
-              '515668069765-se9i0kkcefd93ssb06pusjorjeki73k6.apps.googleusercontent.com',
+          serverClientId: ApiConfig.googleServerClientId,
+          nonce: nonce,
         );
         final GoogleSignInAccount googleUser =
             await GoogleSignIn.instance.authenticate();
@@ -46,7 +49,33 @@ class _AuthScreenState extends State<AuthScreen> {
         if (idToken == null) {
           throw Exception('Google sign in failed: no ID token returned.');
         }
-        await ApiService.instance.loginWithGoogle(idToken);
+        final googlePhoto = googleUser.photoUrl;
+        final googleName = googleUser.displayName;
+        await ApiService.instance.loginWithGoogle(
+          idToken,
+          avatarUrl: googlePhoto,
+          name: googleName,
+        );
+        final needAvatarUpdate = googlePhoto != null &&
+            googlePhoto.isNotEmpty &&
+            googlePhoto != ApiService.instance.avatarUrl;
+        final needNameUpdate = googleName != null &&
+            googleName.isNotEmpty &&
+            (ApiService.instance.userName == null ||
+                ApiService.instance.userName!.isEmpty ||
+                ApiService.instance.userName ==
+                    ApiService.instance.email?.split('@').first);
+
+        if (needAvatarUpdate || needNameUpdate) {
+          try {
+            await ApiService.instance.updateUserProfile(
+              avatarUrl: needAvatarUpdate ? googlePhoto : null,
+              name: needNameUpdate ? googleName : null,
+            );
+          } catch (e) {
+            AppLogger.w('[AuthScreen] Ошибка синхронизации профиля Google: $e');
+          }
+        }
       } else if (provider == 'apple') {
         final credential = await SignInWithApple.getAppleIDCredential(
           scopes: [

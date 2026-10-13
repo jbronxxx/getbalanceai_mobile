@@ -210,8 +210,16 @@ class ApiService {
   }) =>
       _authService.login(email: email, password: password);
 
-  Future<LoginResponseModel> loginWithGoogle(String idToken) =>
-      _authService.loginWithGoogle(idToken);
+  Future<LoginResponseModel> loginWithGoogle(
+    String idToken, {
+    String? avatarUrl,
+    String? name,
+  }) =>
+      _authService.loginWithGoogle(
+        idToken,
+        avatarUrl: avatarUrl,
+        name: name,
+      );
 
   Future<LoginResponseModel> loginWithApple(String identityToken) =>
       _authService.loginWithApple(identityToken);

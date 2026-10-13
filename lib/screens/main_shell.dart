@@ -43,9 +43,11 @@ class _MainShellState extends State<MainShell> {
       builder: (context, authState) {
         String email = '';
         String name = '';
+        String? avatarUrl;
         if (authState is Authenticated) {
           email = authState.email;
           name = authState.name;
+          avatarUrl = authState.avatarUrl;
         }
 
         final theme = Theme.of(context);
@@ -78,6 +80,7 @@ class _MainShellState extends State<MainShell> {
                           key: const PageStorageKey('profile_tab'),
                           userEmail: email,
                           userName: name,
+                          avatarUrl: avatarUrl,
                           onLogout: _logout,
                         ),
                       ],

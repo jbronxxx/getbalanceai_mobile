@@ -76,6 +76,7 @@ class UserAvatar extends StatelessWidget {
           _buildFallback(context, fgColor, bgColor),
           Image.network(
             url,
+            key: ValueKey(url),
             width: size,
             height: size,
             fit: BoxFit.cover,

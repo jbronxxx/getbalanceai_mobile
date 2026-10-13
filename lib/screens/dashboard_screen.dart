@@ -242,16 +242,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: ApiService.instance.isAuthenticated
-                ? GestureDetector(
-                    onTap: _openProfile,
-                    child: UserAvatar(
-                      radius: 18,
-                      avatarUrl: ApiService.instance.avatarUrl,
-                      defaultIcon: Icons.person,
-                    ),
-                  )
-                : TextButton(
+            child: StreamBuilder<bool>(
+              stream: ApiService.instance.authStream,
+              builder: (context, _) {
+                final isAuth = ApiService.instance.isAuthenticated;
+                if (!isAuth) {
+                  return TextButton(
                     onPressed: _openAuthScreen,
                     style: TextButton.styleFrom(
                       foregroundColor: colorScheme.primary,
@@ -271,8 +267,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: colorScheme.primary,
                       ),
                     ),
+                  );
+                }
+
+                return GestureDetector(
+                  onTap: _openProfile,
+                  child: UserAvatar(
+                    radius: 18,
+                    avatarUrl: ApiService.instance.avatarUrl,
+                    defaultIcon: Icons.person,
                   ),
-          )
+                );
+              },
+            ),
+          ),
         ],
       ),
       body: CustomPullToRefresh(

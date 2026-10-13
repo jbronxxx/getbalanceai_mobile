@@ -12,12 +12,14 @@ import '../widgets/widgets.dart';
 class ProfileScreen extends StatelessWidget {
   final String userEmail;
   final String userName;
+  final String? avatarUrl;
   final VoidCallback onLogout;
 
   const ProfileScreen({
     super.key,
     required this.userEmail,
     required this.userName,
+    this.avatarUrl,
     required this.onLogout,
   });
 
@@ -28,6 +30,7 @@ class ProfileScreen extends StatelessWidget {
       child: _ProfileScreenView(
         userEmail: userEmail,
         userName: userName,
+        avatarUrl: avatarUrl,
         onLogout: onLogout,
       ),
     );
@@ -37,11 +40,13 @@ class ProfileScreen extends StatelessWidget {
 class _ProfileScreenView extends StatefulWidget {
   final String userEmail;
   final String userName;
+  final String? avatarUrl;
   final VoidCallback onLogout;
 
   const _ProfileScreenView({
     required this.userEmail,
     required this.userName,
+    this.avatarUrl,
     required this.onLogout,
   });
 
@@ -228,8 +233,15 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         _handleSyncState(context, state);
       },
       builder: (context, state) {
-        final isAuthenticated =
-            context.watch<AuthCubit>().state is Authenticated;
+        final authState = context.watch<AuthCubit>().state;
+        final isAuthenticated = authState is Authenticated;
+        final currentAvatarUrl = authState is Authenticated
+            ? authState.avatarUrl
+            : (widget.avatarUrl ?? ApiService.instance.avatarUrl);
+        final currentUserName =
+            authState is Authenticated ? authState.name : widget.userName;
+        final currentUserEmail =
+            authState is Authenticated ? authState.email : widget.userEmail;
 
         return Scaffold(
           backgroundColor: colorScheme.surface,
@@ -263,8 +275,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
               child: Column(
                 children: [
                   ProfileHeader(
-                    userName: widget.userName,
-                    userEmail: widget.userEmail,
+                    userName: currentUserName,
+                    userEmail: currentUserEmail,
+                    avatarUrl: currentAvatarUrl,
                     isAuthenticated: isAuthenticated,
                   ),
                   const SizedBox(height: 32),

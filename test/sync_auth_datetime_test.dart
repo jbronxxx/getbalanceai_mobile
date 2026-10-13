@@ -433,6 +433,59 @@ void main() {
     });
 
     test(
+        'loginWithGoogle sends avatar_url and name and updates local profile from response user',
+        () async {
+      final api = ApiService.instance;
+      Map<String, dynamic>? receivedData;
+
+      api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
+        if (options.path == ApiConfig.loginGoogle) {
+          receivedData = options.data as Map<String, dynamic>?;
+          return ResponseBody.fromString(
+            jsonEncode({
+              'status': 'success',
+              'data': {
+                'access_token': 'google_access_token',
+                'refresh_token': 'google_refresh_token',
+                'token_type': 'bearer',
+                'user': {
+                  'id': 'google_user_id',
+                  'email': 'google_tester@example.com',
+                  'name': 'Google Tester',
+                  'avatar_url': 'https://example.com/google_photo.png',
+                  'base_currency': 'USD',
+                  'created_at': '2026-01-01T00:00:00Z',
+                },
+              },
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        return ResponseBody.fromString('{}', 404);
+      });
+
+      await api.loginWithGoogle(
+        'test_id_token',
+        avatarUrl: 'https://example.com/google_photo.png',
+        name: 'Google Tester',
+      );
+
+      expect(receivedData, isNotNull);
+      expect(receivedData!['id_token'], 'test_id_token');
+      expect(
+          receivedData!['avatar_url'], 'https://example.com/google_photo.png');
+      expect(receivedData!['name'], 'Google Tester');
+
+      expect(api.isAuthenticated, isTrue);
+      expect(api.avatarUrl, 'https://example.com/google_photo.png');
+      expect(api.userName, 'Google Tester');
+      expect(api.email, 'google_tester@example.com');
+    });
+
+    test(
         'updateBaseUrl updates Dio base URL and onEnvironmentChanged clears session',
         () async {
       final api = ApiService.instance;
@@ -446,6 +499,49 @@ void main() {
       expect(api.isAuthenticated, isFalse);
       expect(mockSecureStorage['auth_token'], isNull);
       expect(mockSecureStorage['refresh_token'], isNull);
+    });
+
+    test('setAvatarUrl saves to secure storage and updates memory', () async {
+      final api = ApiService.instance;
+      await api.setTokens('token_1', 'refresh_1');
+
+      bool streamNotified = false;
+      final sub = api.authStream.listen((isAuth) {
+        if (isAuth) streamNotified = true;
+      });
+
+      const avatarUrl = 'https://lh3.googleusercontent.com/avatar123';
+      await api.setAvatarUrl(avatarUrl);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(api.avatarUrl, avatarUrl);
+      expect(mockSecureStorage['auth_avatar_url'], avatarUrl);
+      expect(streamNotified, isTrue);
+
+      await api.setAvatarUrl(null);
+      expect(api.avatarUrl, isNull);
+      expect(mockSecureStorage['auth_avatar_url'], isNull);
+
+      await sub.cancel();
+      await api.clearAllUserData();
+    });
+
+    test('clearAllUserData clears avatarUrl and secure storage keys', () async {
+      final api = ApiService.instance;
+      await api.setTokens('token_2', 'refresh_2');
+      await api.setAvatarUrl('https://example.com/pic.png');
+      await api.setUserName('Test User');
+
+      expect(api.avatarUrl, 'https://example.com/pic.png');
+      expect(mockSecureStorage['auth_avatar_url'], isNotNull);
+
+      await api.clearAllUserData();
+
+      expect(api.avatarUrl, isNull);
+      expect(api.userName, isNull);
+      expect(api.isAuthenticated, isFalse);
+      expect(mockSecureStorage['auth_avatar_url'], isNull);
+      expect(mockSecureStorage['auth_token'], isNull);
     });
   });
 
