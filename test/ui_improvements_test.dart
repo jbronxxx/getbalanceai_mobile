@@ -102,7 +102,7 @@ void main() {
       expect(find.byType(AppBar), findsNothing);
 
       // Отображается заголовок выбора языка
-      expect(find.text('Выберите язык / Tanlang'), findsOneWidget);
+      expect(find.text('Выберите язык'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
 
       // Переход на шаг валюты
@@ -117,7 +117,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
 
-      expect(find.text('Выберите язык / Tanlang'), findsOneWidget);
+      expect(find.text('Выберите язык'), findsOneWidget);
     });
 
     testWidgets(

@@ -9,7 +9,6 @@ import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
-import 'package:getbalanceai_mobile/widgets/insights/insights_guest_preview.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
 
 void main() {
@@ -401,40 +400,6 @@ void main() {
 
     expect(find.text(LanguageManager.l10n.insight_login_hint), findsOneWidget);
     expect(find.byKey(const Key('insights_cache_hint')), findsNothing);
-    // Вместо голого текста — превью советов с кнопкой входа
-    expect(find.byType(InsightsGuestPreview), findsOneWidget);
-    expect(find.byKey(const ValueKey('insights_guest_login')), findsOneWidget);
-  });
-
-  testWidgets(
-      'InsightsGuestPreview: примеры скрыты от чтеца, кнопка ведёт ко входу',
-      (tester) async {
-    var loginTapped = false;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('ru'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: SingleChildScrollView(
-          child: InsightsGuestPreview(onLogin: () => loginTapped = true),
-        ),
-      ),
-    ));
-
-    expect(
-        find.text(LanguageManager.l10n.insights_guest_title), findsOneWidget);
-    // Демо-советы на экране есть, но они размыты и не кликабельны
-    expect(find.text(LanguageManager.l10n.insight_demo_1), findsOneWidget);
-    expect(
-      find.ancestor(
-        of: find.text(LanguageManager.l10n.insight_demo_1),
-        matching: find.byType(ExcludeSemantics),
-      ),
-      findsWidgets,
-    );
-
-    await tester.tap(find.byKey(const ValueKey('insights_guest_login')));
-    expect(loginTapped, isTrue);
   });
 
   testWidgets(

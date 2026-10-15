@@ -46,7 +46,7 @@
   "logout_info": "Tizimdan chiqdingiz",
   "logout_error_title": "Chiqishda xatolik",
   "transaction_deleted": "Yozuv o'chirildi",
-  "welcome_lang_title": "Tilni tanlang / Choose Language",
+  "welcome_lang_title": "Tilni tanlang",
   "welcome_lang_subtitle": "Ilovadan qulay foydalanish uchun",
   "welcome_currency_title": "Asosiy valyuta",
   "welcome_currency_subtitle": "Umumiy balans va byudjetlar ushbu valyutada hisoblanadi",
@@ -359,10 +359,5 @@
   "structure_total_expenses": "jami xarajat",
   "structure_no_expenses": "xarajat yo'q",
   "structure_more_categories": "{count, plural, other{yana {count} toifa}}",
-  "report_btn_short": "Hisobot",
-  "insights_guest_title": "AI'dan shaxsiy maslahatlar",
-  "insights_guest_login_btn": "Kirish va tahlil olish",
-  "insight_demo_1": "Ovqatlanish xarajatlari o'tgan oyga nisbatan 18% oshdi — asosan ish kunlari kafelarda.",
-  "insight_demo_2": "Taksiga limit qo'yib, safarlarni oldindan rejalashtirsangiz, taxminan 10% tejash mumkin.",
-  "insight_demo_3": "Shu sur'atda oy byudjetiga ozgina zaxira bilan sig'asiz."
+  "report_btn_short": "Hisobot"
 }
