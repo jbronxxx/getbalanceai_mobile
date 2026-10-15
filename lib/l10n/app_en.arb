@@ -1,6 +1,6 @@
 {
   "balance": "Balance",
-  "finances": "Finances",
+  "finances": "Budget",
   "insights": "Analytics",
   "profile": "Profile",
   "interface": "Interface",
@@ -110,7 +110,6 @@
   "no_network_title": "No internet connection",
   "no_network_desc": "Updating analytics requires internet. Check your connection and pull down to retry.",
   "insights_header_title": "AI Analytics",
-  "insights_header_subtitle": "Smart analysis of your finances powered by AI",
   "personal_recs_title": "Personalized Recommendations",
   "insights_updated_prefix": "Updated",
   "insights_cache_hint": "Insights update automatically when new expenses are added",
@@ -235,7 +234,6 @@
   "delete_account_info_subtitle": "Help page: how to delete your account and what data is erased",
   "open_link_error": "Could not open the link",
   "report_export_title": "Export report",
-  "report_export_subtitle": "Transactions for a period in CSV or PDF",
   "report_period_label": "Period",
   "report_period_month": "Month",
   "report_period_year": "Year",
@@ -351,5 +349,46 @@
   "view_by_categories": "By category",
   "edit_btn": "Edit",
   "details_original_amount": "Receipt amount",
-  "details_in_base_currency": "In main currency"
+  "details_in_base_currency": "In main currency",
+  "month_budget_title": "Month budget",
+  "daily_allowance": "You can spend per day",
+  "days_left": "{count, plural, =1{1 day left} other{{count} days left}}",
+  "@days_left": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "budget_limits_total": "Limits",
+  "budget_spent": "Spent",
+  "budget_remaining": "Left",
+  "budget_overspent": "Overspent",
+  "budget_month_result": "Result for limits",
+  "budget_planned": "Planned limits",
+  "add_limit_cta": "Add a limit",
+  "budget_spent_of": "{spent} of {limit}",
+  "@budget_spent_of": {
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "structure_title": "Expense structure",
+  "structure_of_income": "of income",
+  "structure_total_expenses": "expenses",
+  "structure_no_expenses": "no expenses",
+  "structure_more_categories": "{count, plural, =1{1 more category} other{{count} more categories}}",
+  "@structure_more_categories": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "report_btn_short": "Report"
 }

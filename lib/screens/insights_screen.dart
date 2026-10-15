@@ -1,9 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
+import '../widgets/insights/expense_structure_section.dart';
 import '../widgets/insights/insights_generate_card.dart';
 import '../widgets/insights/insights_unavailable_card.dart';
 import '../widgets/period/period.dart';
@@ -98,109 +98,160 @@ class _InsightsScreenState extends State<InsightsScreen> {
 }
 
 class _InsightsScreenView extends StatelessWidget {
-  static const double _topContentPadding = 156.0;
-
   const _InsightsScreenView();
 
-  Widget _buildLoadingPlaceholder(double topPadding) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-            top: topPadding,
-            left: 16,
-            right: 16,
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final scaffoldBg =
+        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+    final topOffset = LiquidGlassAppBar.topContentPadding(context);
+
+    return Scaffold(
+      backgroundColor: scaffoldBg,
+      extendBodyBehindAppBar: true,
+      appBar: LiquidGlassAppBar(
+        title: Text(
+          context.l10n.insights_header_title,
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: colorScheme.onSurface,
           ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: (constraints.maxHeight - topPadding)
-                  .clamp(0.0, double.infinity),
+        ),
+        centerTitle: true,
+      ),
+      body: ScreenBodyCard(
+        child: CustomPullToRefresh(
+          releaseImmediately: true,
+          topPadding: topOffset,
+          onRefresh: () =>
+              context.read<InsightsCubit>().loadInsights(force: true),
+          // Один список, как на других вкладках: месяц, структура расходов,
+          // затем AI-советы в состоянии кубита.
+          child: ListView(
+            physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
-            child: const Center(
-              child: AiSparklesLoader(),
+            padding: EdgeInsets.only(
+              top: topOffset + 8,
+              left: 16,
+              right: 16,
+              bottom: LiquidGlassNavBar.bottomContentPadding(context),
             ),
+            children: [
+              const PeriodSwitcher(),
+              const ExpenseStructureSection(),
+              BlocBuilder<InsightsCubit, InsightsState>(
+                builder: (context, state) => _InsightsBody(state: state),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildBusyCardsList(BuildContext context, double topPadding) {
-    final busyInsights = [
-      context.l10n.insights_assistants_busy_msg1,
-      context.l10n.insights_assistants_busy_msg2,
-    ];
+/// AI-советы в зависимости от состояния [InsightsCubit].
+class _InsightsBody extends StatelessWidget {
+  final InsightsState state;
 
-    return ListView.builder(
-      physics: const ClampingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      padding: EdgeInsets.only(
-        top: topPadding,
-        left: 16,
-        right: 16,
-        bottom: LiquidGlassNavBar.bottomContentPadding(context),
-      ),
-      itemCount: busyInsights.length,
-      itemBuilder: (context, index) {
-        return _buildInsightCard(context, busyInsights[index]);
-      },
-    );
+  const _InsightsBody({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = this.state;
+    if (state is InsightsLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: AiSparklesLoader()),
+      );
+    }
+    if (state is InsightsUnavailable) {
+      return InsightsUnavailableCard(reason: state.reason);
+    }
+    if (state is InsightsAwaitingRequest) {
+      return InsightsGenerateCard(
+        onGenerate: () => context.read<InsightsCubit>().loadInsights(),
+      );
+    }
+    if (state is InsightsNetworkError) {
+      return const _NoNetworkMessage();
+    }
+    if (state is InsightsError) {
+      return Column(
+        children: [
+          _InsightCard(text: context.l10n.insights_assistants_busy_msg1),
+          _InsightCard(text: context.l10n.insights_assistants_busy_msg2),
+        ],
+      );
+    }
+    if (state is InsightsUnauthenticated) {
+      return _InsightCard(text: state.hint);
+    }
+    if (state is InsightsLoaded) {
+      return Column(
+        children: [
+          for (final insight in state.insights) _InsightCard(text: insight),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
   }
+}
 
-  Widget _buildNoNetworkPlaceholder(BuildContext context, double topPadding) {
+class _NoNetworkMessage extends StatelessWidget {
+  const _NoNetworkMessage();
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-            top: topPadding,
-            left: 16,
-            right: 16,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: (constraints.maxHeight - topPadding)
-                  .clamp(0.0, double.infinity),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.wifi_off, size: 64, color: colorScheme.outline),
-                const SizedBox(height: 16),
-                Text(
-                  context.l10n.no_network_title,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    context.l10n.no_network_desc,
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          Icon(Icons.wifi_off, size: 64, color: colorScheme.outline),
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.no_network_title,
+            style: textTheme.titleMedium?.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
           ),
-        );
-      },
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              context.l10n.no_network_desc,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildInsightCard(BuildContext context, String text) {
+class _InsightCard extends StatelessWidget {
+  final String text;
+
+  const _InsightCard({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -257,240 +308,6 @@ class _InsightsScreenView extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFloatingTopBanner(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 480),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0D9488)
-                  .withValues(alpha: isDark ? 0.25 : 0.14),
-              blurRadius: 14,
-              spreadRadius: -3,
-              offset: const Offset(0, 5),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
-              blurRadius: 8,
-              spreadRadius: -2,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF0D9488)
-                        .withValues(alpha: isDark ? 0.82 : 0.85),
-                    const Color(0xFF0F766E)
-                        .withValues(alpha: isDark ? 0.84 : 0.88),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  width: 1.0,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      context.l10n.insights_header_subtitle,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final scaffoldBg =
-        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
-    final topOffset = LiquidGlassAppBar.topContentPadding(context);
-    final effectiveTopPadding = topOffset + _topContentPadding;
-
-    return Scaffold(
-      backgroundColor: scaffoldBg,
-      extendBodyBehindAppBar: true,
-      appBar: LiquidGlassAppBar(
-        title: Text(
-          context.l10n.insights_header_title,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: ScreenBodyCard(
-        child: CustomPullToRefresh(
-          releaseImmediately: true,
-          topPadding: topOffset,
-          onRefresh: () =>
-              context.read<InsightsCubit>().loadInsights(force: true),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: BlocBuilder<InsightsCubit, InsightsState>(
-                  builder: (context, state) {
-                    if (state is InsightsLoading) {
-                      return _buildLoadingPlaceholder(effectiveTopPadding);
-                    } else if (state is InsightsInitial) {
-                      return const SizedBox.shrink();
-                    } else if (state is InsightsUnavailable) {
-                      return ListView(
-                        physics: const ClampingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: EdgeInsets.only(
-                          top: effectiveTopPadding,
-                          left: 16,
-                          right: 16,
-                          bottom:
-                              LiquidGlassNavBar.bottomContentPadding(context),
-                        ),
-                        children: [
-                          InsightsUnavailableCard(reason: state.reason)
-                        ],
-                      );
-                    } else if (state is InsightsAwaitingRequest) {
-                      return ListView(
-                        physics: const ClampingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: EdgeInsets.only(
-                          top: effectiveTopPadding,
-                          left: 16,
-                          right: 16,
-                          bottom:
-                              LiquidGlassNavBar.bottomContentPadding(context),
-                        ),
-                        children: [
-                          InsightsGenerateCard(
-                            onGenerate: () =>
-                                context.read<InsightsCubit>().loadInsights(),
-                          ),
-                        ],
-                      );
-                    } else if (state is InsightsNetworkError) {
-                      return _buildNoNetworkPlaceholder(
-                          context, effectiveTopPadding);
-                    } else if (state is InsightsError) {
-                      return _buildBusyCardsList(context, effectiveTopPadding);
-                    } else if (state is InsightsUnauthenticated) {
-                      return ListView.builder(
-                        physics: const ClampingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: EdgeInsets.only(
-                          top: effectiveTopPadding,
-                          left: 16,
-                          right: 16,
-                          bottom:
-                              LiquidGlassNavBar.bottomContentPadding(context),
-                        ),
-                        itemCount: 1,
-                        itemBuilder: (context, index) {
-                          return _buildInsightCard(context, state.hint);
-                        },
-                      );
-                    } else if (state is InsightsLoaded) {
-                      return ListView.builder(
-                        physics: const ClampingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: EdgeInsets.only(
-                          top: effectiveTopPadding,
-                          left: 16,
-                          right: 16,
-                          bottom:
-                              LiquidGlassNavBar.bottomContentPadding(context),
-                        ),
-                        itemCount: state.insights.length,
-                        itemBuilder: (context, index) {
-                          return _buildInsightCard(
-                            context,
-                            state.insights[index],
-                          );
-                        },
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
-              Positioned(
-                top: topOffset + 8,
-                left: 16,
-                right: 16,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IgnorePointer(
-                          child: _buildFloatingTopBanner(context),
-                        ),
-                        const PeriodSwitcher(
-                          padding: EdgeInsets.only(top: 10.0, bottom: 6.0),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -272,7 +272,7 @@ void main() {
       );
 
       // Переключаемся на вкладку Финансы (индекс 1)
-      await tester.tap(find.text('Финансы'));
+      await tester.tap(find.text('Бюджет'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

@@ -65,7 +65,7 @@ void main() {
 
       final l10n = LanguageManager.l10n;
       expect(l10n.balance, equals('Баланс'));
-      expect(l10n.finances, equals('Қаржы'));
+      expect(l10n.finances, equals('Бюджет'));
       expect(l10n.insights, equals('Талдау'));
       expect(l10n.kzt_name, equals('Қазақстан теңгесі'));
       expect(l10n.usd_name, equals('АҚШ доллары'));

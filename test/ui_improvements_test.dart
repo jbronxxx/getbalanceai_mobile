@@ -228,21 +228,24 @@ void main() {
     });
   });
 
-  group('Budgets Screen Floating Bubble Tests', () {
+  group('Budgets Screen Empty State Tests', () {
     testWidgets(
-        'При отсутствии лимитов отображается пузырь с подсказкой без заливки',
+        'Без лимитов карточка месяца предлагает добавить лимит, списка и заголовка нет',
         (tester) async {
       await tester.pumpWidget(_buildTestApp(const BudgetsScreen()));
       await tester.pumpAndSettle();
 
-      // Проверяем наличие текста подсказки и иконки пузыря
+      expect(find.byType(MonthBudgetCard), findsOneWidget);
       expect(
         find.text(LanguageManager.l10n.no_budgets_subtitle),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.pie_chart_outline_rounded), findsOneWidget);
-      // Присутствуют BackdropFilter в LiquidGlassAppBar и в пустом пузыре подсказки
-      expect(find.byType(BackdropFilter), findsNWidgets(2));
+      expect(
+          find.byKey(const ValueKey('month_budget_add_limit')), findsOneWidget);
+      expect(find.byType(BudgetsSectionHeader), findsNothing);
+      expect(find.byType(BudgetItemCard), findsNothing);
+      // Выгрузка отчёта — кнопкой в шапке
+      expect(find.byType(ReportExportAction), findsOneWidget);
     });
   });
 
