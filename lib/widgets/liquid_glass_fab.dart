@@ -13,6 +13,10 @@ class LiquidGlassFab extends StatelessWidget {
   final String? tooltip;
   final String? semanticLabel;
 
+  /// Непрозрачность градиентной заливки: меньше 1 — сквозь кнопку
+  /// просвечивает стекло (центральная кнопка навбара).
+  final double fillOpacity;
+
   const LiquidGlassFab({
     super.key,
     required this.onPressed,
@@ -20,6 +24,7 @@ class LiquidGlassFab extends StatelessWidget {
     this.size = 56.0,
     this.tooltip,
     this.semanticLabel,
+    this.fillOpacity = 1.0,
   });
 
   @override
@@ -44,7 +49,7 @@ class LiquidGlassFab extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: primaryColor.withValues(alpha: 0.35),
+                color: primaryColor.withValues(alpha: 0.35 * fillOpacity),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
                 spreadRadius: -2,
@@ -67,8 +72,8 @@ class LiquidGlassFab extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      primaryColor,
-                      secondaryColor,
+                      primaryColor.withValues(alpha: fillOpacity),
+                      secondaryColor.withValues(alpha: fillOpacity),
                     ],
                   ),
                   border: Border.all(

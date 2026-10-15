@@ -18,6 +18,34 @@ class InsightsInitial extends InsightsState {
   });
 }
 
+/// Отчёта за период нет, генерация ждёт явного действия пользователя.
+class InsightsAwaitingRequest extends InsightsState {
+  const InsightsAwaitingRequest({
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
+}
+
+/// Почему анализ за период недоступен.
+enum InsightsUnavailableReason {
+  /// Месяц ещё не наступил.
+  futureMonth,
+
+  /// За месяц нет операций.
+  noTransactions,
+}
+
+/// Анализировать нечего — запрос к AI не делается.
+class InsightsUnavailable extends InsightsState {
+  final InsightsUnavailableReason reason;
+
+  const InsightsUnavailable(
+    this.reason, {
+    required super.selectedMonth,
+    required super.selectedYear,
+  });
+}
+
 class InsightsLoading extends InsightsState {
   const InsightsLoading({
     required super.selectedMonth,

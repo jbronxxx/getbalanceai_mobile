@@ -329,5 +329,15 @@
   "more_categories": "Yana",
   "all_categories": "Barcha toifalar",
   "category_search_hint": "Toifani topish",
-  "category_search_empty": "Hech narsa topilmadi"
+  "category_search_empty": "Hech narsa topilmadi",
+  "previous_month": "Oldingi oy",
+  "next_month": "Keyingi oy",
+  "select_month": "Oyni tanlash",
+  "previous_year": "Oldingi yil",
+  "next_year": "Keyingi yil",
+  "add_limit_btn": "Qo'shish",
+  "insights_not_generated": "Bu oy uchun AI-tahlil hali tayyorlanmagan.",
+  "insights_generate_btn": "Tahlil tayyorlash",
+  "insights_future_month": "Bu oy hali boshlanmagan — tahlil qiladigan narsa yo'q.",
+  "insights_no_transactions": "Bu oyda operatsiyalar yo'q — hozircha tahlil qiladigan narsa yo'q."
 }

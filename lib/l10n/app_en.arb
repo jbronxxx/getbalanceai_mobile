@@ -336,5 +336,15 @@
   "more_categories": "More",
   "all_categories": "All categories",
   "category_search_hint": "Find a category",
-  "category_search_empty": "Nothing found"
+  "category_search_empty": "Nothing found",
+  "previous_month": "Previous month",
+  "next_month": "Next month",
+  "select_month": "Select month",
+  "previous_year": "Previous year",
+  "next_year": "Next year",
+  "add_limit_btn": "Add",
+  "insights_not_generated": "The AI analysis for this month has not been generated yet.",
+  "insights_generate_btn": "Generate analysis",
+  "insights_future_month": "This month has not started yet — there is nothing to analyze.",
+  "insights_no_transactions": "No transactions this month — there is nothing to analyze yet."
 }

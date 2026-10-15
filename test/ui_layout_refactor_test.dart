@@ -142,31 +142,20 @@ API_BASE_URL=http://localhost:8000/api/v1
   });
 
   group('Budgets Widgets Tests', () {
-    testWidgets('BudgetPeriodSelector triggers callbacks on change',
+    testWidgets('BudgetsSectionHeader shows title and add button',
         (tester) async {
-      int changedMonth = 0;
+      var added = false;
 
       await tester.pumpWidget(
         _buildTestApp(
-          BudgetPeriodSelector(
-            selectedMonth: 5,
-            selectedYear: 2026,
-            onMonthChanged: (m) => changedMonth = m,
-            onYearChanged: (_) {},
-          ),
+          BudgetsSectionHeader(onAdd: () => added = true),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(LanguageManager.monthsNames[4]), findsOneWidget);
-      expect(find.text('2026'), findsOneWidget);
-
-      // Change month to month 6 (June)
-      await tester.tap(find.byType(DropdownButtonFormField<int>).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(LanguageManager.monthsNames[5]).last);
-      await tester.pumpAndSettle();
-      expect(changedMonth, 6);
+      expect(find.text(LanguageManager.l10n.budgets_title), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('budgets_add_button')));
+      expect(added, isTrue);
     });
 
     testWidgets('BudgetItemCard renders progress and exceeded alert',

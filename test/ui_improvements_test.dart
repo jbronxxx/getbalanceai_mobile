@@ -16,6 +16,7 @@ import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
+import 'package:getbalanceai_mobile/widgets/period/period.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -164,8 +165,9 @@ void main() {
 
   group('Dashboard Layout & Header Tests', () {
     testWidgets(
-        'Главный экран имеет заголовок Баланс в AppBar и BudgetPeriodSelector',
+        'Главный экран имеет заголовок Баланс и переключатель месяца над балансом',
         (tester) async {
+      SelectedPeriodService.instance.reset();
       await tester.pumpWidget(_buildTestApp(const DashboardScreen()));
       await tester.pumpAndSettle();
 
@@ -175,18 +177,34 @@ void main() {
       expect(appBar.surfaceTintColor, equals(Colors.transparent));
       expect(find.text('Баланс'), findsOneWidget);
 
-      // Под виджетом баланса находится BudgetPeriodSelector
+      // Переключатель периода расположен над карточкой баланса
       expect(find.byType(BalanceCard), findsOneWidget);
-      expect(find.byType(BudgetPeriodSelector), findsOneWidget);
+      expect(find.byType(PeriodSwitcher), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byType(PeriodSwitcher)).dy,
+        lessThan(tester.getTopLeft(find.byType(BalanceCard)).dy),
+      );
+      // Плавающей кнопки на экране нет: «+» живёт в панели навигации
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byType(LiquidGlassFab), findsNothing);
     });
 
-    testWidgets('BudgetPeriodSelector на дашборде меняет выбранный период',
+    testWidgets('Переключатель на дашборде меняет общий период',
         (tester) async {
+      SelectedPeriodService.instance.reset();
+      addTearDown(SelectedPeriodService.instance.reset);
       await tester.pumpWidget(_buildTestApp(const DashboardScreen()));
       await tester.pumpAndSettle();
 
-      // Находим дропдауны месяца и года
-      expect(find.byType(DropdownButtonFormField<int>), findsNWidgets(2));
+      final before = SelectedPeriodService.instance.period;
+      await tester.tap(find.byKey(const ValueKey('period_previous')));
+      await tester.pumpAndSettle();
+
+      expect(SelectedPeriodService.instance.period, before.previous);
+      expect(
+        find.text(PeriodSwitcher.label(before.previous)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('BalanceCard имеет уменьшенную тень', (tester) async {

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/services.dart';
 import '../theme/app_theme.dart';
+import 'liquid_glass_fab.dart';
+import 'liquid_glass_nav_shape.dart';
 
 /// Элемент навигации для плавающего островка [LiquidGlassNavBar].
 class LiquidGlassNavItem {
@@ -17,6 +19,19 @@ class LiquidGlassNavItem {
   });
 }
 
+/// Центральная кнопка действия, выступающая над островком навигации.
+class LiquidGlassNavAction {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const LiquidGlassNavAction({
+    this.icon = Icons.add_rounded,
+    required this.tooltip,
+    required this.onPressed,
+  });
+}
+
 /// Плавающий островок нижней навигации с эффектом полированного жидкого стекла (Liquid Glass).
 ///
 /// Вдохновлен One UI и modern glassmorphism.
@@ -25,6 +40,15 @@ class LiquidGlassNavItem {
 class LiquidGlassNavBar extends StatelessWidget {
   /// Фиксированная высота внутреннего контейнера навбара.
   static const double barHeight = 68.0;
+
+  /// Диаметр центральной кнопки действия.
+  static const double centerActionSize = 52.0;
+
+  /// Зазор между кнопкой и огибающей её дугой островка.
+  static const double centerActionGap = 6.0;
+
+  /// На сколько дуга над кнопкой поднимается над верхним краем островка.
+  static const double centerActionLift = 22.0;
 
   /// Вычисляет нижний отступ плавающего островка с учетом безопасной зоны устройства.
   static double bottomMargin(BuildContext context) {
@@ -37,25 +61,25 @@ class LiquidGlassNavBar extends StatelessWidget {
     return barHeight + bottomMargin(context);
   }
 
-  /// Рекомендуемый отступ снизу для содержимого скроллящихся экранов (ListView/CustomScrollView).
+  /// Рекомендуемый отступ снизу для содержимого скроллящихся экранов
+  /// (ListView/CustomScrollView) с учётом выступающей центральной кнопки.
   static double bottomContentPadding(BuildContext context) {
-    return totalHeight(context) + 16.0;
-  }
-
-  /// Рекомендуемый отступ снизу для плавающей кнопки FAB над навбаром.
-  static double fabBottomPadding(BuildContext context) {
-    return totalHeight(context) + 8.0;
+    return totalHeight(context) + centerActionLift + 12.0;
   }
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<LiquidGlassNavItem> destinations;
 
+  /// Кнопка в центре островка; индексы [destinations] её не учитывают.
+  final LiquidGlassNavAction? centerAction;
+
   const LiquidGlassNavBar({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.destinations,
+    this.centerAction,
   });
 
   @override
@@ -85,42 +109,55 @@ class LiquidGlassNavBar extends StatelessWidget {
             ? [const Color(0xDD18181C), const Color(0xDD121216)]
             : [const Color(0xDDFFFFFF), const Color(0xDDF1F5F9)]);
 
-    Widget navContent = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
+    final hasCenterAction = centerAction != null;
+    final shape = LiquidGlassNavShape(
+      bumpRadius: hasCenterAction ? centerActionSize / 2 + centerActionGap : 0,
+      bumpHeight: hasCenterAction ? centerActionLift : 0,
+      side: BorderSide(color: glassTheme.rim),
+    );
+
+    final Widget navContent = DecoratedBox(
+      decoration: ShapeDecoration(
+        shape: shape,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: navColors,
         ),
-        borderRadius: BorderRadius.circular(36),
-        border: Border.all(
-          color: glassTheme.rim,
-          width: 1.0,
-        ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(destinations.length, (index) {
-          final item = destinations[index];
-          final isSelected = selectedIndex == index;
-
-          return Expanded(
-            child: _LiquidGlassNavItemWidget(
-              item: item,
-              isSelected: isSelected,
-              onTap: () => onDestinationSelected(index),
-              glassTheme: glassTheme,
-              colorScheme: theme.colorScheme,
-              labelStyle: theme.textTheme.labelSmall,
-            ),
-          );
-        }),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          6,
+          (hasCenterAction ? centerActionLift : 0) + 6,
+          6,
+          6,
+        ),
+        child: SizedBox(
+          height: barHeight - 12,
+          child: Row(
+            children: [
+              for (var index = 0; index < destinations.length; index++) ...[
+                if (hasCenterAction && index == destinations.length ~/ 2)
+                  const SizedBox(width: centerActionSize + 4),
+                Expanded(
+                  child: _LiquidGlassNavItemWidget(
+                    item: destinations[index],
+                    isSelected: selectedIndex == index,
+                    onTap: () => onDestinationSelected(index),
+                    glassTheme: glassTheme,
+                    colorScheme: theme.colorScheme,
+                    labelStyle: theme.textTheme.labelSmall,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
 
-    final Widget glassBody = ClipRRect(
-      borderRadius: BorderRadius.circular(36),
+    final Widget glassBody = ClipPath(
+      clipper: ShapeBorderClipper(shape: shape),
       child: shouldUseBlur
           ? BackdropFilter(
               filter: ImageFilter.blur(
@@ -138,30 +175,54 @@ class LiquidGlassNavBar extends StatelessWidget {
         child: Center(
           child: Container(
             margin: EdgeInsets.only(
-              left: 20,
-              right: 20,
+              left: 12,
+              right: 12,
               bottom: effectiveBottomMargin,
             ),
             constraints: const BoxConstraints(maxWidth: 480),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(36),
-              boxShadow: [
-                BoxShadow(
-                  color: glassTheme.shadow,
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -2,
+            // Дуга над кнопкой входит в форму островка, поэтому вся кнопка
+            // лежит внутри виджета и принимает нажатия.
+            child: Stack(
+              children: [
+                DecoratedBox(
+                  decoration: ShapeDecoration(
+                    shape: shape,
+                    shadows: [
+                      BoxShadow(
+                        color: glassTheme.shadow,
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                        spreadRadius: -2,
+                      ),
+                      if (isDark)
+                        BoxShadow(
+                          color: glassTheme.accent.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 2),
+                          spreadRadius: -2,
+                        ),
+                    ],
+                  ),
+                  child: glassBody,
                 ),
-                if (isDark)
-                  BoxShadow(
-                    color: glassTheme.accent.withValues(alpha: 0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 2),
-                    spreadRadius: -2,
+                if (hasCenterAction)
+                  Positioned(
+                    top: centerActionGap,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: LiquidGlassFab(
+                        key: const ValueKey('nav_center_action'),
+                        icon: centerAction!.icon,
+                        size: centerActionSize,
+                        fillOpacity: 0.82,
+                        tooltip: centerAction!.tooltip,
+                        onPressed: centerAction!.onPressed,
+                      ),
+                    ),
                   ),
               ],
             ),
-            child: glassBody,
           ),
         ),
       ),
@@ -228,7 +289,7 @@ class _LiquidGlassNavItemWidgetState extends State<_LiquidGlassNavItemWidget> {
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(
-                horizontal: 6,
+                horizontal: 4,
                 vertical: 5,
               ),
               decoration: BoxDecoration(
@@ -258,20 +319,23 @@ class _LiquidGlassNavItemWidgetState extends State<_LiquidGlassNavItemWidget> {
                     ),
                   ),
                   const SizedBox(height: 2),
+                  // Длинные подписи (kk/uz) уменьшаются, а не обрезаются.
                   Flexible(
-                    child: Text(
-                      widget.item.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: widget.labelStyle?.copyWith(
-                        fontSize: 11,
-                        height: 1.15,
-                        fontWeight: widget.isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: widget.isSelected
-                            ? activeContentColor
-                            : inactiveContentColor,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.item.label,
+                        maxLines: 1,
+                        style: widget.labelStyle?.copyWith(
+                          fontSize: 11,
+                          height: 1.15,
+                          fontWeight: widget.isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: widget.isSelected
+                              ? activeContentColor
+                              : inactiveContentColor,
+                        ),
                       ),
                     ),
                   ),

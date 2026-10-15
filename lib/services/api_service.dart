@@ -313,6 +313,7 @@ class ApiService {
     String? locale,
     int? month,
     int? year,
+    bool generate = true,
     CancelToken? cancelToken,
   }) async {
     try {
@@ -323,6 +324,8 @@ class ApiService {
           if (locale != null) 'locale': locale,
           if (month != null) 'month': month,
           if (year != null) 'year': year,
+          // false — только сохранённый отчёт, без вызова LLM
+          if (!generate) 'generate': false,
         },
         options: Options(
           receiveTimeout: const Duration(seconds: 30),

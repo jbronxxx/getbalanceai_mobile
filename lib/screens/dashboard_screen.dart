@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
-import '../widgets/budgets/budgets.dart';
 import '../widgets/dashboard/dashboard.dart';
+import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
@@ -22,8 +22,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedMonth = DateTime.now().month;
-  int _selectedYear = DateTime.now().year;
+  int get _selectedMonth => SelectedPeriodService.instance.period.month;
+  int get _selectedYear => SelectedPeriodService.instance.period.year;
 
   final List<Transaction> _transactions = [];
   Map<DateTime, Map<Category, List<Transaction>>> _groupedTransactions = {};
@@ -47,10 +47,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadTransactions();
     _checkSwipeHint();
     _scrollController.addListener(_onScroll);
-    CurrencyFormatter.currencyNotifier.addListener(_onCurrencyChanged);
+    CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
+    SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
+    LocalDbService.transactionsChanged.addListener(_onDataChanged);
   }
 
-  void _onCurrencyChanged() {
+  /// Перечитывает данные при смене валюты, периода или операций.
+  void _onDataChanged() {
     if (mounted) {
       _loadTransactions();
     }
@@ -58,7 +61,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    CurrencyFormatter.currencyNotifier.removeListener(_onCurrencyChanged);
+    CurrencyFormatter.currencyNotifier.removeListener(_onDataChanged);
+    SelectedPeriodService.instance.periodNotifier
+        .removeListener(_onDataChanged);
+    LocalDbService.transactionsChanged.removeListener(_onDataChanged);
     _swipeHintDismissTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
@@ -177,8 +183,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _openTransactionSheet([Transaction? transaction]) async {
-    await showModalBottomSheet(
+  void _openTransactionSheet(Transaction transaction) {
+    showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -186,7 +192,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         transactionToEdit: transaction,
       ),
     );
-    if (mounted) _loadTransactions();
   }
 
   void _deleteTransaction(Transaction transaction) {
@@ -305,28 +310,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const PeriodSwitcher(),
                       BalanceCard(
                         balance: _totalBalance,
                         income: _totalIncome,
                         expense: _totalExpense,
                       ),
-                      BudgetPeriodSelector(
-                        selectedMonth: _selectedMonth,
-                        selectedYear: _selectedYear,
-                        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                        onMonthChanged: (month) {
-                          setState(() {
-                            _selectedMonth = month;
-                            _loadTransactions();
-                          });
-                        },
-                        onYearChanged: (year) {
-                          setState(() {
-                            _selectedYear = year;
-                            _loadTransactions();
-                          });
-                        },
-                      ),
+                      const SizedBox(height: 16),
                       if (_transactions.isEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0),
@@ -397,15 +387,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          bottom: LiquidGlassNavBar.fabBottomPadding(context),
-        ),
-        child: LiquidGlassFab(
-          tooltip: context.l10n.new_transaction,
-          onPressed: () => _openTransactionSheet(),
         ),
       ),
     );

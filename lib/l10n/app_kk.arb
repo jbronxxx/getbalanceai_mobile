@@ -329,5 +329,15 @@
   "more_categories": "Тағы",
   "all_categories": "Барлық санаттар",
   "category_search_hint": "Санатты табу",
-  "category_search_empty": "Ештеңе табылмады"
+  "category_search_empty": "Ештеңе табылмады",
+  "previous_month": "Алдыңғы ай",
+  "next_month": "Келесі ай",
+  "select_month": "Айды таңдау",
+  "previous_year": "Алдыңғы жыл",
+  "next_year": "Келесі жыл",
+  "add_limit_btn": "Қосу",
+  "insights_not_generated": "Осы айдың AI-талдауы әлі жасалмаған.",
+  "insights_generate_btn": "Талдау жасау",
+  "insights_future_month": "Бұл ай әлі басталған жоқ — талдайтын ештеңе жоқ.",
+  "insights_no_transactions": "Бұл айда операциялар жоқ — әзірге талдайтын ештеңе жоқ."
 }

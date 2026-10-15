@@ -12,6 +12,7 @@ export 'pending_deletions_store.dart';
 export 'preferences_service.dart';
 export 'report_data_service.dart';
 export 'report_export_service.dart';
+export 'selected_period_service.dart';
 export 'sync_service.dart';
 export 'tracing_interceptor.dart';
 export 'transaction_api_service.dart';

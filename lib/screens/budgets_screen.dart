@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/budgets/budgets.dart';
+import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 
 /// Экран «Финансы»: инфографика расходов, лимиты по категориям за выбранный
@@ -18,8 +19,8 @@ class BudgetsScreen extends StatefulWidget {
 }
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
-  int _selectedMonth = DateTime.now().month;
-  int _selectedYear = DateTime.now().year;
+  int get _selectedMonth => SelectedPeriodService.instance.period.month;
+  int get _selectedYear => SelectedPeriodService.instance.period.year;
 
   List<Budget> _budgets = [];
   double _totalIncome = 0;
@@ -32,10 +33,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     super.initState();
     _loadBudgets();
     _checkSwipeHint();
-    CurrencyFormatter.currencyNotifier.addListener(_onCurrencyChanged);
+    CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
+    SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
+    LocalDbService.transactionsChanged.addListener(_onDataChanged);
   }
 
-  void _onCurrencyChanged() {
+  /// Перечитывает лимиты и расходы при смене валюты, периода или операций
+  /// (в том числе добавленных с другой вкладки).
+  void _onDataChanged() {
     if (mounted) {
       _loadBudgets();
     }
@@ -43,7 +48,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   void dispose() {
-    CurrencyFormatter.currencyNotifier.removeListener(_onCurrencyChanged);
+    CurrencyFormatter.currencyNotifier.removeListener(_onDataChanged);
+    SelectedPeriodService.instance.periodNotifier
+        .removeListener(_onDataChanged);
+    LocalDbService.transactionsChanged.removeListener(_onDataChanged);
     super.dispose();
   }
 
@@ -231,6 +239,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const PeriodSwitcher(),
                       BudgetExpenseRatioCard(
                         totalIncome: _totalIncome,
                         totalExpense: _totalExpense,
@@ -240,22 +249,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         selectedMonth: _selectedMonth,
                         selectedYear: _selectedYear,
                       ),
-                      BudgetPeriodSelector(
-                        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                        selectedMonth: _selectedMonth,
-                        selectedYear: _selectedYear,
-                        onMonthChanged: (val) {
-                          setState(() {
-                            _selectedMonth = val;
-                            _loadBudgets();
-                          });
-                        },
-                        onYearChanged: (val) {
-                          setState(() {
-                            _selectedYear = val;
-                            _loadBudgets();
-                          });
-                        },
+                      BudgetsSectionHeader(
+                        onAdd: () => _openAddBudgetSheet(),
                       ),
                     ],
                   ),
@@ -310,15 +305,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               ),
             ],
           ),
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          bottom: LiquidGlassNavBar.fabBottomPadding(context),
-        ),
-        child: LiquidGlassFab(
-          tooltip: context.l10n.add_budget_title,
-          onPressed: () => _openAddBudgetSheet(),
         ),
       ),
     );
