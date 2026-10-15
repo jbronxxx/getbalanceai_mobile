@@ -59,7 +59,7 @@ lib/
 ├── widgets/
 │   ├── dashboard/               # Декомпозированные виджеты экрана дашборда (баннер гостя, тайлы, группы)
 │   ├── budgets/                 # Декомпозированные виджеты экрана бюджетов (селектор периода, карточка, лист)
-│   ├── profile/                 # Декомпозированные виджеты профиля (шапка, синк, настройки, версия с таймером)
+│   ├── profile/                 # Декомпозированные виджеты профиля (шапка, синк, настройки, данные, версия с таймером)
 │   ├── ai_sparkles_loader.dart  # Анимированный лоадер генерации ИИ (пульсирующие звёздочки)
 │   ├── custom_pull_to_refresh.dart # Кастомный Pull-to-Refresh со шторкой и режимом releaseImmediately
 │   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter, RepaintBoundary и непрозрачным fallback
@@ -222,7 +222,9 @@ main.dart`. Это было исправлено переносом состоя
     - В `AddBudgetSheet` поле ввода суммы лимита расположено первым перед выбором категории.
     - Поле «Описание» настроено на ввод с заглавной первой буквы (`textCapitalization: TextCapitalization.sentences`).
     - Поле ввода суммы бюджета унифицировано с транзакциями: отображает краткую метку «Сумма» без валюты в скобках.
-  - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
+  - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileDataCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
+  - `ProfileDataCard`: раздел «Данные» в профиле (виден всегда). Пункт «Удаление аккаунта и данных» с иконкой и подзаголовком-пояснением (справка, а не само удаление) открывает во внешнем браузере публичную страницу бэкенда `/delete-account?lang=<код языка>`. Само удаление остаётся кнопкой «Удалить аккаунт» внизу профиля. При ошибке открытия показывается тост `open_link_error`.
+  - **Юридические ссылки (`lib/config/legal_links.dart`)**: `LegalLinks.url(LegalPage, languageCode)` строит URL страниц бэкенда `/terms`, `/privacy`, `/delete-account` от origin `EnvironmentConfig.baseUrl` (без `/api/v1`): release ведёт на прод, debug/local — на выбранный бэкенд (например, `http://10.0.2.2:8000`). Используется в `AuthScreen` («Условия использования», «Политика конфиденциальности») и в `ProfileDataCard`. Тексты хранятся и обновляются на бэкенде; в ARB ссылок нет.
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
   - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику») и размещенным непосредственно под ней селектором периода `BudgetPeriodSelector` (с отступом `topOffset`), синхронизированным с фильтром на экранах «Баланс» и «Лимиты»; анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»); оптимизирован для работы внутри `IndexedStack` (`MainShell` передает `isActive: _currentIndex == 2`), выполняет ленивую загрузку строго при первом открытии вкладки, смене периода пользователем (`setPeriod`) или явном Pull-to-Refresh, игнорируя фоновые смены языка/валюты до первого входа.
   - `AuthScreen`: устранен отдельный AppBar/хэдер, экран выполнен в виде целостного холста с верхним радиальным свечением темы, центрированным стеклянным медальоном, комфортной типографикой и аккуратной встроенной кнопкой возврата назад (при наличии стека навигации) по аналогии с `WelcomeSetupScreen` и `WelcomeLanguageSheet`.
