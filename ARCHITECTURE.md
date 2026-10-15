@@ -15,6 +15,7 @@
 | Сетевой клиент         | [Dio](https://pub.dev/packages/dio)                                |
 | Конфигурация           | `--dart-define` / [flutter_dotenv](https://pub.dev/packages/flutter_dotenv) |
 | Управление версией SDK | [FVM](https://fvm.app/) (см. `.fvmrc`, Flutter 3.29.3)             |
+| Минимальные платформы  | iOS 15.0 (требование Xcode 27), Android — `minSdk` из Flutter      |
 
 Бэкенд (FastAPI) в этот репозиторий не входит — приложение общается с ним
 только по REST API, описанному в `lib/config/api_config.dart`.
