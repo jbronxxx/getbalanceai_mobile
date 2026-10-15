@@ -7,6 +7,7 @@ import '../utils/utils.dart';
 import '../widgets/budgets/budgets.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
+import '../theme/theme.dart';
 
 /// Вкладка «Бюджет»: карточка бюджета месяца (сколько можно тратить в день),
 /// лимиты по категориям и выгрузка отчёта за месяц в CSV/PDF (кнопка в шапке).
@@ -130,13 +131,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final scaffoldBg =
-        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+    final scaffoldBg = AppColors.of(context).shellBackground;
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -144,11 +139,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       appBar: LiquidGlassAppBar(
         title: Text(
           context.l10n.finances,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: colorScheme.onSurface,
-          ),
+          style: AppTypography.screenTitle(context),
         ),
         centerTitle: true,
         actions: [

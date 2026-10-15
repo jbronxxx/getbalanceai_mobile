@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Главная карточка вкладки «Бюджет» в стиле карточки баланса дашборда.
 ///
@@ -17,32 +18,26 @@ class MonthBudgetCard extends StatelessWidget {
     required this.onAddLimit,
   });
 
-  static const _gradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0F766E), Color(0xFF115E59)],
-  );
-
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: _gradient,
+        gradient: AppColors.of(context).brandGradient,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.32),
+          color: AppColors.onBrandBase.withValues(alpha: 0.32),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F766E).withValues(alpha: 0.16),
+            color: AppColors.of(context).brandShadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.shadowBase.withValues(alpha: 0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -64,7 +59,7 @@ class _SummaryContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
-    final white82 = Colors.white.withValues(alpha: 0.82);
+    final white82 = AppColors.onBrandBase.withValues(alpha: 0.82);
 
     final String headline;
     final double headlineAmount;
@@ -103,7 +98,7 @@ class _SummaryContent extends StatelessWidget {
           headlineAmount,
           useFittedBox: true,
           style: textTheme.headlineLarge?.copyWith(
-            color: Colors.white,
+            color: AppColors.onBrandBase,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
           ),
@@ -122,8 +117,10 @@ class _SummaryContent extends StatelessWidget {
             key: const ValueKey('month_budget_progress'),
             value: summary.spentRatio.clamp(0.0, 1.0),
             minHeight: 8,
-            color: summary.isExceeded ? const Color(0xFFFDBA74) : Colors.white,
-            backgroundColor: Colors.white.withValues(alpha: 0.22),
+            color: summary.isExceeded
+                ? AppColors.of(context).exceededOnBrand
+                : AppColors.of(context).onBrand,
+            backgroundColor: AppColors.onBrandBase.withValues(alpha: 0.22),
           ),
         ),
         const SizedBox(height: 18),
@@ -171,9 +168,10 @@ class _Figure extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: AppColors.onBrandBase.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+        border:
+            Border.all(color: AppColors.onBrandBase.withValues(alpha: 0.24)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +181,7 @@ class _Figure extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textTheme.labelSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.85),
+              color: AppColors.onBrandBase.withValues(alpha: 0.85),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -192,7 +190,7 @@ class _Figure extends StatelessWidget {
             amount,
             useFittedBox: true,
             style: textTheme.titleSmall?.copyWith(
-              color: Colors.white,
+              color: AppColors.onBrandBase,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -218,7 +216,7 @@ class _EmptyContent extends StatelessWidget {
         Text(
           context.l10n.month_budget_title,
           style: textTheme.titleMedium?.copyWith(
-            color: Colors.white,
+            color: AppColors.onBrandBase,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -226,7 +224,7 @@ class _EmptyContent extends StatelessWidget {
         Text(
           context.l10n.no_budgets_subtitle,
           style: textTheme.bodyMedium?.copyWith(
-            color: Colors.white.withValues(alpha: 0.85),
+            color: AppColors.onBrandBase.withValues(alpha: 0.85),
             height: 1.4,
           ),
         ),
@@ -237,8 +235,8 @@ class _EmptyContent extends StatelessWidget {
           icon: const Icon(Icons.add_rounded),
           label: Text(context.l10n.add_limit_cta),
           style: FilledButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF0F766E),
+            backgroundColor: AppColors.onBrandBase,
+            foregroundColor: AppColors.of(context).brandGradientStart,
             minimumSize: const Size(0, 46),
             shape: const StadiumBorder(),
             textStyle: textTheme.labelLarge?.copyWith(

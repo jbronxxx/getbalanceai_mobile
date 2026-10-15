@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 /// Каркас контента экрана с закругленными верхними краями в стиле M3 Expressive / Sheet.
 ///
@@ -18,11 +19,8 @@ class ScreenBodyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final effectiveBg = backgroundColor ??
-        (isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6));
+    final effectiveBg =
+        backgroundColor ?? AppColors.of(context).shellBackground;
 
     return Container(
       width: double.infinity,

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
 
 /// Централизованная конфигурация тем оформления приложения (Material Design 3).
 class AppTheme {
@@ -130,7 +131,7 @@ class AppTheme {
         ),
         errorMaxLines: 2,
       ),
-      extensions: const [GlassTheme.light],
+      extensions: const [GlassTheme.light, AppColors.light],
     );
   }
 
@@ -252,7 +253,7 @@ class AppTheme {
         ),
         errorMaxLines: 2,
       ),
-      extensions: const [GlassTheme.dark],
+      extensions: const [GlassTheme.dark, AppColors.dark],
     );
   }
 }

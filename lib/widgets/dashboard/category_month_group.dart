@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
 import 'transaction_item_tile.dart';
+import '../../theme/app_colors.dart';
 
 /// Операции одной категории за месяц.
 class CategoryMonthSummary {
@@ -70,21 +71,19 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
     final summary = widget.summary;
     final categoryColor = CategoryStyle.color(summary.category);
-    final borderColor =
-        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+    final borderColor = AppColors.of(context).cardBorder;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: TransactionItemTile.backgroundColor(theme),
+        color: TransactionItemTile.backgroundColor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            color: AppColors.of(context).cardShadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -95,7 +94,7 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
         child: Column(
           children: [
             Material(
-              color: Colors.transparent,
+              color: AppColors.transparent,
               child: InkWell(
                 key: ValueKey('category_group_${summary.category.name}'),
                 onTap: () => setState(() => _expanded = !_expanded),
@@ -155,7 +154,7 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
                           style: textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: summary.total >= 0
-                                ? colorScheme.primary
+                                ? AppColors.of(context).accentText
                                 : colorScheme.onSurface,
                           ),
                         ),

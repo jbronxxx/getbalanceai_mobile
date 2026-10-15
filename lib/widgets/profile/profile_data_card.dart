@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/legal_links.dart';
 import '../../utils/utils.dart';
 import '../app_alerts.dart';
+import '../../theme/app_colors.dart';
 
 /// Открывает URL во внешнем браузере; возвращает `false`, если открыть не удалось.
 Future<bool> openExternalUrl(Uri uri) =>
@@ -35,14 +36,10 @@ class ProfileDataCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
     final l10n = context.l10n;
 
-    final glassBg = isDark
-        ? const Color(0xFF141416).withValues(alpha: 0.70)
-        : Colors.white.withValues(alpha: 0.85);
-    final glassBorder =
-        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+    final glassBg = AppColors.of(context).cardGlassBackground;
+    final glassBorder = AppColors.of(context).cardBorder;
 
     return Container(
       decoration: BoxDecoration(
@@ -51,7 +48,7 @@ class ProfileDataCard extends StatelessWidget {
         border: Border.all(color: glassBorder, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            color: AppColors.of(context).cardShadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -60,7 +57,8 @@ class ProfileDataCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: ListTile(
-          leading: Icon(Icons.privacy_tip_outlined, color: colorScheme.primary),
+          leading: Icon(Icons.privacy_tip_outlined,
+              color: AppColors.of(context).accentText),
           title: Text(
             l10n.delete_account_info_title,
             style: textTheme.bodyMedium?.copyWith(

@@ -230,33 +230,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF161618) : colorScheme.surface;
-    final sheetBorder = isDark
-        ? Colors.white.withValues(alpha: 0.18)
-        : Colors.black.withValues(alpha: 0.08);
 
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border(
-            top: BorderSide(color: sheetBorder, width: 1.5),
-            left: BorderSide(color: sheetBorder, width: 1.0),
-            right: BorderSide(color: sheetBorder, width: 1.0),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.10),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
+        decoration: AppSheet.decoration(context),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
@@ -270,18 +250,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.25)
-                          : colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+                const Center(
+                  child: SheetHandle(),
                 ),
                 Text(
                   isEditing

@@ -9,6 +9,7 @@ import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
+import '../theme/theme.dart';
 
 /// Главный экран: баланс за выбранный период и список операций.
 class DashboardScreen extends StatefulWidget {
@@ -216,7 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         showModalBottomSheet<bool>(
           context: context,
           isScrollControlled: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.transparent,
           builder: (context) => AddTransactionSheet(
             transactionToEdit: transaction,
           ),
@@ -258,10 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final isDark = theme.brightness == Brightness.dark;
-
-    final scaffoldBg =
-        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+    final scaffoldBg = AppColors.of(context).shellBackground;
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -269,11 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: LiquidGlassAppBar(
         title: Text(
           context.l10n.balance,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: colorScheme.onSurface,
-          ),
+          style: AppTypography.screenTitle(context),
         ),
         centerTitle: true,
         actions: [
@@ -399,7 +393,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: colorScheme.primary,
+                        color: AppColors.of(context).accentText,
                       ),
                     ),
                   ),

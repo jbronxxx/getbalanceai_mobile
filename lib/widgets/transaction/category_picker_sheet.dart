@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import 'category_chip.dart';
+import '../app_sheet.dart';
+import '../../theme/app_colors.dart';
 
 /// Модальный лист со всеми категориями операции.
 ///
@@ -29,7 +31,7 @@ class CategoryPickerSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => CategoryPickerSheet(
         categories: categories,
         selected: selected,
@@ -63,13 +65,7 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border(
-            top: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
-          ),
-        ),
+        decoration: AppSheet.decoration(context),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
@@ -78,16 +74,8 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+                const Center(
+                  child: SheetHandle(),
                 ),
                 Text(
                   context.l10n.all_categories,

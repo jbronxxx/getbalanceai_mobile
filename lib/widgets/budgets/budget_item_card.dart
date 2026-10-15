@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
 import '../swipe_hint_wrapper.dart';
+import '../../theme/app_colors.dart';
 
 /// Карточка элемента бюджета с индикатором выполнения и поддержкой свайпа для удаления.
 class BudgetItemCard extends StatelessWidget {
@@ -27,18 +28,10 @@ class BudgetItemCard extends StatelessWidget {
 
   /// Цвет шкалы по доле потраченного: до 75% — основной, 75–100% —
   /// предупреждение, выше лимита — перерасход.
-  static Color progressColorFor(
-    double ratio,
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
-    if (ratio > 1) {
-      return isDark ? const Color(0xFFF59E0B) : const Color(0xFFEA7A35);
-    }
-    if (ratio >= 0.75) {
-      return isDark ? const Color(0xFFFCD34D) : const Color(0xFFD97706);
-    }
-    return colorScheme.primary;
+  static Color progressColorFor(double ratio, AppColors colors) {
+    if (ratio > 1) return colors.exceeded;
+    if (ratio >= 0.75) return colors.warning;
+    return colors.accentText;
   }
 
   static String _display(double amount) => CurrencyFormatter.format(amount);
@@ -49,6 +42,7 @@ class BudgetItemCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final isDark = theme.brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     final ratio =
         budget.limitAmount > 0 ? currentSpent / budget.limitAmount : 0.0;
@@ -56,23 +50,20 @@ class BudgetItemCard extends StatelessWidget {
     final isExceeded = currentSpent > budget.limitAmount;
     final percent = (ratio * 100).round();
 
-    // Мягкий бежево-оранжевый цвет предупреждения вместо пугающего красного
-    final exceededColor =
-        isDark ? const Color(0xFFF59E0B) : const Color(0xFFEA7A35);
-    final progressColor = progressColorFor(ratio, colorScheme, isDark);
+    final exceededColor = colors.exceeded;
+    final progressColor = progressColorFor(ratio, colors);
 
     final background = Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFEF4444),
+        color: colorScheme.error,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Icon(Icons.delete_rounded, color: colorScheme.onError),
     );
 
-    final baseBg = theme.cardTheme.color ??
-        (isDark ? const Color(0xFF141416) : Colors.white);
+    final baseBg = colors.cardBackground;
     final cardBg = isExceeded
         ? Color.alphaBlend(
             exceededColor.withValues(alpha: isDark ? 0.16 : 0.08),
@@ -82,9 +73,7 @@ class BudgetItemCard extends StatelessWidget {
 
     final glassBorder = isExceeded
         ? exceededColor.withValues(alpha: isDark ? 0.40 : 0.35)
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.14)
-            : const Color(0xFFE2E8F0));
+        : colors.cardBorder;
 
     final cardContent = Container(
       decoration: BoxDecoration(
@@ -98,14 +87,14 @@ class BudgetItemCard extends StatelessWidget {
           BoxShadow(
             color: isExceeded
                 ? exceededColor.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+                : AppColors.of(context).cardShadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
           onTap: onTap,

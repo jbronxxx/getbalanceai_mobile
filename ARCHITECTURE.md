@@ -173,6 +173,12 @@ main.dart`. Это было исправлено переносом состоя
 
 ## Пользовательский интерфейс, темы и верстка (UI & Design System)
 
+- **Дизайн-токены (`lib/theme/app_colors.dart`, `lib/theme/app_typography.dart`)**:
+  - `AppColors` (`ThemeExtension`, `AppColors.of(context)`) — семантические цвета сверх `ColorScheme` для светлой и тёмной темы: фон экранов (`shellBackground`), листы (`sheetBackground/Border/Shadow`, `sheetHandleDark`), карточки (`cardBackground`, `cardGlassBackground`, `cardBorder`, `cardDivider`, `cardShadow`), заливка стекла без размытия (`glassFallbackStart/End`), поля и списки, фирменная карточка (`brandGradient`, `brandShadow`, `onBrand`), бюджет (`warning`, `exceeded` — в светлой теме #B45309/#C2410C, чтобы текст на белой и подкрашенной карточке был не ниже 4.5:1; `exceededOnBrand`, `overspendBadge`), плашка pull-to-refresh. Без расширения в теме (изолированные тесты) берутся значения по яркости.
+  - **`accentText`** — бирюзовый для текста и иконок. В светлой теме совпадает с `primary` (#0F766E), в тёмной — #2DD4BF: `primary` на тёмных фонах давал 3.2–3.6:1 при норме WCAG AA 4.5:1. Заливки кнопок и рамки по-прежнему используют `primary` (для графики достаточно 3:1). Контраст закреплён тестом `design_tokens_test.dart`.
+  - Палитры категорий — в `CategoryStyle` (`icon`, `color`, `chartColor` — пастель для диаграмм на фирменной карточке).
+  - Оформление модальных листов — `AppSheet.decoration(context)` и `SheetHandle` (`lib/widgets/app_sheet.dart`), одинаковое для всех листов.
+  - `AppFontSize` — шкала размеров шрифта (micro 10 … headline 20) для ролей, которых нет в `TextTheme`; `AppTypography.screenTitle` — заголовок экрана в стеклянной шапке. В экранах и виджетах нет `Color(0x…)` и числовых `fontSize`; исключения — пропорциональные инициалы `UserAvatar` и PDF-отчёт (`PdfColors`). Кнопки входа Google/Apple — токены `googleButtonBackground/Text`, `appleButtonBackground`. Вместо `Colors.*` — статические основы `AppColors.transparent`, `shadowBase` (тени, затемнения), `highlightBase` (блики и контуры стекла), `onBrandBase` (текст на фирменной карточке); их можно использовать и в `const`.
 - **Дизайн-система и темы (`lib/theme/app_theme.dart`)**:
   - Все цвета и параметры тем вынесены из `main.dart` в единый класс `AppTheme`.
   - Поддерживаются `AppTheme.lightTheme` и `AppTheme.darkTheme` на базе Material 3 с палитрами `colorScheme` (основной цвет — `primaryTeal` `#0D9488`, фоны `#F8FAFC` и `#0F172A`, карточки `#FFFFFF` и `#1E293B`, границы `#E2E8F0` и `#334155`).

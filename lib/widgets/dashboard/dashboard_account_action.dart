@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
 import '../user_avatar.dart';
+import '../../theme/app_colors.dart';
 
 /// Действие в шапке дашборда: «Войти» для гостя, аватар — для вошедшего.
 class DashboardAccountAction extends StatelessWidget {
@@ -26,7 +27,7 @@ class DashboardAccountAction extends StatelessWidget {
           return TextButton(
             onPressed: onLogin,
             style: TextButton.styleFrom(
-              foregroundColor: colorScheme.primary,
+              foregroundColor: AppColors.of(context).accentText,
               backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(
@@ -38,7 +39,7 @@ class DashboardAccountAction extends StatelessWidget {
               maxLines: 1,
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
+                color: AppColors.of(context).accentText,
               ),
             ),
           );

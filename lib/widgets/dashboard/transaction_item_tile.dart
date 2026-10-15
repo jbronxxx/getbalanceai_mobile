@@ -3,6 +3,8 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
 import '../swipe_hint_wrapper.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
 /// Строка операции в ленте дашборда: иконка категории, описание, категория
 /// и сумма. Свайп влево удаляет, тап открывает редактирование.
@@ -31,11 +33,8 @@ class TransactionItemTile extends StatelessWidget {
 
   /// Непрозрачный фон строки: сквозь него не просвечивает красная подложка
   /// удаления при свайпе.
-  static Color backgroundColor(ThemeData theme) =>
-      theme.cardTheme.color ??
-      (theme.brightness == Brightness.dark
-          ? const Color(0xFF141416)
-          : Colors.white);
+  static Color backgroundColor(BuildContext context) =>
+      AppColors.of(context).cardBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +64,7 @@ class TransactionItemTile extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       background: background,
       child: Material(
-        color: backgroundColor(theme),
+        color: backgroundColor(context),
         child: ListTile(
           onTap: onTap,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -121,8 +120,9 @@ class TransactionItemTile extends StatelessWidget {
                   useFittedBox: true,
                   style: textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color:
-                        isExpense ? colorScheme.onSurface : colorScheme.primary,
+                    color: isExpense
+                        ? colorScheme.onSurface
+                        : AppColors.of(context).accentText,
                   ),
                 ),
                 if (transaction.currency !=
@@ -137,7 +137,7 @@ class TransactionItemTile extends StatelessWidget {
                     useFittedBox: true,
                     style: textTheme.labelSmall?.copyWith(
                       color: colorScheme.outline,
-                      fontSize: 10,
+                      fontSize: AppFontSize.micro,
                     ),
                   ),
                 ],

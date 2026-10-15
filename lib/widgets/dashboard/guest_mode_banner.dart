@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Баннер уведомления о гостевом режиме (локальное хранилище без облака).
 class GuestModeBanner extends StatelessWidget {
@@ -16,7 +17,7 @@ class GuestModeBanner extends StatelessWidget {
         ? colorScheme.surfaceContainerHighest
         : colorScheme.surfaceContainerLow;
     final bannerBorder = colorScheme.outlineVariant;
-    final iconColor = colorScheme.primary;
+    final iconColor = AppColors.of(context).accentText;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

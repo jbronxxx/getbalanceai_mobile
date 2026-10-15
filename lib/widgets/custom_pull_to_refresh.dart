@@ -2,6 +2,8 @@ import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// Кастомный виджет Pull-to-Refresh в стиле Liquid Glass / Material 3.
 ///
@@ -14,8 +16,9 @@ class CustomPullToRefresh extends StatefulWidget {
   final String? pullText;
   final String? releaseText;
   final String? refreshingText;
-  final Color backgroundColor;
-  final Color foregroundColor;
+
+  /// Цвет спиннера и текста; по умолчанию — `AppColors.accentText`.
+  final Color? foregroundColor;
   final bool releaseImmediately;
   final double? topPadding;
 
@@ -26,8 +29,7 @@ class CustomPullToRefresh extends StatefulWidget {
     this.pullText,
     this.releaseText,
     this.refreshingText,
-    this.backgroundColor = const Color(0xFFF1F5F9),
-    this.foregroundColor = const Color(0xFF0F766E),
+    this.foregroundColor,
     this.releaseImmediately = false,
     this.topPadding,
   });
@@ -221,17 +223,17 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final pillBg = isDark
-        ? const Color(0xFF1E293B).withValues(alpha: 0.92)
-        : Colors.white.withValues(alpha: 0.94);
+    final colors = AppColors.of(context);
+    final foreground = widget.foregroundColor ?? colors.accentText;
+    final pillBg = colors.pillBackground;
 
     final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.16)
-        : const Color(0xFF0F766E).withValues(alpha: 0.22);
+        ? AppColors.highlightBase.withValues(alpha: 0.16)
+        : colors.brandGradientStart.withValues(alpha: 0.22);
 
     final shadowColor = isDark
-        ? Colors.black.withValues(alpha: 0.35)
-        : Colors.black.withValues(alpha: 0.08);
+        ? AppColors.shadowBase.withValues(alpha: 0.35)
+        : AppColors.shadowBase.withValues(alpha: 0.08);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -261,7 +263,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
               child: CircularProgressIndicator(
                 strokeWidth: 2.0,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  widget.foregroundColor,
+                  foreground,
                 ),
               ),
             )
@@ -271,7 +273,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
               turns: _canRefresh ? 0.5 : 0.0,
               child: Icon(
                 Icons.arrow_downward_rounded,
-                color: widget.foregroundColor,
+                color: foreground,
                 size: 16,
               ),
             ),
@@ -285,7 +287,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
             style: textTheme.labelMedium?.copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontSize: AppFontSize.caption,
               letterSpacing: 0.2,
             ),
           ),

@@ -4,6 +4,7 @@ import '../../utils/utils.dart';
 import 'currency_picker_sheet.dart';
 import 'language_picker_sheet.dart';
 import 'theme_mode_picker_sheet.dart';
+import '../../theme/app_colors.dart';
 
 /// Карточка настроек интерфейса (тема, язык, валюта).
 class ProfileSettingsCard extends StatelessWidget {
@@ -19,16 +20,11 @@ class ProfileSettingsCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
     final l10n = context.l10n;
 
-    final glassBg = isDark
-        ? const Color(0xFF141416).withValues(alpha: 0.70)
-        : Colors.white.withValues(alpha: 0.85);
-    final glassBorder =
-        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
-    final dividerColor =
-        isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9);
+    final glassBg = AppColors.of(context).cardGlassBackground;
+    final glassBorder = AppColors.of(context).cardBorder;
+    final dividerColor = AppColors.of(context).cardDivider;
 
     return Container(
       decoration: BoxDecoration(
@@ -40,7 +36,7 @@ class ProfileSettingsCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            color: AppColors.of(context).cardShadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -65,7 +61,7 @@ class ProfileSettingsCard extends StatelessWidget {
                     Text(
                       ThemeModePickerSheet.getThemeModeLabel(context, mode),
                       style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.primary,
+                        color: AppColors.of(context).accentText,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -93,7 +89,7 @@ class ProfileSettingsCard extends StatelessWidget {
                 Text(
                   LanguageManager.currentLanguage.displayName,
                   style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.primary,
+                    color: AppColors.of(context).accentText,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -126,7 +122,7 @@ class ProfileSettingsCard extends StatelessWidget {
                     Text(
                       currency.localizedName,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.primary,
+                        color: AppColors.of(context).accentText,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

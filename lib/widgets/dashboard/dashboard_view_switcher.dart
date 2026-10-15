@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Вид ленты дашборда.
 enum DashboardViewMode {
@@ -66,8 +67,9 @@ class _ViewPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final foreground =
-        isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final foreground = isSelected
+        ? AppColors.of(context).accentText
+        : colorScheme.onSurfaceVariant;
 
     return Semantics(
       button: true,
@@ -84,7 +86,7 @@ class _ViewPill extends StatelessWidget {
             side: BorderSide(
               color: isSelected
                   ? colorScheme.primary.withValues(alpha: 0.6)
-                  : Colors.transparent,
+                  : AppColors.transparent,
               width: 1.2,
             ),
           ),

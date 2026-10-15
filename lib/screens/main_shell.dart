@@ -9,6 +9,7 @@ import 'insights_screen.dart';
 import 'profile_screen.dart';
 
 import '../widgets/widgets.dart';
+import '../theme/theme.dart';
 
 /// Каркас приложения с нижней навигацией в виде плавающего островка жидкого стекла.
 class MainShell extends StatefulWidget {
@@ -33,7 +34,7 @@ class _MainShellState extends State<MainShell> {
     showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => const AddTransactionSheet(),
     );
   }
@@ -62,10 +63,7 @@ class _MainShellState extends State<MainShell> {
           avatarUrl = authState.avatarUrl;
         }
 
-        final theme = Theme.of(context);
-        final isDark = theme.brightness == Brightness.dark;
-        final shellBg =
-            isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+        final shellBg = AppColors.of(context).shellBackground;
 
         return Scaffold(
           backgroundColor: shellBg,

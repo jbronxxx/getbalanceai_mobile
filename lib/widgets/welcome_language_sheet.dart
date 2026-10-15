@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
+import 'app_sheet.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// Модальный лист приветственной настройки при первом запуске приложения.
 ///
@@ -29,14 +32,8 @@ class WelcomeLanguageSheet extends StatelessWidget {
     Currency selectedCurrency = CurrencyFormatter.currentCurrency;
     bool currencyManuallyChanged = false;
 
-    final isDark = theme.brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF161618) : colorScheme.surface;
-    final sheetBorder = isDark
-        ? Colors.white.withValues(alpha: 0.18)
-        : Colors.black.withValues(alpha: 0.08);
-
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: Container(
         padding: EdgeInsets.only(
           top: 10,
@@ -44,22 +41,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
           right: 24,
           bottom: 24 + MediaQuery.of(context).padding.bottom,
         ),
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border(
-            top: BorderSide(color: sheetBorder, width: 1.5),
-            left: BorderSide(color: sheetBorder, width: 1.0),
-            right: BorderSide(color: sheetBorder, width: 1.0),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.10),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
+        decoration: AppSheet.decoration(context),
         child: SingleChildScrollView(
           child: StatefulBuilder(
             builder: (context, setModalState) {
@@ -67,26 +49,12 @@ class WelcomeLanguageSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 60,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.25)
-                            : colorScheme.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+                  const Center(
+                    child: SheetHandle(width: 60, bottomMargin: 20),
                   ),
                   Text(
                     l10n.welcome_lang_title,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
+                    style: AppTypography.screenTitle(context),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -103,7 +71,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? colorScheme.primary.withValues(alpha: 0.08)
-                            : Colors.transparent,
+                            : AppColors.transparent,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected
@@ -125,13 +93,14 @@ class WelcomeLanguageSheet extends StatelessWidget {
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                             color: isSelected
-                                ? colorScheme.primary
+                                ? AppColors.of(context).accentText
                                 : colorScheme.onSurface,
                           ),
                         ),
                         trailing: isSelected
                             ? Icon(Icons.check_circle,
-                                color: colorScheme.primary, size: 20)
+                                color: AppColors.of(context).accentText,
+                                size: 20)
                             : Icon(Icons.circle_outlined,
                                 color: colorScheme.outline, size: 20),
                         onTap: () {
@@ -155,11 +124,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
                   const SizedBox(height: 20),
                   Text(
                     l10n.welcome_currency_title,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
+                    style: AppTypography.screenTitle(context),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -195,7 +160,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
                             border: Border.all(
                               color: isCurSelected
                                   ? colorScheme.primary
-                                  : Colors.transparent,
+                                  : AppColors.transparent,
                               width: isCurSelected ? 2 : 1,
                             ),
                           ),
@@ -207,7 +172,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
                                 style: textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: isCurSelected
-                                      ? colorScheme.primary
+                                      ? AppColors.of(context).accentText
                                       : colorScheme.onSurface,
                                 ),
                               ),
@@ -216,7 +181,7 @@ class WelcomeLanguageSheet extends StatelessWidget {
                                 currency.localizedName,
                                 style: textTheme.bodySmall?.copyWith(
                                   color: isCurSelected
-                                      ? colorScheme.primary
+                                      ? AppColors.of(context).accentText
                                       : colorScheme.onSurfaceVariant,
                                 ),
                               ),

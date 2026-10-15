@@ -8,6 +8,7 @@ import '../widgets/insights/insights_generate_card.dart';
 import '../widgets/insights/insights_unavailable_card.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
+import '../theme/theme.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatefulWidget {
@@ -102,13 +103,7 @@ class _InsightsScreenView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final scaffoldBg =
-        isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+    final scaffoldBg = AppColors.of(context).shellBackground;
     final topOffset = LiquidGlassAppBar.topContentPadding(context);
 
     return Scaffold(
@@ -117,11 +112,7 @@ class _InsightsScreenView extends StatelessWidget {
       appBar: LiquidGlassAppBar(
         title: Text(
           context.l10n.insights_header_title,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: colorScheme.onSurface,
-          ),
+          style: AppTypography.screenTitle(context),
         ),
         centerTitle: true,
       ),
@@ -222,11 +213,7 @@ class _NoNetworkMessage extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.no_network_title,
-            style: textTheme.titleMedium?.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
+            style: AppTypography.screenTitle(context),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -255,14 +242,10 @@ class _InsightCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
 
-    final glassBg = isDark
-        ? const Color(0xFF141416).withValues(alpha: 0.70)
-        : Colors.white.withValues(alpha: 0.85);
+    final glassBg = AppColors.of(context).cardGlassBackground;
 
-    final glassBorder =
-        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+    final glassBorder = AppColors.of(context).cardBorder;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -276,7 +259,7 @@ class _InsightCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            color: AppColors.of(context).cardShadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -293,7 +276,7 @@ class _InsightCard extends StatelessWidget {
             ),
             child: Icon(
               Icons.auto_awesome_rounded,
-              color: colorScheme.primary,
+              color: AppColors.of(context).accentText,
               size: 20,
             ),
           ),

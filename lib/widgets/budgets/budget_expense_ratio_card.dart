@@ -2,6 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
+import '../category_style.dart';
+import '../../theme/app_typography.dart';
 
 /// Данные одного сегмента кольцевой диаграммы расходов.
 class ExpenseSegmentData {
@@ -29,39 +32,6 @@ class BudgetExpenseRatioCard extends StatefulWidget {
     required this.totalExpense,
     required this.categoryExpenses,
   });
-
-  /// Цветовая палитра категорий Material 3 с высокой контрастностью
-  /// на бирюзовом стеклянном фоне карточки.
-  static Color getCategorySegmentColor(Category category) {
-    switch (category) {
-      case Category.food:
-        return const Color(0xFFFB923C); // Coral Orange
-      case Category.transport:
-        return const Color(0xFF60A5FA); // Sky Blue
-      case Category.entertainment:
-        return const Color(0xFFC084FC); // Soft Purple
-      case Category.health:
-        return const Color(0xFFF87171); // Light Red
-      case Category.shopping:
-        return const Color(0xFFF472B6); // Rose Pink
-      case Category.subscriptions:
-        return const Color(0xFF818CF8); // Indigo
-      case Category.freelance:
-        return const Color(0xFFFBBF24); // Amber
-      case Category.investments:
-        return const Color(0xFF34D399); // Emerald
-      case Category.transfers:
-        return const Color(0xFF38BDF8); // Light Cyan
-      case Category.cashback:
-        return const Color(0xFF2DD4BF); // Mint Teal
-      case Category.sales:
-        return const Color(0xFFFB7185); // Light Coral
-      case Category.salary:
-        return const Color(0xFF4ADE80); // Bright Green
-      case Category.other:
-        return const Color(0xFFCBD5E1); // Slate Gray
-    }
-  }
 
   @override
   State<BudgetExpenseRatioCard> createState() => _BudgetExpenseRatioCardState();
@@ -121,7 +91,7 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
       return ExpenseSegmentData(
         category: e.key,
         amount: e.value,
-        color: BudgetExpenseRatioCard.getCategorySegmentColor(e.key),
+        color: CategoryStyle.chartColor(e.key),
       );
     }).toList();
   }
@@ -139,27 +109,20 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F766E),
-            Color(0xFF115E59),
-          ],
-        ),
+        gradient: AppColors.of(context).brandGradient,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.32),
+          color: AppColors.onBrandBase.withValues(alpha: 0.32),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F766E).withValues(alpha: 0.16),
+            color: AppColors.of(context).brandShadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.shadowBase.withValues(alpha: 0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -234,7 +197,7 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textTheme.titleSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: AppColors.onBrandBase.withValues(alpha: 0.82),
               letterSpacing: 0.3,
               fontWeight: FontWeight.w500,
             ),
@@ -245,19 +208,19 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
             decoration: BoxDecoration(
-              color: const Color(0xFFF43F5E).withValues(alpha: 0.28),
+              color: AppColors.of(context).overspendBadge,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.22),
+                color: AppColors.onBrandBase.withValues(alpha: 0.22),
                 width: 0.8,
               ),
             ),
             child: Text(
               '! $overspendRatio%',
               style: textTheme.labelSmall?.copyWith(
-                color: const Color(0xFFFFE4E6),
+                color: AppColors.of(context).onOverspendBadge,
                 fontWeight: FontWeight.bold,
-                fontSize: 11,
+                fontSize: AppFontSize.small,
                 letterSpacing: 0.1,
               ),
             ),
@@ -320,9 +283,9 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
                   child: Text(
                     centerPrimaryText,
                     style: textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.onBrandBase,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: AppFontSize.headline,
                       height: 1.1,
                     ),
                   ),
@@ -335,8 +298,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
                     maxLines: 1,
                     textAlign: TextAlign.center,
                     style: textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      fontSize: 10,
+                      color: AppColors.onBrandBase.withValues(alpha: 0.78),
+                      fontSize: AppFontSize.micro,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -359,14 +322,14 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: AppColors.onBrandBase.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             Icon(
               Icons.check_circle_outline_rounded,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: AppColors.onBrandBase.withValues(alpha: 0.7),
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -376,8 +339,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 11,
+                  color: AppColors.onBrandBase.withValues(alpha: 0.8),
+                  fontSize: AppFontSize.small,
                   height: 1.25,
                 ),
               ),
@@ -419,7 +382,7 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
           ),
         if (remainingCount > 0)
           _CategoryLegendRow(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: AppColors.onBrandBase.withValues(alpha: 0.7),
             name: context.l10n.structure_more_categories(remainingCount),
             amount: remainingSum,
             percentage: ((remainingSum / widget.totalExpense) * 100).round(),
@@ -469,8 +432,8 @@ class _CategoryLegendRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodySmall?.copyWith(
-                    color: Colors.white,
-                    fontSize: 12,
+                    color: AppColors.onBrandBase,
+                    fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -479,8 +442,8 @@ class _CategoryLegendRow extends StatelessWidget {
               Text(
                 '$percentage%',
                 style: textTheme.labelSmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.95),
-                  fontSize: 11,
+                  color: AppColors.onBrandBase.withValues(alpha: 0.95),
+                  fontSize: AppFontSize.small,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -494,8 +457,8 @@ class _CategoryLegendRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.labelSmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.78),
-                fontSize: 10.5,
+                color: AppColors.onBrandBase.withValues(alpha: 0.78),
+                fontSize: AppFontSize.legend,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -526,10 +489,10 @@ class _SummaryInfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: AppColors.onBrandBase.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.24),
+          color: AppColors.onBrandBase.withValues(alpha: 0.24),
           width: 1.0,
         ),
       ),
@@ -541,12 +504,12 @@ class _SummaryInfoChip extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
+                  color: AppColors.onBrandBase.withValues(alpha: 0.22),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.white,
+                  color: AppColors.onBrandBase,
                   size: 13,
                 ),
               ),
@@ -557,7 +520,7 @@ class _SummaryInfoChip extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.82),
+                    color: AppColors.onBrandBase.withValues(alpha: 0.82),
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.2,
                   ),
@@ -570,7 +533,7 @@ class _SummaryInfoChip extends StatelessWidget {
             amount,
             showSign: false,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
+              color: AppColors.onBrandBase,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.2,
             ),
@@ -604,7 +567,7 @@ class _DonutChartPainter extends CustomPainter {
     final bgPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..color = Colors.white.withValues(alpha: 0.12);
+      ..color = AppColors.onBrandBase.withValues(alpha: 0.12);
 
     canvas.drawCircle(center, radius, bgPaint);
 

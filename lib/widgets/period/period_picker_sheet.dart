@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
+import '../app_sheet.dart';
+import '../../theme/app_colors.dart';
 
 /// Лист выбора месяца: год со стрелками и сетка из 12 месяцев.
 ///
@@ -14,7 +16,7 @@ class PeriodPickerSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => const PeriodPickerSheet(),
     );
   }
@@ -41,20 +43,13 @@ class _PeriodPickerSheetState extends State<PeriodPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final selected = _service.period;
     final current = MonthPeriod.current();
     final earliest = _service.earliest;
     final latest = _service.latest;
 
     return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
-        ),
-      ),
+      decoration: AppSheet.decoration(context),
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
       // Прокрутка спасает от переполнения на маленьких экранах и при
       // крупном системном шрифте.
@@ -64,15 +59,7 @@ class _PeriodPickerSheetState extends State<PeriodPickerSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 80,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              const SheetHandle(width: 80, bottomMargin: 12),
               Row(
                 children: [
                   IconButton(
@@ -149,7 +136,7 @@ class _MonthCell extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Material(
-      color: isSelected ? colorScheme.primary : Colors.transparent,
+      color: isSelected ? colorScheme.primary : AppColors.transparent,
       shape: StadiumBorder(
         side: BorderSide(
           color: isSelected || isCurrent
@@ -174,7 +161,7 @@ class _MonthCell extends StatelessWidget {
                   color: isSelected
                       ? colorScheme.onPrimary
                       : isCurrent
-                          ? colorScheme.primary
+                          ? AppColors.of(context).accentText
                           : colorScheme.onSurface,
                 ),
               ),

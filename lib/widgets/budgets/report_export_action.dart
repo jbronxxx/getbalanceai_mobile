@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
 import 'report_export_sheet.dart';
+import '../../theme/app_colors.dart';
 
 /// Кнопка «Отчёт» в шапке вкладки «Бюджет» — в том же стиле, что «Войти» на
 /// дашборде; открывает выгрузку отчёта в CSV/PDF за выбранный месяц.
@@ -33,11 +34,11 @@ class ReportExportAction extends StatelessWidget {
           maxLines: 1,
           style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: colorScheme.primary,
+            color: AppColors.of(context).accentText,
           ),
         ),
         style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
+          foregroundColor: AppColors.of(context).accentText,
           backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(

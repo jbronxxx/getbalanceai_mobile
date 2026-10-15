@@ -4,6 +4,7 @@ import '../../cubits/report_export/report_export_cubit.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../app_alerts.dart';
+import '../../theme/app_colors.dart';
 
 /// Модальный лист выгрузки отчёта: период, формат и кнопка «Выгрузить».
 class ReportExportSheet extends StatelessWidget {
@@ -17,7 +18,7 @@ class ReportExportSheet extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => BlocProvider(
         create: (_) => ReportExportCubit(month: month, year: year),
         child: const ReportExportSheet(),

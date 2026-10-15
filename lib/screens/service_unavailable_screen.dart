@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../utils/utils.dart';
+import '../theme/app_colors.dart';
 
 /// Экран отображения временной недоступности сервиса (HTTP 503 / Технические работы).
 class ServiceUnavailableScreen extends StatelessWidget {
@@ -22,7 +23,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: Navigator.canPop(context)
             ? IconButton(
