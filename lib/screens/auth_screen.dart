@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
+import '../config/legal_links.dart';
 
 /// Экран входа/регистрации через соцсети (Google, Apple).
 class AuthScreen extends StatefulWidget {
@@ -322,8 +323,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                       alignment: PlaceholderAlignment.baseline,
                                       baseline: TextBaseline.alphabetic,
                                       child: GestureDetector(
-                                        onTap: () => launchUrl(Uri.parse(
-                                            context.l10n.terms_of_use_url)),
+                                        onTap: () => launchUrl(LegalLinks.url(
+                                            LegalPage.terms,
+                                            Localizations.localeOf(context)
+                                                .languageCode)),
                                         child: Text(
                                           context.l10n.terms_of_use_link,
                                           style: textTheme.bodySmall?.copyWith(
@@ -340,8 +343,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                       alignment: PlaceholderAlignment.baseline,
                                       baseline: TextBaseline.alphabetic,
                                       child: GestureDetector(
-                                        onTap: () => launchUrl(Uri.parse(
-                                            context.l10n.privacy_policy_url)),
+                                        onTap: () => launchUrl(LegalLinks.url(
+                                            LegalPage.privacy,
+                                            Localizations.localeOf(context)
+                                                .languageCode)),
                                         child: Text(
                                           context.l10n.privacy_policy_link,
                                           style: textTheme.bodySmall?.copyWith(

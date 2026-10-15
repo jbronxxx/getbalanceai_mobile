@@ -292,6 +292,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       },
                     ),
                     const SizedBox(height: 24),
+                    _buildSectionHeader(context.l10n.profile_data_section),
+                    const ProfileDataCard(),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       height: 56,
