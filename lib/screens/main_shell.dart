@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/auth/auth_cubit.dart';
 import '../utils/utils.dart';
+import 'add_transaction_sheet.dart';
 import 'budgets_screen.dart';
 import 'dashboard_screen.dart';
 import 'insights_screen.dart';
@@ -24,6 +25,17 @@ class _MainShellState extends State<MainShell> {
     setState(() {
       _currentIndex = 3;
     });
+  }
+
+  /// Форма новой операции открывается с любой вкладки; вкладки узнают
+  /// о сохранении через `LocalDbService.transactionsChanged`.
+  void _openNewTransaction() {
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const AddTransactionSheet(),
+    );
   }
 
   void _logout() {
@@ -98,6 +110,10 @@ class _MainShellState extends State<MainShell> {
                 bottom: 0,
                 child: LiquidGlassNavBar(
                   selectedIndex: _currentIndex,
+                  centerAction: LiquidGlassNavAction(
+                    tooltip: context.l10n.new_transaction,
+                    onPressed: _openNewTransaction,
+                  ),
                   onDestinationSelected: (index) {
                     if (_currentIndex != index) {
                       setState(() {

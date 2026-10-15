@@ -329,5 +329,15 @@
   "more_categories": "Ещё",
   "all_categories": "Все категории",
   "category_search_hint": "Найти категорию",
-  "category_search_empty": "Ничего не найдено"
+  "category_search_empty": "Ничего не найдено",
+  "previous_month": "Предыдущий месяц",
+  "next_month": "Следующий месяц",
+  "select_month": "Выбрать месяц",
+  "previous_year": "Предыдущий год",
+  "next_year": "Следующий год",
+  "add_limit_btn": "Добавить",
+  "insights_not_generated": "AI-анализ за этот месяц ещё не сформирован.",
+  "insights_generate_btn": "Сформировать анализ",
+  "insights_future_month": "Этот месяц ещё не наступил — анализировать пока нечего.",
+  "insights_no_transactions": "За этот месяц нет операций — анализировать пока нечего."
 }

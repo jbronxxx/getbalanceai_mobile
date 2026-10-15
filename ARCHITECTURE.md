@@ -37,16 +37,18 @@ lib/
 │   ├── paginated_response.dart  # Универсальный DTO для пагинированных ответов (items, total, limit, offset)
 │   ├── transaction_model.dart   # DTO для транзакций (с поддержкой created_at и безопасного парсинга дат)
 │   ├── sync_model.dart          # Модель для пакетной синхронизации
-│   └── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
+│   ├── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
+│   └── month_period.dart        # MonthPeriod: календарный месяц (переходы через границу года, сравнение)
 ├── services/
 │   ├── api_service.dart          # Единый сетевой фасад (делегирует в Auth/Transaction/Budget/Sync)
 │   ├── auth_api_service.dart     # Сервис аутентификации, сессий и токенов
 │   ├── transaction_api_service.dart # Сервис API транзакций
 │   ├── budget_api_service.dart   # Сервис API бюджетов
 │   ├── sync_service.dart         # Двусторонняя синхронизация с бэкендом
-│   ├── local_db_service.dart     # Доступ к ObjectBox (singleton)
+│   ├── local_db_service.dart     # Доступ к ObjectBox (singleton); статический transactionsChanged — сигнал вкладкам о сохранении/удалении операции
 │   ├── app_info_service.dart     # Кеширование метаданных приложения (версия, сборка)
 │   ├── preferences_service.dart  # Настройки (тема, язык, валюта)
+│   ├── selected_period_service.dart # Общий выбранный месяц для вкладок «Баланс», «Финансы», «Аналитика» (ValueNotifier, ±5 лет)
 │   ├── currency_exchange_service.dart # Конвертация и актуализация курсов валют (офлайн fallback).
 │   │                                 # При смене базовой валюты Presentation-слой динамически пересчитывает суммы
 │   │                                 # в представлении (on-the-fly) без мутации исторической базы и без ложных флагов isModified.
@@ -65,7 +67,8 @@ lib/
 │   └── profile/                 # ProfileCubit: статус авторизации, облачная синхронизация, выход
 ├── widgets/
 │   ├── dashboard/               # Декомпозированные виджеты экрана дашборда (баннер гостя, тайлы, группы)
-│   ├── budgets/                 # Декомпозированные виджеты экрана бюджетов (селектор периода, карточка, лист)
+│   ├── budgets/                 # Декомпозированные виджеты экрана бюджетов (заголовок блока лимитов, карточка, лист)
+│   ├── period/                  # PeriodSwitcher «‹ Октябрь ›» и PeriodPickerSheet (год + сетка месяцев)
 │   ├── transaction/             # Части формы операции: тип, сумма с валютой, выбор дня, чипы категорий и лист всех категорий
 │   ├── profile/                 # Декомпозированные виджеты профиля (шапка, синк, настройки, данные, версия с таймером)
 │   ├── ai_sparkles_loader.dart  # Анимированный лоадер генерации ИИ (пульсирующие звёздочки)
@@ -73,7 +76,7 @@ lib/
 │   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter, RepaintBoundary и непрозрачным fallback
 │   ├── liquid_glass_app_bar.dart# Хэдер экрана из полированного полупрозрачного стекла со скругленным низом (20px, BackdropFilter, topContentPadding)
 │   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass с единой полупрозрачностью и блюром (RepaintBoundary, sigma 18)
-│   ├── liquid_glass_fab.dart    # Плавающая кнопка действия с градиентным стеклом и неоновым свечением
+│   ├── liquid_glass_fab.dart    # Кнопка действия с градиентным стеклом и неоновым свечением (центральная «+» навбара)
 │   ├── screen_body_card.dart    # Каркас контента экрана со скругленными верхними краями (28px) и бесшовным скольжением под хэдер
 │   └── welcome_language_sheet.dart # Выбор стартового языка приложения
 └── screens/
@@ -186,10 +189,11 @@ main.dart`. Это было исправлено переносом состоя
     - Навигационная панель вынесена из слота `bottomNavigationBar` Scaffold в плавающий оверлей `Stack(alignment: Alignment.bottomCenter)` с `Positioned(bottom: 0)`.
     - Обернута в `RepaintBoundary` для изоляции перерисовок, а радиус размытия оптимизирован до `sigma: 18.0`.
     - Поддерживает доступность через `Semantics(button: true, selected: isSelected, label: item.label)`, ограничение масштабирования текста `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3)` и тактильно-визуальный отклик нажатия с микро-анимацией масштаба (`AnimatedScale` 0.94 на tap-down).
+    - **Центральная кнопка «+» (`LiquidGlassNavAction`)**: `MainShell` передаёт `centerAction`, кнопка (`LiquidGlassFab`, 52pt, полупрозрачная заливка `fillOpacity: 0.82`) стоит между второй и третьей вкладкой. Верхний край островка огибает её дугой с зазором `centerActionGap` (6pt), поднимаясь на `centerActionLift` (22pt): форма `LiquidGlassNavShape` (капсула + дуга со скруглёнными переходами) общая для заливки, блюра (`ClipPath`), контура и тени (`ShapeDecoration`). Высота виджета включает подъём, поэтому вся кнопка принимает нажатия. Подписи вкладок не обрезаются, а уменьшаются (`FittedBox`), если не помещаются. Индексы `destinations` кнопку не учитывают. Кнопка открывает `AddTransactionSheet` с любой вкладки; плавающих FAB на экранах нет.
   - **Централизованные метрики высоты и адаптивные отступы**:
-    - Устранены дублирующиеся магические числа (68.0, 140.0, 120.0). Расчет отступов централизован в хелперах `LiquidGlassNavBar.totalHeight(context)`, `bottomContentPadding(context)` и `fabBottomPadding(context)` на базе `MediaQuery.paddingOf(context)`.
-    - Всплывающие уведомления `AppAlerts` (SnackBar) используют `SnackBarBehavior.floating` с `margin.bottom = totalHeight + 8.0`, предотвращая перекрытие тостов плавающим навбаром.
-  - **Плавающая кнопка действия (`LiquidGlassFab`)**:
+    - Устранены дублирующиеся магические числа (68.0, 140.0, 120.0). Расчет отступов централизован в хелперах `LiquidGlassNavBar.totalHeight(context)` и `bottomContentPadding(context)` (учитывает подъём центральной кнопки) на базе `MediaQuery.paddingOf(context)`.
+    - Всплывающие уведомления `AppAlerts` (SnackBar) используют `SnackBarBehavior.floating` с `margin.bottom = totalHeight + centerActionLift + 8.0`, предотвращая перекрытие тостов навбаром и центральной кнопкой.
+  - **Кнопка действия (`LiquidGlassFab`)** — используется как центральная «+» навбара:
     - Стилизована через палитру темы (`colorScheme.primary`/`secondary`/`onPrimary`) без хардкода цветов.
     - Включает полную поддержку доступности (`Tooltip`, `Semantics`) с локализованными подсказками.
   - **Хэдер экрана Liquid Glass (`LiquidGlassAppBar`)**:
@@ -210,13 +214,14 @@ main.dart`. Это было исправлено переносом состоя
 - **Декомпозиция крупных экранов и полировка UI/UX**:
   - `WelcomeSetupScreen`: экраны онбординга (выбор языка и валюты) выполнены в цельном виде без отдельного верхнего хэдера/AppBar; блок заголовка и описания выбора языка зафиксирован по высоте (`SizedBox(height: 120)`), а кнопки выбора отделены комфортным отступом (`SizedBox(height: 40)`), что полностью исключает «скачки» кнопок вверх-вниз при смене языка и переносе строк; кнопка возврата назад на шаге валюты выровнена по левому краю экрана. При первом запуске приложение проверяет статус онбординга синхронно (`PreferencesService.isOnboardingCompletedSync`) и открывает `WelcomeSetupScreen` сразу в качестве корневого экрана (`routes['/']`), исключая предварительное мелькание или показ главного экрана.
   - `DashboardScreen`: декомпозирован на `GuestModeBanner`, `TransactionItemTile`, `CategoryGroupWidget`, `DayGroupWidget` (директория `lib/widgets/dashboard/`).
-    - Выбор периода (месяц и год) перемещен из хэдера AppBar непосредственно под виджет `BalanceCard` с переиспользованием `BudgetPeriodSelector`.
+    - **Выбор периода**: компактный `PeriodSwitcher` («‹ Октябрь ›», год показывается только для нетекущего года) стоит над `BalanceCard`. Стрелки листают месяцы через границу года, тап по подписи открывает `PeriodPickerSheet` (год со стрелками и сетка 12 месяцев). Период общий для вкладок «Баланс», «Финансы» и «Аналитика» — `SelectedPeriodService.periodNotifier`; при запуске всегда текущий месяц.
+    - Дашборд и «Финансы» перечитывают данные по `periodNotifier`, `CurrencyFormatter.currencyNotifier` и `LocalDbService.transactionsChanged` (операция сохранена/удалена с любой вкладки). Фоновая синхронизация `transactionsChanged` не трогает, чтобы не сбрасывать прокрутку списков.
     - Добавлен лаконичный заголовок «Баланс» по центру в AppBar; цвет фона AppBar и экрана строго синхронизированы (`colorScheme.surface`, `surfaceTintColor: transparent`).
     - Тень виджета `BalanceCard` уменьшена во избежание визуального наложения на расположенный ниже `BudgetPeriodSelector`.
     - Механика `CustomPullToRefresh` (Liquid Glass / Material 3): контент экрана (`BalanceCard`, `BudgetExpenseRatioCard` и списки) зафиксирован на месте и не съезжает вниз при оверскролле, а индикатор обновления отображается в виде плавающей стеклянной капсулы (Floating Pill) с прогрессом и спиннером непосредственно под `LiquidGlassAppBar`.
     - `TransactionItemTile`: поверхность строки транзакции сделана непрозрачной (`tileBgColor`), исключая просвечивание красной подложки удаления при анимации свайпа.
     - `CategoryGroupWidget` суммирует итог категории строго в базовой валюте пользователя (`effectiveBaseAmount`) со знаком валюты, обеспечивая 100% сходимость с общим балансом дашборда. При наличии мультивалютных трат выводит подстроку с оригинальной валютой чека, счетчик операций с корректным склонением (`LanguageManager.formatOperationsCount`) и анимированный шеврон раскрытия аккордеона (`AnimatedRotation`). Для внутреннего `ExpansionTile` используется изолированный `PageStorageKey<String>`, исключающий коллизию типов (`type 'double' is not a subtype of type 'bool?'`) с сохраненным смещением скролла родительского `CustomScrollView`.
-  - `BudgetsScreen` (вкладка «Финансы», ранее «Лимиты»): декомпозирован на `BudgetExpenseRatioCard`, `ReportExportCard`, `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
+  - `BudgetsScreen` (вкладка «Финансы», ранее «Лимиты»): декомпозирован на `BudgetExpenseRatioCard`, `ReportExportCard`, `BudgetsSectionHeader` (заголовок «Лимиты расходов» с кнопкой «Добавить» вместо FAB), `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`); вверху — общий `PeriodSwitcher`.
     - В верхней части экрана размещена большая бирюзовая стеклянная карточка `BudgetExpenseRatioCard` (того же размера и визуального стиля Polished Turquoise Liquid Glass, что и `BalanceCard` на дашборде). Карточка визуализирует соотношение расходов за месяц к доходу с помощью кастомной кольцевой диаграммы (Donut Chart, `CustomPainter`):
       - **Инфо-ядро Donut**: В центре кольца отображается текущий процент расходов от дохода (или общая сумма расходов при отсутствии прихода).
       - **Кейс отсутствия прихода (0 дохода)**: Карточка автоматически адаптируется, визуализируя 100% расходов по категориям без деления на ноль, отображает статус «Только расходы» и нулевой приход в нижнем чипе.
@@ -237,7 +242,7 @@ main.dart`. Это было исправлено переносом состоя
   - `ProfileDataCard`: раздел «Данные» в профиле (виден всегда). Пункт «Удаление аккаунта и данных» с иконкой и подзаголовком-пояснением (справка, а не само удаление) открывает во внешнем браузере публичную страницу бэкенда `/delete-account?lang=<код языка>`. Само удаление остаётся кнопкой «Удалить аккаунт» внизу профиля. При ошибке открытия показывается тост `open_link_error`.
   - **Юридические ссылки (`lib/config/legal_links.dart`)**: `LegalLinks.url(LegalPage, languageCode)` строит URL страниц бэкенда `/terms`, `/privacy`, `/delete-account` от origin `EnvironmentConfig.baseUrl` (без `/api/v1`): release ведёт на прод, debug/local — на выбранный бэкенд (например, `http://10.0.2.2:8000`). Используется в `AuthScreen` («Условия использования», «Политика конфиденциальности») и в `ProfileDataCard`. Тексты хранятся и обновляются на бэкенде; в ARB ссылок нет.
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.
-  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику») и размещенным непосредственно под ней селектором периода `BudgetPeriodSelector` (с отступом `topOffset`), синхронизированным с фильтром на экранах «Баланс» и «Лимиты»; анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»); оптимизирован для работы внутри `IndexedStack` (`MainShell` передает `isActive: _currentIndex == 2`), выполняет ленивую загрузку строго при первом открытии вкладки, смене периода пользователем (`setPeriod`) или явном Pull-to-Refresh, игнорируя фоновые смены языка/валюты до первого входа.
+  - `InsightsScreen`: экран AI-анализа с плавающей полупрозрачной плашкой заголовка («AI-Аналитика», термин «Инсайты» заменен на более понятную пользователю «Аналитику») и размещенным непосредственно под ней общим переключателем `PeriodSwitcher` (с отступом `topOffset`). Генерация AI — платный запрос к LLM, поэтому `InsightsCubit` следует правилам: будущий месяц и месяц без локальных операций — `InsightsUnavailable` (`InsightsUnavailableCard`) без запроса; текущий месяц — запрос с генерацией (бэкенд отдаёт сохранённый отчёт, пока новых операций месяца меньше 5); прошлые месяцы и смена валюты/языка — `GET /insights?generate=false`: сохранённый отчёт показывается автоматически, при `state=not_generated` — `InsightsAwaitingRequest` с кнопкой «Сформировать анализ» (`InsightsGenerateCard`); pull-to-refresh — `loadInsights(force: true)`. Ответ `state=no_data` → `InsightsUnavailable`, `quota_exceeded` → сообщение о лимите (не кэшируется). Полученные отчёты кэшируются на сессию (ключ — период, валюта, язык; очищается при выходе). Экран применяет общий период к кубиту только при активной вкладке; анимированный лоадер генерации `AiSparklesLoader`; единый Graceful Fallback при ошибках бэкенда («Наши умные помощники сейчас очень заняты»); оптимизирован для работы внутри `IndexedStack` (`MainShell` передает `isActive: _currentIndex == 2`), выполняет ленивую загрузку строго при первом открытии вкладки, смене периода пользователем (`setPeriod`) или явном Pull-to-Refresh, игнорируя фоновые смены языка/валюты до первого входа.
   - `AuthScreen`: устранен отдельный AppBar/хэдер, экран выполнен в виде целостного холста с верхним радиальным свечением темы, центрированным стеклянным медальоном, комфортной типографикой и аккуратной встроенной кнопкой возврата назад (при наличии стека навигации) по аналогии с `WelcomeSetupScreen` и `WelcomeLanguageSheet`.
   - Методы `_buildX` заменены на независимые StatelessWidget / StatefulWidget с чистым контрактом передачи параметров и колбэков.
 

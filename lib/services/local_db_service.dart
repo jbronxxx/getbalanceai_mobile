@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -29,6 +29,14 @@ class LocalDbService {
 
   static set instance(LocalDbService? value) => _instance = value;
   static bool get isInitialized => _instance != null;
+
+  /// Счётчик пользовательских изменений операций (сохранение и удаление).
+  ///
+  /// Вкладки, живущие в `IndexedStack`, подписываются на него, чтобы
+  /// пересчитать данные после добавления операции с любой вкладки.
+  /// Фоновая синхронизация счётчик не меняет — иначе списки сбрасывали бы
+  /// прокрутку на каждом цикле синка.
+  static final ValueNotifier<int> transactionsChanged = ValueNotifier(0);
 
   late final Store _store;
   late final Box<Transaction> _transactionBox;
@@ -268,6 +276,7 @@ class LocalDbService {
     _linkToExistingTransaction(transaction);
     final id = _transactionBox.put(transaction);
     AppLogger.d('[LocalDbService] Saved transaction localId: $id');
+    transactionsChanged.value++;
   }
 
   /// Переносит на приехавшую с сервера транзакцию `localId` уже существующей
@@ -347,6 +356,7 @@ class LocalDbService {
   bool deleteTransaction(int id) {
     final removed = _transactionBox.remove(id);
     AppLogger.d('[LocalDbService] Removed transaction $id: $removed');
+    if (removed) transactionsChanged.value++;
     return removed;
   }
 

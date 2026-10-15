@@ -2,8 +2,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
+import '../services/services.dart';
 import '../utils/utils.dart';
-import '../widgets/budgets/budgets.dart';
+import '../widgets/insights/insights_generate_card.dart';
+import '../widgets/insights/insights_unavailable_card.dart';
+import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 
 /// Экран AI-инсайтов.
@@ -28,15 +31,35 @@ class _InsightsScreenState extends State<InsightsScreen> {
   @override
   void initState() {
     super.initState();
+    final period = SelectedPeriodService.instance.period;
     if (widget.cubit != null) {
       _cubit = widget.cubit!;
     } else {
-      _cubit = InsightsCubit();
+      _cubit = InsightsCubit(
+        initialMonth: period.month,
+        initialYear: period.year,
+      );
       _isLocalCubit = true;
     }
+    SelectedPeriodService.instance.periodNotifier.addListener(_onPeriodChanged);
 
-    if (widget.isActive && !_cubit.hasLoadedOnce) {
-      _cubit.loadInsights();
+    if (widget.isActive) _activate();
+  }
+
+  /// Период меняется на любой вкладке, но запрос к AI уходит только при
+  /// активной вкладке аналитики: в фоне период применится при её открытии.
+  void _onPeriodChanged() {
+    if (widget.isActive) _activate();
+  }
+
+  /// Применяет общий период к кубиту; правила генерации — в [InsightsCubit].
+  void _activate() {
+    final period = SelectedPeriodService.instance.period;
+    if (_cubit.selectedMonth != period.month ||
+        _cubit.selectedYear != period.year) {
+      _cubit.setPeriod(month: period.month, year: period.year);
+    } else if (!_cubit.hasLoadedOnce) {
+      _cubit.resolvePeriod();
     }
   }
 
@@ -51,14 +74,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
       _cubit = widget.cubit!;
     }
     if (widget.isActive && !oldWidget.isActive) {
-      if (!_cubit.hasLoadedOnce) {
-        _cubit.loadInsights();
-      }
+      _activate();
     }
   }
 
   @override
   void dispose() {
+    SelectedPeriodService.instance.periodNotifier
+        .removeListener(_onPeriodChanged);
     if (_isLocalCubit) {
       _cubit.close();
     }
@@ -75,7 +98,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
 }
 
 class _InsightsScreenView extends StatelessWidget {
-  static const double _topContentPadding = 168.0;
+  static const double _topContentPadding = 156.0;
 
   const _InsightsScreenView();
 
@@ -351,7 +374,8 @@ class _InsightsScreenView extends StatelessWidget {
         child: CustomPullToRefresh(
           releaseImmediately: true,
           topPadding: topOffset,
-          onRefresh: () => context.read<InsightsCubit>().loadInsights(),
+          onRefresh: () =>
+              context.read<InsightsCubit>().loadInsights(force: true),
           child: Stack(
             children: [
               Positioned.fill(
@@ -361,6 +385,41 @@ class _InsightsScreenView extends StatelessWidget {
                       return _buildLoadingPlaceholder(effectiveTopPadding);
                     } else if (state is InsightsInitial) {
                       return const SizedBox.shrink();
+                    } else if (state is InsightsUnavailable) {
+                      return ListView(
+                        physics: const ClampingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.only(
+                          top: effectiveTopPadding,
+                          left: 16,
+                          right: 16,
+                          bottom:
+                              LiquidGlassNavBar.bottomContentPadding(context),
+                        ),
+                        children: [
+                          InsightsUnavailableCard(reason: state.reason)
+                        ],
+                      );
+                    } else if (state is InsightsAwaitingRequest) {
+                      return ListView(
+                        physics: const ClampingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.only(
+                          top: effectiveTopPadding,
+                          left: 16,
+                          right: 16,
+                          bottom:
+                              LiquidGlassNavBar.bottomContentPadding(context),
+                        ),
+                        children: [
+                          InsightsGenerateCard(
+                            onGenerate: () =>
+                                context.read<InsightsCubit>().loadInsights(),
+                          ),
+                        ],
+                      );
                     } else if (state is InsightsNetworkError) {
                       return _buildNoNetworkPlaceholder(
                           context, effectiveTopPadding);
@@ -421,30 +480,8 @@ class _InsightsScreenView extends StatelessWidget {
                         IgnorePointer(
                           child: _buildFloatingTopBanner(context),
                         ),
-                        BlocBuilder<InsightsCubit, InsightsState>(
-                          buildWhen: (prev, curr) =>
-                              prev.selectedMonth != curr.selectedMonth ||
-                              prev.selectedYear != curr.selectedYear,
-                          builder: (context, state) {
-                            return BudgetPeriodSelector(
-                              padding: const EdgeInsets.only(
-                                top: 10.0,
-                                bottom: 6.0,
-                              ),
-                              selectedMonth: state.selectedMonth,
-                              selectedYear: state.selectedYear,
-                              onMonthChanged: (val) {
-                                context
-                                    .read<InsightsCubit>()
-                                    .setPeriod(month: val);
-                              },
-                              onYearChanged: (val) {
-                                context
-                                    .read<InsightsCubit>()
-                                    .setPeriod(year: val);
-                              },
-                            );
-                          },
+                        const PeriodSwitcher(
+                          padding: EdgeInsets.only(top: 10.0, bottom: 6.0),
                         ),
                       ],
                     ),

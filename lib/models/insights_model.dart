@@ -1,11 +1,42 @@
+/// Состояние AI-отчёта за период (поле `state` ответа бэкенда).
+enum InsightsReportState {
+  /// Отчёт есть (сгенерирован или сохранённый).
+  ready,
+
+  /// Отчёта нет, генерация не запрашивалась (`generate=false`).
+  notGenerated,
+
+  /// Будущий месяц или нет операций за период.
+  noData,
+
+  /// Суточная квота исчерпана; `insights` — сообщение о лимите.
+  quotaExceeded;
+
+  /// Значение из JSON; неизвестное или отсутствующее (старый бэкенд) — [ready].
+  static InsightsReportState fromJson(dynamic value) {
+    switch (value) {
+      case 'not_generated':
+        return InsightsReportState.notGenerated;
+      case 'no_data':
+        return InsightsReportState.noData;
+      case 'quota_exceeded':
+        return InsightsReportState.quotaExceeded;
+      default:
+        return InsightsReportState.ready;
+    }
+  }
+}
+
 /// DTO модели ответа AI-аналитики (`GET /api/v1/insights/`).
 class InsightsModel {
   final List<String> insights;
   final DateTime? generatedAt;
+  final InsightsReportState state;
 
   const InsightsModel({
     required this.insights,
     this.generatedAt,
+    this.state = InsightsReportState.ready,
   });
 
   /// Безопасный парсинг даты из ответа бэкенда.
@@ -39,6 +70,7 @@ class InsightsModel {
               .toList() ??
           const [],
       generatedAt: parseGeneratedAt(payload['generated_at']),
+      state: InsightsReportState.fromJson(payload['state']),
     );
   }
 

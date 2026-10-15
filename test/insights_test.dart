@@ -9,7 +9,7 @@ import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
-import 'package:getbalanceai_mobile/widgets/budgets/budget_period_selector.dart';
+import 'package:getbalanceai_mobile/widgets/period/period.dart';
 
 void main() {
   final storageData = <String, String>{};
@@ -445,7 +445,7 @@ void main() {
   });
 
   testWidgets(
-      'InsightsScreen renders BudgetPeriodSelector and requests insights with selected month and year',
+      'InsightsScreen renders PeriodSwitcher and requests insights with selected month and year',
       (tester) async {
     await ApiService.instance.setTokens('test_token', 'test_refresh');
 
@@ -483,7 +483,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byType(BudgetPeriodSelector), findsOneWidget);
+      expect(find.byType(PeriodSwitcher), findsOneWidget);
       expect(requestedMonth, DateTime.now().month);
       expect(requestedYear, DateTime.now().year);
       expect(

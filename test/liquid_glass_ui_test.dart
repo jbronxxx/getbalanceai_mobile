@@ -101,7 +101,6 @@ void main() {
         (tester) async {
       late double totalHeight;
       late double bottomContentPadding;
-      late double fabBottomPadding;
 
       await tester.pumpWidget(
         buildTestApp(
@@ -110,7 +109,6 @@ void main() {
               totalHeight = LiquidGlassNavBar.totalHeight(context);
               bottomContentPadding =
                   LiquidGlassNavBar.bottomContentPadding(context);
-              fabBottomPadding = LiquidGlassNavBar.fabBottomPadding(context);
               return const SizedBox();
             },
           ),
@@ -119,8 +117,10 @@ void main() {
       await tester.pump();
 
       expect(totalHeight, greaterThan(68.0));
-      expect(bottomContentPadding, equals(totalHeight + 16.0));
-      expect(fabBottomPadding, equals(totalHeight + 8.0));
+      expect(
+        bottomContentPadding,
+        equals(totalHeight + LiquidGlassNavBar.centerActionLift + 12.0),
+      );
     });
 
     testWidgets('LiquidGlassNavBar корректно использует токены GlassTheme',

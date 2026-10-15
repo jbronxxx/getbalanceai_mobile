@@ -56,7 +56,9 @@ class AppAlerts {
       margin: EdgeInsets.only(
         left: 16,
         right: 16,
-        bottom: LiquidGlassNavBar.totalHeight(context) + 8.0,
+        bottom: LiquidGlassNavBar.totalHeight(context) +
+            LiquidGlassNavBar.centerActionLift +
+            8.0,
         top: 8,
       ),
       content: GlassContainer(

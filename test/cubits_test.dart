@@ -93,6 +93,7 @@ void main() {
               locale: any(named: 'locale'),
               month: any(named: 'month'),
               year: any(named: 'year'),
+              generate: any(named: 'generate'),
               cancelToken: any(named: 'cancelToken'),
             )).thenAnswer((_) async => {
               'insights': ['Tip A', 'Tip B'],
@@ -120,6 +121,7 @@ void main() {
               locale: any(named: 'locale'),
               month: any(named: 'month'),
               year: any(named: 'year'),
+              generate: any(named: 'generate'),
               cancelToken: any(named: 'cancelToken'),
             )).thenAnswer((_) async => {'insights': <String>[]});
       },
@@ -141,6 +143,7 @@ void main() {
               locale: any(named: 'locale'),
               month: any(named: 'month'),
               year: any(named: 'year'),
+              generate: any(named: 'generate'),
               cancelToken: any(named: 'cancelToken'),
             )).thenThrow(DioException(
           requestOptions: RequestOptions(path: '/insights/'),
@@ -164,6 +167,7 @@ void main() {
               locale: any(named: 'locale'),
               month: any(named: 'month'),
               year: any(named: 'year'),
+              generate: any(named: 'generate'),
               cancelToken: any(named: 'cancelToken'),
             )).thenThrow(DioException(
           requestOptions: RequestOptions(path: '/insights/'),
@@ -184,6 +188,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((invocation) {
         captured = invocation.namedArguments[#cancelToken] as CancelToken;
@@ -240,11 +245,27 @@ void main() {
       LanguageManager.setLanguage(AppLanguage.ru);
     });
 
+    /// В выбранном месяце есть операции — анализ доступен, запрос к AI уходит.
+    void stubMonthHasTransactions(MockLocalDbService mockDb) {
+      when(() => mockDb.getTransactionsForPeriod(any(), any(),
+          limit: any(named: 'limit'))).thenReturn([
+        Transaction(
+          amount: 50,
+          description: 'Lunch',
+          dbCategory: Category.food.name,
+          dbType: TransactionType.expense.name,
+          dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
+          dateCreatedMilliseconds: 0,
+        ),
+      ]);
+    }
+
     test(
         'calls syncLocalDataToBackend before getInsights when unsynced data exists',
         () async {
       final mockDb = MockLocalDbService();
       LocalDbService.instance = mockDb;
+      stubMonthHasTransactions(mockDb);
 
       when(() => mockDb.getUnsyncedTransactions()).thenReturn([
         Transaction(
@@ -266,6 +287,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Synced tip'],
@@ -281,6 +303,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
       expect(cubit.state, isA<InsightsLoaded>());
@@ -293,6 +316,7 @@ void main() {
         () async {
       final mockDb = MockLocalDbService();
       LocalDbService.instance = mockDb;
+      stubMonthHasTransactions(mockDb);
 
       when(() => mockDb.getUnsyncedTransactions()).thenReturn([
         Transaction(
@@ -315,6 +339,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Fallback tip'],
@@ -330,6 +355,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
       expect(cubit.state, isA<InsightsLoaded>());
@@ -341,6 +367,7 @@ void main() {
         () async {
       final mockDb = MockLocalDbService();
       LocalDbService.instance = mockDb;
+      stubMonthHasTransactions(mockDb);
 
       when(() => mockDb.getUnsyncedTransactions()).thenReturn(<Transaction>[]);
       when(() => mockDb.getUnsyncedBudgets()).thenReturn(<Budget>[]);
@@ -350,6 +377,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Tip without sync'],
@@ -365,6 +393,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).called(1);
       expect(cubit.state, isA<InsightsLoaded>());
@@ -372,8 +401,122 @@ void main() {
       await cubit.close();
     });
 
+    /// Ответ бэкенда: при generate=false и [storedOnly] = null — not_generated.
+    void stubInsights(
+      List<String> insights, {
+      List<String>? storedOnly,
+    }) {
+      when(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
+            generate: any(named: 'generate'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((invocation) async {
+        final generate = invocation.namedArguments[#generate] as bool;
+        if (generate) return {'insights': insights, 'state': 'ready'};
+        return storedOnly == null
+            ? {'insights': <String>[], 'state': 'not_generated'}
+            : {'insights': storedOnly, 'state': 'ready'};
+      });
+    }
+
+    List<bool> capturedGenerateFlags() => verify(() => api.getInsights(
+          currency: any(named: 'currency'),
+          locale: any(named: 'locale'),
+          month: any(named: 'month'),
+          year: any(named: 'year'),
+          generate: captureAny(named: 'generate'),
+          cancelToken: any(named: 'cancelToken'),
+        )).captured.cast<bool>();
+
+    final now = DateTime.now();
+    final previousMonth = MonthPeriod.current(now).previous;
+
     blocTest<InsightsCubit, InsightsState>(
-      'setPeriod updates selectedMonth and selectedYear and calls getInsights with new period',
+      'past month without stored report: request without generation, then awaits user',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(true);
+        stubInsights(['Generated']);
+      },
+      build: build,
+      act: (cubit) => cubit.setPeriod(
+        month: previousMonth.month,
+        year: previousMonth.year,
+      ),
+      expect: () => [
+        isA<InsightsLoading>(),
+        isA<InsightsAwaitingRequest>().having(
+            (s) => s.selectedMonth, 'selectedMonth', previousMonth.month),
+      ],
+      verify: (_) => expect(capturedGenerateFlags(), [false]),
+    );
+
+    blocTest<InsightsCubit, InsightsState>(
+      'past month with stored report is shown automatically',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(true);
+        stubInsights(['Generated'], storedOnly: ['Stored report']);
+      },
+      build: build,
+      act: (cubit) => cubit.setPeriod(
+        month: previousMonth.month,
+        year: previousMonth.year,
+      ),
+      expect: () => [
+        isA<InsightsLoading>(),
+        isA<InsightsLoaded>()
+            .having((s) => s.insights, 'insights', ['Stored report']),
+      ],
+      verify: (_) => expect(capturedGenerateFlags(), [false]),
+    );
+
+    blocTest<InsightsCubit, InsightsState>(
+      'generate button for past month requests generation',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(true);
+        stubInsights(['Generated']);
+      },
+      build: build,
+      act: (cubit) async {
+        cubit.setPeriod(month: previousMonth.month, year: previousMonth.year);
+        await Future<void>.delayed(Duration.zero);
+        await cubit.loadInsights();
+      },
+      skip: 2,
+      expect: () => [
+        isA<InsightsLoading>(),
+        isA<InsightsLoaded>()
+            .having((s) => s.insights, 'insights', ['Generated']),
+      ],
+      verify: (_) => expect(capturedGenerateFlags(), [false, true]),
+    );
+
+    blocTest<InsightsCubit, InsightsState>(
+      'future month is unavailable without any request',
+      setUp: () => when(() => api.isAuthenticated).thenReturn(true),
+      build: build,
+      act: (cubit) {
+        final next = MonthPeriod.current(now).next;
+        cubit.setPeriod(month: next.month, year: next.year);
+      },
+      expect: () => [
+        isA<InsightsUnavailable>().having(
+            (s) => s.reason, 'reason', InsightsUnavailableReason.futureMonth),
+      ],
+      verify: (_) => verifyNever(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
+            generate: any(named: 'generate'),
+            cancelToken: any(named: 'cancelToken'),
+          )),
+    );
+
+    blocTest<InsightsCubit, InsightsState>(
+      'backend no_data maps to unavailable (no transactions)',
       setUp: () {
         when(() => api.isAuthenticated).thenReturn(true);
         when(() => api.getInsights(
@@ -381,33 +524,89 @@ void main() {
               locale: any(named: 'locale'),
               month: any(named: 'month'),
               year: any(named: 'year'),
+              generate: any(named: 'generate'),
               cancelToken: any(named: 'cancelToken'),
-            )).thenAnswer((_) async => {
-              'insights': ['May 2025 insight'],
-              'generated_at': '2025-05-01T10:00:00Z',
-            });
+            )).thenAnswer((_) async => {'insights': [], 'state': 'no_data'});
       },
       build: build,
-      act: (cubit) => cubit.setPeriod(month: 5, year: 2025),
+      act: (cubit) => cubit.loadInsights(),
       expect: () => [
-        isA<InsightsLoading>()
-            .having((s) => s.selectedMonth, 'selectedMonth', 5)
-            .having((s) => s.selectedYear, 'selectedYear', 2025),
-        isA<InsightsLoaded>()
-            .having((s) => s.selectedMonth, 'selectedMonth', 5)
-            .having((s) => s.selectedYear, 'selectedYear', 2025)
-            .having((s) => s.insights, 'insights', ['May 2025 insight']),
+        isA<InsightsLoading>(),
+        isA<InsightsUnavailable>().having((s) => s.reason, 'reason',
+            InsightsUnavailableReason.noTransactions),
       ],
-      verify: (_) {
-        verify(() => api.getInsights(
-              currency: any(named: 'currency'),
-              locale: any(named: 'locale'),
-              month: 5,
-              year: 2025,
-              cancelToken: any(named: 'cancelToken'),
-            )).called(1);
-      },
     );
+
+    test('returning to a loaded month uses session cache without request',
+        () async {
+      when(() => api.isAuthenticated).thenReturn(true);
+      stubInsights(['Current report']);
+      final cubit = build();
+
+      await cubit.loadInsights();
+      cubit.setPeriod(month: previousMonth.month, year: previousMonth.year);
+      await Future<void>.delayed(Duration.zero);
+      cubit.setPeriod(month: now.month, year: now.year);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        cubit.state,
+        isA<InsightsLoaded>()
+            .having((s) => s.insights, 'insights', ['Current report']),
+      );
+      // Текущий месяц — 1 генерация, прошлый — 1 запрос без генерации.
+      expect(capturedGenerateFlags(), [true, false]);
+
+      await cubit.close();
+    });
+
+    test('pull-to-refresh (force) bypasses session cache', () async {
+      when(() => api.isAuthenticated).thenReturn(true);
+      stubInsights(['First']);
+      final cubit = build();
+
+      await cubit.loadInsights();
+      await cubit.loadInsights(force: true);
+
+      expect(capturedGenerateFlags(), [true, true]);
+      await cubit.close();
+    });
+
+    test('currency change requests only stored report, never generation',
+        () async {
+      when(() => api.isAuthenticated).thenReturn(true);
+      stubInsights(['USD insight']);
+      final cubit = build();
+      await cubit.loadInsights();
+      clearInteractions(api);
+
+      CurrencyFormatter.setCurrency(Currency.eur);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, isA<InsightsAwaitingRequest>());
+      expect(capturedGenerateFlags(), [false]);
+
+      await cubit.close();
+      CurrencyFormatter.setCurrency(Currency.usd);
+    });
+
+    test('logout clears cached reports', () async {
+      when(() => api.isAuthenticated).thenReturn(true);
+      stubInsights(['Private insight']);
+      final cubit = build();
+      await cubit.loadInsights();
+
+      authStreamController.add(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state, isA<InsightsUnauthenticated>());
+
+      clearInteractions(api);
+      await cubit.loadInsights();
+
+      expect(capturedGenerateFlags(), [true]);
+      await cubit.close();
+    });
 
     test('setPeriod does not reload if period has not changed', () async {
       when(() => api.isAuthenticated).thenReturn(true);
@@ -416,6 +615,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           )).thenAnswer((_) async => {
             'insights': ['Initial']
@@ -431,6 +631,7 @@ void main() {
             locale: any(named: 'locale'),
             month: any(named: 'month'),
             year: any(named: 'year'),
+            generate: any(named: 'generate'),
             cancelToken: any(named: 'cancelToken'),
           ));
 
