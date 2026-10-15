@@ -223,6 +223,14 @@ class InsightsCubit extends Cubit<InsightsState> {
           selectedMonth: _selectedMonth,
           selectedYear: _selectedYear,
         );
+      case InsightsReportState.busy:
+        // Та же карточка «помощники заняты», что и при сбое сети; не кэшируется,
+        // поэтому повторное открытие или pull-to-refresh запросит отчёт снова.
+        return InsightsError(
+          LanguageManager.l10n.insights_assistants_busy,
+          selectedMonth: _selectedMonth,
+          selectedYear: _selectedYear,
+        );
       case InsightsReportState.ready:
       case InsightsReportState.quotaExceeded:
         final loaded = InsightsLoaded(
