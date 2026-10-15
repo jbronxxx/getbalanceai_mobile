@@ -27,7 +27,7 @@ class CategoryGroupWidget extends StatefulWidget {
   static IconData getCategoryIcon(Category category) {
     switch (category) {
       case Category.food:
-        return Icons.shopping_cart;
+        return Icons.restaurant_rounded;
       case Category.transport:
         return Icons.directions_bus;
       case Category.salary:

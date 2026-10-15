@@ -90,6 +90,7 @@ API_BASE_URL=http://localhost:8000/api/v1
       await tester.pumpAndSettle();
 
       final addButton = find.text(LanguageManager.l10n.add_btn);
+      await tester.ensureVisible(addButton);
       expect(addButton, findsOneWidget);
       await tester.tap(addButton);
       await tester.pump();
@@ -116,6 +117,7 @@ API_BASE_URL=http://localhost:8000/api/v1
       await tester.pump();
 
       final addButton = find.text(LanguageManager.l10n.add_btn);
+      await tester.ensureVisible(addButton);
       await tester.tap(addButton);
       await tester.pump();
 
@@ -136,6 +138,7 @@ API_BASE_URL=http://localhost:8000/api/v1
       await tester.pump();
 
       final addButton = find.text(LanguageManager.l10n.add_btn);
+      await tester.ensureVisible(addButton);
       await tester.tap(addButton);
       await tester.pump();
 
@@ -155,6 +158,7 @@ API_BASE_URL=http://localhost:8000/api/v1
       await tester.pumpAndSettle();
 
       final addButton = find.text(LanguageManager.l10n.add_btn);
+      await tester.ensureVisible(addButton);
       await tester.tap(addButton);
       await tester.pump();
 

@@ -320,5 +320,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "yesterday": "Yesterday",
+  "pick_date": "Pick a date",
+  "date_label": "Date",
+  "rate_updated_on": "updated {date}",
+  "@rate_updated_on": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "rate_approximate": "approximate rate",
+  "more_categories": "More",
+  "all_categories": "All categories",
+  "category_search_hint": "Find a category",
+  "category_search_empty": "Nothing found"
 }

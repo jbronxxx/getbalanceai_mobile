@@ -2,14 +2,17 @@ import 'dart:async';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:flutter/material.dart';
 
 /// Модальная форма создания/редактирования транзакции.
 ///
 /// Если [transactionToEdit] передан — форма предзаполняется его данными и
-/// сохранение обновляет существующую запись (сохраняя `localId`/дату),
-/// иначе создаётся новая запись с текущей датой и временем.
+/// сохранение обновляет существующую запись (сохраняя `localId`),
+/// иначе создаётся новая запись. День операции выбирается в форме
+/// (по умолчанию — сегодня), время берётся текущее либо исходное при
+/// редактировании.
 class AddTransactionSheet extends StatefulWidget {
   final Transaction? transactionToEdit;
 
@@ -22,6 +25,8 @@ class AddTransactionSheet extends StatefulWidget {
 class _AddTransactionSheetState extends State<AddTransactionSheet> {
   late TransactionType _type;
   late Category _category;
+  late DateTime _date;
+  List<Category> _frequentCategories = const [];
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
   late Currency _selectedCurrency;
@@ -34,6 +39,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _type = t?.type ?? TransactionType.expense;
     _category = t?.category ??
         (_type == TransactionType.income ? Category.salary : Category.food);
+    _date = t?.date ?? DateTime.now();
+    _frequentCategories = _loadFrequentCategories(_type);
     _selectedCurrency = t?.currency ?? CurrencyFormatter.currentCurrency;
     _amountController = TextEditingController(
       text: t != null
@@ -57,6 +64,50 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  /// Частые категории из истории; без инициализированной базы — пусто
+  /// (порядок по умолчанию).
+  List<Category> _loadFrequentCategories(TransactionType type) {
+    if (!LocalDbService.isInitialized) return const [];
+    try {
+      return LocalDbService.instance.getFrequentCategories(type);
+    } catch (e, s) {
+      AppLogger.w('[AddTransaction] Frequent categories failed', e, s);
+      return const [];
+    }
+  }
+
+  void _onTypeChanged(TransactionType type) {
+    if (type == _type) return;
+    final frequent = _loadFrequentCategories(type);
+    setState(() {
+      _type = type;
+      _frequentCategories = frequent;
+      if (type == TransactionType.expense &&
+          !Category.expenseCategories.contains(_category)) {
+        _category = Category.food;
+      } else if (type == TransactionType.income &&
+          !Category.incomeCategories.contains(_category)) {
+        _category = Category.salary;
+      }
+    });
+  }
+
+  /// Переносит выбранный день, сохраняя время: исходное при редактировании,
+  /// текущее для новой записи — так порядок операций внутри дня не ломается.
+  void _onDayChanged(DateTime day) {
+    final time = widget.transactionToEdit?.date ?? DateTime.now();
+    setState(() {
+      _date = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        time.hour,
+        time.minute,
+        time.second,
+      );
+    });
   }
 
   Future<void> _showCurrencyPicker() async {
@@ -137,7 +188,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         currencyCode: _selectedCurrency.code,
         exchangeRate: rate,
         baseAmount: baseAmount,
-        dateMilliseconds: t.date.millisecondsSinceEpoch,
+        dateMilliseconds: _date.millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
         dateCreatedMilliseconds: t.dateCreatedMilliseconds,
         isModified: t.serverId != null,
@@ -151,7 +202,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         currencyCode: _selectedCurrency.code,
         exchangeRate: rate,
         baseAmount: baseAmount,
-        dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
+        dateMilliseconds: _date.millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
         dateCreatedMilliseconds: 0,
       );
@@ -242,248 +293,31 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() {
-                            _type = TransactionType.expense;
-                            if (!Category.expenseCategories
-                                .contains(_category)) {
-                              _category = Category.food;
-                            }
-                          }),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _type == TransactionType.expense
-                                  ? theme.cardColor
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: _type == TransactionType.expense
-                                  ? [
-                                      BoxShadow(
-                                        color: colorScheme.shadow
-                                            .withValues(alpha: 0.05),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      )
-                                    ]
-                                  : [],
-                            ),
-                            child: Text(
-                              context.l10n.expense_title,
-                              style: textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: _type == TransactionType.expense
-                                    ? colorScheme.onSurface
-                                    : colorScheme.outline,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() {
-                            _type = TransactionType.income;
-                            if (!Category.incomeCategories
-                                .contains(_category)) {
-                              _category = Category.salary;
-                            }
-                          }),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _type == TransactionType.income
-                                  ? theme.cardColor
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: _type == TransactionType.income
-                                  ? [
-                                      BoxShadow(
-                                        color: colorScheme.shadow
-                                            .withValues(alpha: 0.05),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      )
-                                    ]
-                                  : [],
-                            ),
-                            child: Text(
-                              context.l10n.income_title,
-                              style: textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: _type == TransactionType.income
-                                    ? colorScheme.primary
-                                    : colorScheme.outline,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                TransactionTypeToggle(type: _type, onChanged: _onTypeChanged),
+                const SizedBox(height: 20),
+                TransactionAmountField(
+                  controller: _amountController,
+                  currency: _selectedCurrency,
+                  errorText: _amountError,
+                  onCurrencyTap: _showCurrencyPicker,
+                  autofocus: !isEditing,
+                ),
+                const SizedBox(height: 12),
+                TransactionDateSelector(
+                  date: _date,
+                  onChanged: _onDayChanged,
                 ),
                 const SizedBox(height: 20),
-                Builder(
-                  builder: (context) {
-                    final enteredAmount =
-                        CurrencyFormatter.parseInput(_amountController.text) ??
-                            0.0;
-                    final isDifferentCurrency =
-                        _selectedCurrency != CurrencyFormatter.currentCurrency;
-                    final approxBase = CurrencyExchangeService.instance.convert(
-                      enteredAmount,
-                      from: _selectedCurrency,
-                      to: CurrencyFormatter.currentCurrency,
-                    );
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          inputFormatters: [
-                            CurrencyInputFormatter(currency: _selectedCurrency),
-                          ],
-                          autofocus: false,
-                          decoration: InputDecoration(
-                            labelText: context.l10n.amount_label,
-                            errorText: _amountError,
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: UnconstrainedBox(
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(10),
-                                    onTap: _showCurrencyPicker,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? Colors.white
-                                                .withValues(alpha: 0.10)
-                                            : colorScheme.primary
-                                                .withValues(alpha: 0.10),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? Colors.white
-                                                  .withValues(alpha: 0.20)
-                                              : colorScheme.primary
-                                                  .withValues(alpha: 0.25),
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        _selectedCurrency.code,
-                                        style: textTheme.labelLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: isDark
-                                              ? const Color(0xFF2DD4BF)
-                                              : colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: colorScheme.error,
-                                width: 1.5,
-                              ),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: colorScheme.error,
-                                width: 2,
-                              ),
-                            ),
-                            errorStyle: TextStyle(
-                              color: colorScheme.error,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        if (isDifferentCurrency && enteredAmount > 0) ...[
-                          const SizedBox(height: 6),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Row(
-                              children: [
-                                Icon(Icons.currency_exchange,
-                                    size: 14, color: colorScheme.outline),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    '≈ ${CurrencyFormatter.format(approxBase)} (${CurrencyExchangeService.instance.formatRateDescription(from: _selectedCurrency, to: CurrencyFormatter.currentCurrency)})'
-                                    '${CurrencyExchangeService.instance.isOutdated ? (CurrencyExchangeService.instance.lastUpdated != null ? ' • обновлён ${LanguageManager.formatDayMonth(CurrencyExchangeService.instance.lastUpdated!)}' : ' • курс приблизительный') : ''}',
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.outline,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
+                CategoryChipsSelector(
+                  categories: _type == TransactionType.income
+                      ? Category.incomeCategories
+                      : Category.expenseCategories,
+                  frequent: _frequentCategories,
+                  selected: _category,
+                  onSelected: (category) =>
+                      setState(() => _category = category),
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<Category>(
-                  value: _category,
-                  borderRadius: BorderRadius.circular(20),
-                  dropdownColor:
-                      isDark ? const Color(0xFF1E1E22) : Colors.white,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.70)
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                  alignment: Alignment.centerLeft,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.category_label,
-                  ),
-                  items: (_type == TransactionType.income
-                          ? Category.incomeCategories
-                          : Category.expenseCategories)
-                      .map((cat) {
-                    return DropdownMenuItem(
-                      value: cat,
-                      child: Text(cat.getLocalizedName(context)),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _category = val);
-                  },
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 TextField(
                   controller: _descriptionController,
                   textCapitalization: TextCapitalization.sentences,

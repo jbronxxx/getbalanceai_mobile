@@ -320,5 +320,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "yesterday": "Вчера",
+  "pick_date": "Выбрать дату",
+  "date_label": "Дата",
+  "rate_updated_on": "обновлён {date}",
+  "rate_approximate": "курс приблизительный",
+  "more_categories": "Ещё",
+  "all_categories": "Все категории",
+  "category_search_hint": "Найти категорию",
+  "category_search_empty": "Ничего не найдено"
 }

@@ -157,6 +157,35 @@ class LocalDbService {
     return results;
   }
 
+  /// Категории операций типа [type] за последние [window], от частых к редким.
+  ///
+  /// Используется формой операции, чтобы показать часто используемые
+  /// категории первыми. Категории без операций в результат не попадают.
+  List<Category> getFrequentCategories(
+    TransactionType type, {
+    Duration window = const Duration(days: 90),
+    DateTime? now,
+  }) {
+    final since = (now ?? DateTime.now()).subtract(window);
+    final q = _transactionBox
+        .query(
+          Transaction_.dbType.equals(type.name) &
+              Transaction_.dateMilliseconds
+                  .greaterOrEqual(since.millisecondsSinceEpoch),
+        )
+        .build();
+    final transactions = q.find();
+    q.close();
+
+    final counts = <Category, int>{};
+    for (final t in transactions) {
+      counts.update(t.category, (c) => c + 1, ifAbsent: () => 1);
+    }
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [for (final e in sorted) e.key];
+  }
+
   /// Считает общие итоги (доход и расход) за выбранный месяц с динамической
   /// конвертацией всех операций в текущую валюту аккаунта.
   Map<String, double> getMonthTotals(int month, int year,
