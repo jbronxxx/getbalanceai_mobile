@@ -241,6 +241,13 @@ class SyncService {
           'T($transLength), B($budgetsLength); '
           'Removed: T($removedTransactions), B($removedBudgets)');
 
+      // Один сигнал на загрузку, и только если сервер прислал изменения
+      // (не 304): экраны перечитают данные, но не на каждой записи в базу.
+      if (remoteTransactionsResult.transactions != null ||
+          remoteBudgets != null) {
+        LocalDbService.transactionsChanged.value++;
+      }
+
       return {
         'transactions': transLength,
         'budgets': budgetsLength,

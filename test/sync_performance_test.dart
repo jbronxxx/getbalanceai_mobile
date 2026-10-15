@@ -116,6 +116,7 @@ void main() {
 
       api.dio.interceptors.insert(0, interceptor);
 
+      final changesBefore = LocalDbService.transactionsChanged.value;
       try {
         final result = await api.syncBackendDataToLocal(
           null,
@@ -124,6 +125,8 @@ void main() {
           },
         );
 
+        // Экраны получают ровно один сигнал на загрузку с изменениями
+        expect(LocalDbService.transactionsChanged.value, changesBefore + 1);
         expect(result['transactions'], 3);
         expect(progressUpdates.length, 2);
         expect(progressUpdates[0], {'count': 2, 'page': 1});
@@ -488,6 +491,31 @@ void main() {
         final ids = all.map((t) => t.serverId).toSet();
         expect(ids.contains('tx-local-kept'), isTrue);
         expect(ids.contains('tx-remote-partial'), isTrue);
+      } finally {
+        api.dio.interceptors.remove(interceptor);
+      }
+    });
+
+    test('304 for transactions and budgets does not signal screens to reload',
+        () async {
+      final interceptor = InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/transactions') ||
+              options.path.contains('/budgets')) {
+            return handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 304,
+            ));
+          }
+          return handler.next(options);
+        },
+      );
+      api.dio.interceptors.insert(0, interceptor);
+
+      final changesBefore = LocalDbService.transactionsChanged.value;
+      try {
+        await api.sync.syncBackendDataToLocal('test_token');
+        expect(LocalDbService.transactionsChanged.value, changesBefore);
       } finally {
         api.dio.interceptors.remove(interceptor);
       }

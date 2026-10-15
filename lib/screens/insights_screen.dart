@@ -5,9 +5,11 @@ import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/insights/expense_structure_section.dart';
 import '../widgets/insights/insights_generate_card.dart';
+import '../widgets/insights/insights_guest_preview.dart';
 import '../widgets/insights/insights_unavailable_card.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
+import 'auth_screen.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatefulWidget {
@@ -192,7 +194,11 @@ class _InsightsBody extends StatelessWidget {
       );
     }
     if (state is InsightsUnauthenticated) {
-      return _InsightCard(text: state.hint);
+      return InsightsGuestPreview(
+        onLogin: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const AuthScreen()),
+        ),
+      );
     }
     if (state is InsightsLoaded) {
       return Column(

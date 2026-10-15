@@ -116,6 +116,8 @@ class _MainShellState extends State<MainShell> {
                   ),
                   onDestinationSelected: (index) {
                     if (_currentIndex != index) {
+                      // Тост относится к вкладке, где он появился
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       setState(() {
                         _currentIndex = index;
                       });
