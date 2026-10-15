@@ -320,5 +320,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "yesterday": "Кеше",
+  "pick_date": "Күнді таңдау",
+  "date_label": "Күні",
+  "rate_updated_on": "{date} жаңартылды",
+  "rate_approximate": "шамамен бағам",
+  "more_categories": "Тағы",
+  "all_categories": "Барлық санаттар",
+  "category_search_hint": "Санатты табу",
+  "category_search_empty": "Ештеңе табылмады"
 }

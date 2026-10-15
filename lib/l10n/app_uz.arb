@@ -320,5 +320,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "yesterday": "Kecha",
+  "pick_date": "Sanani tanlash",
+  "date_label": "Sana",
+  "rate_updated_on": "{date} yangilangan",
+  "rate_approximate": "taxminiy kurs",
+  "more_categories": "Yana",
+  "all_categories": "Barcha toifalar",
+  "category_search_hint": "Toifani topish",
+  "category_search_empty": "Hech narsa topilmadi"
 }
