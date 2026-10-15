@@ -5,6 +5,8 @@ import '../services/services.dart';
 import '../theme/app_theme.dart';
 import 'liquid_glass_fab.dart';
 import 'liquid_glass_nav_shape.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// Элемент навигации для плавающего островка [LiquidGlassNavBar].
 class LiquidGlassNavItem {
@@ -105,9 +107,10 @@ class LiquidGlassNavBar extends StatelessWidget {
                 glassTheme.surface.withValues(alpha: 0.45),
                 glassTheme.surfaceEnd.withValues(alpha: 0.55),
               ])
-        : (isDark
-            ? [const Color(0xDD18181C), const Color(0xDD121216)]
-            : [const Color(0xDDFFFFFF), const Color(0xDDF1F5F9)]);
+        : ([
+            AppColors.of(context).glassFallbackStart,
+            AppColors.of(context).glassFallbackEnd
+          ]);
 
     final hasCenterAction = centerAction != null;
     final shape = LiquidGlassNavShape(
@@ -273,7 +276,7 @@ class _LiquidGlassNavItemWidgetState extends State<_LiquidGlassNavItemWidget> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
             onHighlightChanged: (highlighted) {
@@ -293,7 +296,8 @@ class _LiquidGlassNavItemWidgetState extends State<_LiquidGlassNavItemWidget> {
                 vertical: 5,
               ),
               decoration: BoxDecoration(
-                color: widget.isSelected ? activeBgColor : Colors.transparent,
+                color:
+                    widget.isSelected ? activeBgColor : AppColors.transparent,
                 borderRadius: BorderRadius.circular(22),
                 border: widget.isSelected
                     ? Border.all(
@@ -327,7 +331,7 @@ class _LiquidGlassNavItemWidgetState extends State<_LiquidGlassNavItemWidget> {
                         widget.item.label,
                         maxLines: 1,
                         style: widget.labelStyle?.copyWith(
-                          fontSize: 11,
+                          fontSize: AppFontSize.small,
                           height: 1.15,
                           fontWeight: widget.isSelected
                               ? FontWeight.w700

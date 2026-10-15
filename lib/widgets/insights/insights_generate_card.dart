@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Карточка «отчёт за месяц ещё не сформирован» с кнопкой генерации.
 ///
@@ -36,7 +37,7 @@ class InsightsGenerateCard extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.auto_awesome_rounded,
-                  color: colorScheme.primary,
+                  color: AppColors.of(context).accentText,
                   size: 20,
                 ),
               ),

@@ -6,6 +6,7 @@ import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/profile/profile.dart';
 import '../widgets/widgets.dart';
+import '../theme/theme.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatelessWidget {
@@ -88,7 +89,8 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: isDark ? 0.70 : 0.40),
+      barrierColor:
+          AppColors.shadowBase.withValues(alpha: isDark ? 0.70 : 0.40),
       builder: (dialogContext) => PopScope(
         canPop: false,
         child: Center(
@@ -122,7 +124,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                         width: 26,
                         height: 26,
                         child: CircularProgressIndicator(
-                          color: theme.colorScheme.primary,
+                          color: AppColors.of(context).accentText,
                           strokeWidth: 2.8,
                         ),
                       ),
@@ -223,8 +225,6 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final isDark = theme.brightness == Brightness.dark;
-
     return BlocConsumer<ProfileCubit, ProfileState>(
       listenWhen: (previous, current) =>
           previous.syncStatus != current.syncStatus,
@@ -242,8 +242,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         final currentUserEmail =
             authState is Authenticated ? authState.email : widget.userEmail;
 
-        final scaffoldBg =
-            isDark ? const Color(0xFF09090B) : const Color(0xFFEFF2F6);
+        final scaffoldBg = AppColors.of(context).shellBackground;
 
         return Scaffold(
           backgroundColor: scaffoldBg,
@@ -251,11 +250,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
           appBar: LiquidGlassAppBar(
             title: Text(
               context.l10n.profile,
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: colorScheme.onSurface,
-              ),
+              style: AppTypography.screenTitle(context),
             ),
             centerTitle: true,
           ),

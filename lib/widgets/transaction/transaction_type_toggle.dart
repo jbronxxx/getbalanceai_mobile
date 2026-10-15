@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Сегментный переключатель «Расход / Доход» в форме операции.
 class TransactionTypeToggle extends StatelessWidget {
@@ -37,7 +38,7 @@ class TransactionTypeToggle extends StatelessWidget {
             child: _TypeSegment(
               label: context.l10n.income_title,
               isSelected: type == TransactionType.income,
-              selectedTextColor: colorScheme.primary,
+              selectedTextColor: AppColors.of(context).accentText,
               onTap: () => onChanged(TransactionType.income),
             ),
           ),
@@ -71,7 +72,7 @@ class _TypeSegment extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? theme.cardColor : Colors.transparent,
+          color: isSelected ? theme.cardColor : AppColors.transparent,
           borderRadius: BorderRadius.circular(12),
           boxShadow: isSelected
               ? [

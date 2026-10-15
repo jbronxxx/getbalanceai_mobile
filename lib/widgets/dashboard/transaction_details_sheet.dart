@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
+import '../app_sheet.dart';
+import '../../theme/app_colors.dart';
 
 /// Действие, выбранное в карточке операции.
 enum TransactionDetailsAction { edit, delete }
@@ -23,7 +25,7 @@ class TransactionDetailsSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => TransactionDetailsSheet(transaction: transaction),
     );
   }
@@ -40,13 +42,7 @@ class TransactionDetailsSheet extends StatelessWidget {
     final description = t.description.trim();
 
     return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
-        ),
-      ),
+      decoration: AppSheet.decoration(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -54,16 +50,8 @@ class TransactionDetailsSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 80,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+              const Center(
+                child: SheetHandle(bottomMargin: 20),
               ),
               Text(
                 t.type.getLocalizedName(context),
@@ -79,8 +67,9 @@ class TransactionDetailsSheet extends StatelessWidget {
                 useFittedBox: true,
                 style: textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color:
-                      isExpense ? colorScheme.onSurface : colorScheme.primary,
+                  color: isExpense
+                      ? colorScheme.onSurface
+                      : AppColors.of(context).accentText,
                 ),
               ),
               const SizedBox(height: 16),

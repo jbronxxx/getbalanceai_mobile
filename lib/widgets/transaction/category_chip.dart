@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../category_style.dart';
+import '../../theme/app_colors.dart';
 
 /// Чип категории с иконкой и цветом категории.
 class CategoryChip extends StatelessWidget {
@@ -36,7 +37,9 @@ class CategoryChip extends StatelessWidget {
       ),
       shape: const StadiumBorder(),
       labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+            color: isSelected
+                ? AppColors.of(context).accentText
+                : colorScheme.onSurface,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
     );

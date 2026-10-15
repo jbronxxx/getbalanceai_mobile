@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/utils.dart';
+import '../theme/app_colors.dart';
 
 /// Плавающая кнопка действия с эффектом полированного жидкого стекла (Liquid Glass FAB).
 ///
@@ -55,7 +56,7 @@ class LiquidGlassFab extends StatelessWidget {
                 spreadRadius: -2,
               ),
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.20),
+                color: AppColors.shadowBase.withValues(alpha: 0.20),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
                 spreadRadius: -2,
@@ -64,7 +65,7 @@ class LiquidGlassFab extends StatelessWidget {
           ),
           child: ClipOval(
             child: Material(
-              color: Colors.transparent,
+              color: AppColors.transparent,
               child: Ink(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -77,7 +78,7 @@ class LiquidGlassFab extends StatelessWidget {
                     ],
                   ),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: AppColors.highlightBase.withValues(alpha: 0.35),
                     width: 1.2,
                   ),
                 ),

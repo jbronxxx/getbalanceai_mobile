@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../cubits/profile/profile_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/language_manager.dart';
+import '../../theme/app_colors.dart';
 
 /// Карточка статуса облачной синхронизации в стиле полированного жидкого стекла.
 class ProfileSyncCard extends StatelessWidget {
@@ -21,12 +22,11 @@ class ProfileSyncCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
     final l10n = context.l10n;
 
     String syncStatusText;
     IconData syncIcon = Icons.cloud_done_rounded;
-    Color syncColor = colorScheme.primary;
+    Color syncColor = AppColors.of(context).accentText;
     final bool isSyncing = status == SyncStatus.syncing;
 
     if (status == SyncStatus.noInternet) {
@@ -44,18 +44,15 @@ class ProfileSyncCard extends StatelessWidget {
     } else if (status == SyncStatus.success) {
       syncStatusText = l10n.sync_updated_just_now;
       syncIcon = Icons.cloud_done_rounded;
-      syncColor = colorScheme.primary;
+      syncColor = AppColors.of(context).accentText;
     } else {
       syncStatusText = l10n.sync_synced;
     }
 
     final activeColor = isAuthenticated ? syncColor : colorScheme.outline;
 
-    final glassBg = isDark
-        ? const Color(0xFF141416).withValues(alpha: 0.70)
-        : Colors.white.withValues(alpha: 0.85);
-    final glassBorder =
-        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+    final glassBg = AppColors.of(context).cardGlassBackground;
+    final glassBorder = AppColors.of(context).cardBorder;
 
     return Container(
       decoration: BoxDecoration(
@@ -67,14 +64,14 @@ class ProfileSyncCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+            color: AppColors.of(context).cardShadow,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
           onTap: isAuthenticated
@@ -130,7 +127,8 @@ class ProfileSyncCard extends StatelessWidget {
                   ),
                 ),
                 if (isAuthenticated)
-                  Icon(Icons.sync_rounded, color: colorScheme.primary, size: 20)
+                  Icon(Icons.sync_rounded,
+                      color: AppColors.of(context).accentText, size: 20)
                 else
                   Icon(Icons.chevron_right_rounded,
                       color: colorScheme.outline, size: 20),

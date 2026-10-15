@@ -11,6 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
 import '../config/legal_links.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// Экран входа/регистрации через соцсети (Google, Apple).
 class AuthScreen extends StatefulWidget {
@@ -134,6 +136,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final textTheme = theme.textTheme;
     final isIOS = theme.platform == TargetPlatform.iOS;
     final isDark = theme.brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     final googleButton = _SocialButton(
       icon: Image.asset(
@@ -142,16 +145,14 @@ class _AuthScreenState extends State<AuthScreen> {
         height: 24,
       ),
       text: context.l10n.login_with_google,
-      backgroundColor: isDark
-          ? const Color(0xFF141416).withValues(alpha: 0.85)
-          : Colors.white.withValues(alpha: 0.88),
-      textColor: isDark ? Colors.white : const Color(0xFF0F172A),
+      backgroundColor: colors.googleButtonBackground,
+      textColor: colors.googleButtonText,
       borderColor: isDark
-          ? Colors.white.withValues(alpha: 0.15)
-          : Colors.white.withValues(alpha: 0.85),
+          ? AppColors.highlightBase.withValues(alpha: 0.15)
+          : AppColors.highlightBase.withValues(alpha: 0.85),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+          color: AppColors.shadowBase.withValues(alpha: isDark ? 0.35 : 0.06),
           blurRadius: 18,
           offset: const Offset(0, 6),
         ),
@@ -163,17 +164,16 @@ class _AuthScreenState extends State<AuthScreen> {
       icon: const FaIcon(
         FontAwesomeIcons.apple,
         size: 24,
-        color: Colors.white,
+        color: AppColors.highlightBase,
       ),
       text: context.l10n.login_with_apple,
-      backgroundColor: isDark
-          ? const Color(0xFF18181B).withValues(alpha: 0.90)
-          : const Color(0xFF09090B).withValues(alpha: 0.95),
-      textColor: Colors.white,
-      borderColor: Colors.white.withValues(alpha: isDark ? 0.20 : 0.15),
+      backgroundColor: colors.appleButtonBackground,
+      textColor: AppColors.highlightBase,
+      borderColor:
+          AppColors.highlightBase.withValues(alpha: isDark ? 0.20 : 0.15),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.15),
+          color: AppColors.shadowBase.withValues(alpha: isDark ? 0.40 : 0.15),
           blurRadius: 18,
           offset: const Offset(0, 6),
         ),
@@ -198,7 +198,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   radius: 0.9,
                   colors: [
                     colorScheme.primary.withValues(alpha: isDark ? 0.20 : 0.12),
-                    Colors.transparent,
+                    AppColors.transparent,
                   ],
                 ),
               ),
@@ -246,31 +246,31 @@ class _AuthScreenState extends State<AuthScreen> {
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    const Color(0xFF0F766E).withValues(
+                                    colors.brandGradientStart.withValues(
                                         alpha: isDark ? 0.35 : 0.22),
-                                    const Color(0xFF115E59).withValues(
+                                    colors.brandGradientEnd.withValues(
                                         alpha: isDark ? 0.45 : 0.28),
                                   ],
                                 ),
                                 border: Border.all(
-                                  color: Colors.white
+                                  color: AppColors.highlightBase
                                       .withValues(alpha: isDark ? 0.22 : 0.70),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF0F766E).withValues(
+                                    color: colors.brandGradientStart.withValues(
                                         alpha: isDark ? 0.35 : 0.20),
                                     blurRadius: 24,
                                     offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(
                                   Icons.account_circle_rounded,
                                   size: 52,
-                                  color: Color(0xFF0F766E),
+                                  color: colors.accentText,
                                 ),
                               ),
                             ),
@@ -296,11 +296,11 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             const Spacer(),
                             if (_isLoading)
-                              const Padding(
-                                padding: EdgeInsets.all(16.0),
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  color: Color(0xFF0F766E),
+                                  color: colors.accentText,
                                 ),
                               )
                             else if (isIOS)
@@ -330,7 +330,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                         child: Text(
                                           context.l10n.terms_of_use_link,
                                           style: textTheme.bodySmall?.copyWith(
-                                            color: colorScheme.primary,
+                                            color: AppColors.of(context)
+                                                .accentText,
                                             decoration:
                                                 TextDecoration.underline,
                                           ),
@@ -350,7 +351,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                         child: Text(
                                           context.l10n.privacy_policy_link,
                                           style: textTheme.bodySmall?.copyWith(
-                                            color: colorScheme.primary,
+                                            color: AppColors.of(context)
+                                                .accentText,
                                             decoration:
                                                 TextDecoration.underline,
                                           ),
@@ -410,14 +412,14 @@ class _SocialButton extends StatelessWidget {
         boxShadow: boxShadow ??
             [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
+                color: AppColors.shadowBase.withValues(alpha: 0.12),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onPressed,
@@ -439,7 +441,7 @@ class _SocialButton extends StatelessWidget {
                   Text(
                     text,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppFontSize.lead,
                       fontWeight: FontWeight.w600,
                       color: textColor,
                       letterSpacing: -0.2,

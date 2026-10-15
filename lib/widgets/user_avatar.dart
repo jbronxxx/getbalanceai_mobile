@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/utils.dart';
+import '../theme/app_colors.dart';
 
 /// Виджет аватара пользователя с безопасной сетевой загрузкой
 /// и отказоустойчивым отображением инициалов/иконки при сбоях сети.
@@ -54,7 +55,7 @@ class UserAvatar extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final bgColor =
         backgroundColor ?? colorScheme.primary.withValues(alpha: 0.1);
-    final fgColor = foregroundColor ?? colorScheme.primary;
+    final fgColor = foregroundColor ?? AppColors.of(context).accentText;
     final size = radius * 2;
 
     final url = avatarUrl;

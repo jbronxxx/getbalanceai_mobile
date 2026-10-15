@@ -67,4 +67,37 @@ class CategoryStyle {
         return const Color(0xFF64748B);
     }
   }
+
+  /// Цвет сегмента категории в диаграммах на бирюзовом фоне фирменной
+  /// карточки: светлые пастельные оттенки с высокой контрастностью.
+  static Color chartColor(Category category) {
+    switch (category) {
+      case Category.food:
+        return const Color(0xFFFB923C); // Coral Orange
+      case Category.transport:
+        return const Color(0xFF60A5FA); // Sky Blue
+      case Category.entertainment:
+        return const Color(0xFFC084FC); // Soft Purple
+      case Category.health:
+        return const Color(0xFFF87171); // Light Red
+      case Category.shopping:
+        return const Color(0xFFF472B6); // Rose Pink
+      case Category.subscriptions:
+        return const Color(0xFF818CF8); // Indigo
+      case Category.freelance:
+        return const Color(0xFFFBBF24); // Amber
+      case Category.investments:
+        return const Color(0xFF34D399); // Emerald
+      case Category.transfers:
+        return const Color(0xFF38BDF8); // Light Cyan
+      case Category.cashback:
+        return const Color(0xFF2DD4BF); // Mint Teal
+      case Category.sales:
+        return const Color(0xFFFB7185); // Light Coral
+      case Category.salary:
+        return const Color(0xFF4ADE80); // Bright Green
+      case Category.other:
+        return const Color(0xFFCBD5E1); // Slate Gray
+    }
+  }
 }

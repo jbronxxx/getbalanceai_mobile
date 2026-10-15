@@ -4,6 +4,7 @@ import '../services/services.dart';
 import '../theme/app_theme.dart';
 import '../utils/utils.dart';
 import '../widgets/widgets.dart';
+import '../theme/app_colors.dart';
 
 /// Экран пошаговой первоначальной настройки языка и базовой валюты.
 class WelcomeSetupScreen extends StatefulWidget {
@@ -135,7 +136,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                     colors: [
                       colorScheme.primary
                           .withValues(alpha: isDark ? 0.20 : 0.12),
-                      Colors.transparent,
+                      AppColors.transparent,
                     ],
                   ),
                 ),
@@ -245,7 +246,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                 ),
               ],
               child: Material(
-                color: Colors.transparent,
+                color: AppColors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
                   onTap: () => _onLanguageSelected(lang),
@@ -259,8 +260,9 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.w500,
-                        color:
-                            isSelected ? primaryColor : colorScheme.onSurface,
+                        color: isSelected
+                            ? AppColors.of(context).accentText
+                            : colorScheme.onSurface,
                       ),
                     ),
                     trailing: isSelected
@@ -272,7 +274,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                             ),
                             child: Icon(
                               Icons.check_circle_rounded,
-                              color: primaryColor,
+                              color: AppColors.of(context).accentText,
                               size: 22,
                             ),
                           )
@@ -364,7 +366,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                       ),
                     ],
                     child: Material(
-                      color: Colors.transparent,
+                      color: AppColors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () => _onCurrencySelected(currency),
@@ -381,7 +383,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                                   ? FontWeight.bold
                                   : FontWeight.w500,
                               color: isSelected
-                                  ? primaryColor
+                                  ? AppColors.of(context).accentText
                                   : colorScheme.onSurface,
                             ),
                           ),
@@ -394,7 +396,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
                                   ),
                                   child: Icon(
                                     Icons.check_circle_rounded,
-                                    color: primaryColor,
+                                    color: AppColors.of(context).accentText,
                                     size: 22,
                                   ),
                                 )
@@ -435,7 +437,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
           ],
         ),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.35),
+          color: AppColors.highlightBase.withValues(alpha: 0.35),
           width: 1.2,
         ),
         boxShadow: [
@@ -447,7 +449,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
           ),
         ],
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: () {

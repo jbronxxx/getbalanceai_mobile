@@ -4,6 +4,8 @@ import 'package:getbalanceai_mobile/utils/utils.dart';
 import '../theme/app_theme.dart';
 import 'glass_container.dart';
 import 'liquid_glass_nav_bar.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_colors.dart';
 
 enum AlertType { success, error, warning, info }
 
@@ -48,7 +50,7 @@ class AppAlerts {
     }
 
     final snackBar = SnackBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       elevation: 0,
       behavior: SnackBarBehavior.floating,
       duration: duration,
@@ -71,7 +73,7 @@ class AppAlerts {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+            color: AppColors.shadowBase.withValues(alpha: isDark ? 0.45 : 0.08),
             blurRadius: isDark ? 24 : 14,
             offset: const Offset(0, 4),
             spreadRadius: -2,
@@ -120,7 +122,7 @@ class AppAlerts {
                       style: TextStyle(
                         color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: AppFontSize.body,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -130,7 +132,9 @@ class AppAlerts {
                     message,
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: title != null ? 12.5 : 13.5,
+                      fontSize: title != null
+                          ? AppFontSize.toastWithTitle
+                          : AppFontSize.toastSingle,
                       height: 1.35,
                     ),
                   ),
@@ -219,7 +223,7 @@ class AppAlerts {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.headline,
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
                 ),
@@ -229,7 +233,7 @@ class AppAlerts {
               Text(
                 message,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.body,
                   color: colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
@@ -243,7 +247,7 @@ class AppAlerts {
                     text: TextSpan(
                       text: effectiveConfirmText,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.body,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -256,7 +260,7 @@ class AppAlerts {
                     text: TextSpan(
                       text: effectiveCancelText,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.body,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -306,7 +310,7 @@ class AppAlerts {
                                 effectiveConfirmText,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                                  fontSize: AppFontSize.button,
                                 ),
                                 maxLines: 1,
                               ),
@@ -337,7 +341,7 @@ class AppAlerts {
                                 effectiveCancelText,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 15,
+                                  fontSize: AppFontSize.button,
                                 ),
                                 maxLines: 1,
                               ),
@@ -374,7 +378,7 @@ class AppAlerts {
                                 effectiveCancelText,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                                  fontSize: AppFontSize.body,
                                 ),
                                 maxLines: 1,
                               ),
@@ -407,7 +411,7 @@ class AppAlerts {
                                 effectiveConfirmText,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: AppFontSize.body,
                                 ),
                                 maxLines: 1,
                               ),
@@ -455,7 +459,7 @@ class AppAlerts {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.headline,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -465,7 +469,7 @@ class AppAlerts {
               Text(
                 message,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.body,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
@@ -525,7 +529,7 @@ class AppAlerts {
               Text(
                 title ?? context.l10n.service_unavailable_title,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.headline,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -535,7 +539,7 @@ class AppAlerts {
               Text(
                 message ?? context.l10n.service_unavailable_desc,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.body,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
@@ -696,7 +700,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
         Text(
           widget.title,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: AppFontSize.headline,
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
           ),
@@ -706,7 +710,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
         Text(
           widget.message,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppFontSize.body,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.5,
           ),
@@ -740,7 +744,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
                       ? '${context.l10n.rate_limit_countdown_prefix} $_secondsLeft ${context.l10n.uzs_symbol == 'сум' ? 'сек.' : 'sec'}'
                       : context.l10n.rate_limit_ready,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.hint,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -825,7 +829,7 @@ class _LiquidGlassDialog extends StatelessWidget {
     final glassTheme = GlassTheme.of(context);
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       elevation: 0,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(28)),
@@ -842,7 +846,7 @@ class _LiquidGlassDialog extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.08),
+            color: AppColors.shadowBase.withValues(alpha: isDark ? 0.65 : 0.08),
             blurRadius: isDark ? 32 : 16,
             offset: const Offset(0, 8),
             spreadRadius: -2,

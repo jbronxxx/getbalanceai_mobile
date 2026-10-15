@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
 /// Поле суммы операции с кнопкой выбора валюты и подсказкой пересчёта
 /// в базовую валюту, если валюта чека отличается от базовой.
@@ -45,7 +47,7 @@ class TransactionAmountField extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: UnconstrainedBox(
                 child: Material(
-                  color: Colors.transparent,
+                  color: AppColors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
                     onTap: onCurrencyTap,
@@ -56,12 +58,12 @@ class TransactionAmountField extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Colors.white.withValues(alpha: 0.10)
+                            ? AppColors.highlightBase.withValues(alpha: 0.10)
                             : colorScheme.primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.20)
+                              ? AppColors.highlightBase.withValues(alpha: 0.20)
                               : colorScheme.primary.withValues(alpha: 0.25),
                           width: 1.0,
                         ),
@@ -70,9 +72,7 @@ class TransactionAmountField extends StatelessWidget {
                         currency.code,
                         style: textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? const Color(0xFF2DD4BF)
-                              : colorScheme.primary,
+                          color: AppColors.of(context).accentText,
                         ),
                       ),
                     ),
@@ -93,7 +93,7 @@ class TransactionAmountField extends StatelessWidget {
             ),
             errorStyle: TextStyle(
               color: colorScheme.error,
-              fontSize: 12,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w500,
             ),
           ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/preferences_service.dart';
 import '../../utils/utils.dart';
+import '../app_sheet.dart';
+import '../../theme/app_colors.dart';
 
 /// Модальный лист выбора темы оформления приложения (дропдаун).
 class ThemeModePickerSheet extends StatelessWidget {
@@ -18,7 +20,7 @@ class ThemeModePickerSheet extends StatelessWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => ThemeModePickerSheet(onThemeChanged: onThemeChanged),
     );
   }
@@ -75,11 +77,6 @@ class ThemeModePickerSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF161618) : colorScheme.surface;
-    final sheetBorder = isDark
-        ? Colors.white.withValues(alpha: 0.18)
-        : Colors.black.withValues(alpha: 0.08);
 
     final currentMode = PreferencesService.instance.themeModeNotifier.value;
 
@@ -90,39 +87,14 @@ class ThemeModePickerSheet extends StatelessWidget {
         right: 24,
         bottom: 24 + MediaQuery.of(context).padding.bottom,
       ),
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(color: sheetBorder, width: 1.5),
-          left: BorderSide(color: sheetBorder, width: 1.0),
-          right: BorderSide(color: sheetBorder, width: 1.0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.10),
-            blurRadius: 32,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
+      decoration: AppSheet.decoration(context),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 80,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.25)
-                      : colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+            const Center(
+              child: SheetHandle(),
             ),
             Text(
               getThemeTitle(context),
@@ -144,12 +116,12 @@ class ThemeModePickerSheet extends StatelessWidget {
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected
-                        ? colorScheme.primary
+                        ? AppColors.of(context).accentText
                         : colorScheme.onSurface,
                   ),
                 ),
                 trailing: isSelected
-                    ? Icon(Icons.check, color: colorScheme.primary)
+                    ? Icon(Icons.check, color: AppColors.of(context).accentText)
                     : null,
                 onTap: () {
                   PreferencesService.instance.saveThemeMode(mode);

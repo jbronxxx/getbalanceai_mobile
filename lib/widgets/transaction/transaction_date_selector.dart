@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Выбор дня операции: «Сегодня», «Вчера» или произвольная дата из календаря.
 ///
@@ -80,8 +81,9 @@ class _DateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final foreground =
-        isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final foreground = isSelected
+        ? AppColors.of(context).accentText
+        : colorScheme.onSurfaceVariant;
 
     return ChoiceChip(
       label: Text(label),

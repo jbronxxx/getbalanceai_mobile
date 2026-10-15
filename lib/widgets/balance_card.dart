@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/theme/app_colors.dart';
 
 /// Главная карточка баланса на дашборде, выполненная в стиле полированного
 /// бирюзового жидкого стекла (Polished Turquoise Liquid Glass).
@@ -19,32 +20,26 @@ class BalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final colors = AppColors.of(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F766E),
-            Color(0xFF115E59),
-          ],
-        ),
+        gradient: colors.brandGradient,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.32),
+          color: AppColors.onBrandBase.withValues(alpha: 0.32),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F766E).withValues(alpha: 0.16),
+            color: colors.brandShadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.shadowBase.withValues(alpha: 0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -57,7 +52,7 @@ class BalanceCard extends StatelessWidget {
           Text(
             context.l10n.month_total,
             style: textTheme.titleSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: AppColors.onBrandBase.withValues(alpha: 0.82),
               letterSpacing: 0.3,
               fontWeight: FontWeight.w500,
             ),
@@ -67,7 +62,7 @@ class BalanceCard extends StatelessWidget {
             balance,
             showSign: true,
             style: textTheme.headlineLarge?.copyWith(
-              color: Colors.white,
+              color: AppColors.onBrandBase,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.5,
             ),
@@ -81,7 +76,7 @@ class BalanceCard extends StatelessWidget {
                   label: context.l10n.income_title,
                   amount: income,
                   icon: Icons.arrow_downward_rounded,
-                  color: Colors.white,
+                  color: AppColors.onBrandBase,
                 ),
               ),
               const SizedBox(width: 12),
@@ -90,7 +85,7 @@ class BalanceCard extends StatelessWidget {
                   label: context.l10n.expense_title,
                   amount: expense,
                   icon: Icons.arrow_upward_rounded,
-                  color: Colors.white,
+                  color: AppColors.onBrandBase,
                 ),
               ),
             ],
@@ -121,10 +116,10 @@ class _IncomeExpenseInfo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: AppColors.onBrandBase.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.24),
+          color: AppColors.onBrandBase.withValues(alpha: 0.24),
           width: 1.0,
         ),
       ),
@@ -136,12 +131,12 @@ class _IncomeExpenseInfo extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
+                  color: AppColors.onBrandBase.withValues(alpha: 0.22),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.white,
+                  color: AppColors.onBrandBase,
                   size: 13,
                 ),
               ),
@@ -150,7 +145,7 @@ class _IncomeExpenseInfo extends StatelessWidget {
                 child: Text(
                   label,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: AppColors.onBrandBase.withValues(alpha: 0.85),
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -163,7 +158,7 @@ class _IncomeExpenseInfo extends StatelessWidget {
           CurrencyFormatter.formatText(
             amount,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
+              color: AppColors.onBrandBase,
               fontWeight: FontWeight.bold,
             ),
             useFittedBox: true,

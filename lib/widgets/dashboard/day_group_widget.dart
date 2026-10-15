@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import 'transaction_item_tile.dart';
+import '../../theme/app_colors.dart';
 
 /// Операции одного дня: заголовок с датой и итогом дня, под ним — карточка
 /// со строками операций.
@@ -54,7 +55,6 @@ class DayGroupWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     final formattedDate = LanguageManager.formatDayMonth(date);
     final isToday = DateUtils.isSameDay(date, DateTime.now());
@@ -62,8 +62,7 @@ class DayGroupWidget extends StatelessWidget {
       fontWeight: FontWeight.bold,
       color: colorScheme.outline,
     );
-    final borderColor =
-        isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0);
+    final borderColor = AppColors.of(context).cardBorder;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,12 +90,12 @@ class DayGroupWidget extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: TransactionItemTile.backgroundColor(theme),
+            color: TransactionItemTile.backgroundColor(context),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+                color: AppColors.of(context).cardShadow,
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

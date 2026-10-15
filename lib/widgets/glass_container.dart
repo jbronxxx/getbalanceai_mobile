@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/services.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_colors.dart';
 
 /// Универсальный контейнер с эффектом полированного жидкого стекла (Liquid Glass / Frosted Glass).
 ///
@@ -40,7 +41,6 @@ class GlassContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glassTheme = GlassTheme.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final isBlurSupported = DeviceCapabilityService.instance.isBlurSupported;
@@ -48,8 +48,7 @@ class GlassContainer extends StatelessWidget {
     final shouldUseBlur =
         !disableAnimations && isBlurSupported && effectiveSigma > 0;
 
-    final fallbackOpaqueColor =
-        isDark ? const Color(0xFF18181C) : const Color(0xFFFFFFFF);
+    final fallbackOpaqueColor = AppColors.of(context).fieldBackground;
 
     final effectiveColor = color ??
         (gradient == null

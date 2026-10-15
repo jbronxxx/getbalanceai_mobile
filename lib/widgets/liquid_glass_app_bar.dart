@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/services.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_colors.dart';
 
 /// Хэдер экрана в стиле полированного полупрозрачного жидкого стекла (Liquid Glass).
 ///
@@ -60,9 +61,10 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                 glassTheme.surface.withValues(alpha: 0.45),
                 glassTheme.surfaceEnd.withValues(alpha: 0.55),
               ])
-        : (isDark
-            ? [const Color(0xDD18181C), const Color(0xDD121216)]
-            : [const Color(0xDDFFFFFF), const Color(0xDDF1F5F9)]);
+        : ([
+            AppColors.of(context).glassFallbackStart,
+            AppColors.of(context).glassFallbackEnd
+          ]);
 
     final bottomBorderRadius = BorderRadius.vertical(
       bottom: Radius.circular(bottomRadius),
@@ -78,7 +80,7 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
         borderRadius: bottomBorderRadius,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.02),
+            color: AppColors.shadowBase.withValues(alpha: isDark ? 0.08 : 0.02),
             blurRadius: 16,
             offset: const Offset(0, 4),
             spreadRadius: -4,
@@ -113,10 +115,10 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: centerTitle ?? true,
       actions: actions,
       leading: leading,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: AppColors.transparent,
       toolbarHeight: toolbarHeight,
       shape: RoundedRectangleBorder(
         borderRadius: bottomBorderRadius,
@@ -124,9 +126,9 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
       systemOverlayStyle: systemOverlayStyle ??
           (isDark
               ? SystemUiOverlayStyle.light
-                  .copyWith(statusBarColor: Colors.transparent)
+                  .copyWith(statusBarColor: AppColors.transparent)
               : SystemUiOverlayStyle.dark
-                  .copyWith(statusBarColor: Colors.transparent)),
+                  .copyWith(statusBarColor: AppColors.transparent)),
       flexibleSpace: flexibleSpace,
     );
   }

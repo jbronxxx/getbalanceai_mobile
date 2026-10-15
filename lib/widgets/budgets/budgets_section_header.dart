@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
+import '../../theme/app_colors.dart';
 
 /// Заголовок блока лимитов на экране «Финансы» с кнопкой добавления лимита.
 class BudgetsSectionHeader extends StatelessWidget {
@@ -31,7 +32,7 @@ class BudgetsSectionHeader extends StatelessWidget {
             icon: const Icon(Icons.add_rounded, size: 20),
             label: Text(context.l10n.add_limit_btn),
             style: TextButton.styleFrom(
-              foregroundColor: colorScheme.primary,
+              foregroundColor: AppColors.of(context).accentText,
               backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 14),
