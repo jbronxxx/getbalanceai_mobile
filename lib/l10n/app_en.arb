@@ -390,5 +390,10 @@
       }
     }
   },
-  "report_btn_short": "Report"
+  "report_btn_short": "Report",
+  "insights_guest_title": "Personal AI tips",
+  "insights_guest_login_btn": "Sign in and get analysis",
+  "insight_demo_1": "Food spending is 18% higher than last month — mostly cafes on weekdays.",
+  "insight_demo_2": "You can save about 10% by setting a limit on taxis and planning trips ahead.",
+  "insight_demo_3": "At this pace you will stay within the month budget with a small reserve."
 }

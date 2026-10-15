@@ -271,10 +271,18 @@ void main() {
         findsOneWidget,
       );
 
-      // Переключаемся на вкладку Финансы (индекс 1)
+      // Тост, показанный на одной вкладке, закрывается при переходе на другую
+      ScaffoldMessenger.of(tester.element(find.byType(MainShell)))
+          .showSnackBar(const SnackBar(content: Text('toast_on_balance')));
+      await tester.pump();
+      expect(find.text('toast_on_balance'), findsOneWidget);
+
+      // Переключаемся на вкладку «Бюджет» (индекс 1)
       await tester.tap(find.text('Бюджет'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('toast_on_balance'), findsNothing);
 
       final updatedStack = tester.widget<IndexedStack>(indexedStackFinder);
       expect(updatedStack.index, equals(1));
