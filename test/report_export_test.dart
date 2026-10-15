@@ -495,7 +495,7 @@ void main() {
     });
   });
 
-  group('ReportExportCard', () {
+  group('ReportExportAction', () {
     testWidgets('открывает форму выгрузки с выбором периода и формата',
         (tester) async {
       await tester.pumpWidget(
@@ -505,13 +505,13 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           theme: AppTheme.lightTheme,
           home: const Scaffold(
-            body: ReportExportCard(selectedMonth: 3, selectedYear: 2030),
+            body: ReportExportAction(selectedMonth: 3, selectedYear: 2030),
           ),
         ),
       );
 
-      expect(find.text('Выгрузка отчёта'), findsOneWidget);
-      await tester.tap(find.text('Выгрузка отчёта'));
+      expect(find.byTooltip('Выгрузка отчёта'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.file_download_outlined));
       await tester.pumpAndSettle();
 
       expect(find.text('Март 2030'), findsOneWidget);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
+import '../category_style.dart';
 import '../swipe_hint_wrapper.dart';
 
 /// Карточка элемента бюджета с индикатором выполнения и поддержкой свайпа для удаления.
@@ -24,6 +25,24 @@ class BudgetItemCard extends StatelessWidget {
     required this.onHintShown,
   });
 
+  /// Цвет шкалы по доле потраченного: до 75% — основной, 75–100% —
+  /// предупреждение, выше лимита — перерасход.
+  static Color progressColorFor(
+    double ratio,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    if (ratio > 1) {
+      return isDark ? const Color(0xFFF59E0B) : const Color(0xFFEA7A35);
+    }
+    if (ratio >= 0.75) {
+      return isDark ? const Color(0xFFFCD34D) : const Color(0xFFD97706);
+    }
+    return colorScheme.primary;
+  }
+
+  static String _display(double amount) => CurrencyFormatter.format(amount);
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -31,14 +50,16 @@ class BudgetItemCard extends StatelessWidget {
     final textTheme = theme.textTheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final progress = budget.limitAmount > 0
-        ? (currentSpent / budget.limitAmount).clamp(0.0, 1.0)
-        : 0.0;
+    final ratio =
+        budget.limitAmount > 0 ? currentSpent / budget.limitAmount : 0.0;
+    final progress = ratio.clamp(0.0, 1.0);
     final isExceeded = currentSpent > budget.limitAmount;
+    final percent = (ratio * 100).round();
 
     // Мягкий бежево-оранжевый цвет предупреждения вместо пугающего красного
     final exceededColor =
         isDark ? const Color(0xFFF59E0B) : const Color(0xFFEA7A35);
+    final progressColor = progressColorFor(ratio, colorScheme, isDark);
 
     final background = Container(
       alignment: Alignment.centerRight,
@@ -93,89 +114,81 @@ class BudgetItemCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxCategoryWidth = constraints.maxWidth * 0.45;
-
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ConstrainedBox(
-                          constraints:
-                              BoxConstraints(maxWidth: maxCategoryWidth),
-                          child: Text(
-                            budget.category.getLocalizedName(context),
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Icon(
+                      CategoryStyle.icon(budget.category),
+                      size: 20,
+                      color: CategoryStyle.color(budget.category),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        budget.category.getLocalizedName(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: CurrencyFormatter.formatText(
+                          (budget.limitAmount - currentSpent).abs(),
+                          prefix: isExceeded
+                              ? '${context.l10n.budget_exceeded} '
+                              : '',
+                          useFittedBox: true,
+                          textAlign: TextAlign.end,
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isExceeded
+                                ? exceededColor
+                                : colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CurrencyFormatter.formatText(
-                                    currentSpent,
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isExceeded
-                                          ? exceededColor
-                                          : colorScheme.primary,
-                                    ),
-                                  ),
-                                  Text(
-                                    ' / ',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isExceeded
-                                          ? exceededColor
-                                          : colorScheme.primary,
-                                    ),
-                                  ),
-                                  CurrencyFormatter.formatText(
-                                    budget.limitAmount,
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isExceeded
-                                          ? exceededColor
-                                          : colorScheme.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 LinearProgressIndicator(
                   value: progress,
-                  color: isExceeded ? exceededColor : colorScheme.primary,
+                  color: progressColor,
                   backgroundColor: colorScheme.surfaceContainerHighest,
                   minHeight: 8,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                if (isExceeded) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${context.l10n.budget_exceeded} ${CurrencyFormatter.format(currentSpent - budget.limitAmount, showSymbol: true)}!',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: exceededColor,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        context.l10n.budget_spent_of(
+                          _display(currentSpent),
+                          _display(budget.limitAmount),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    Text(
+                      '$percent%',
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: progressColor,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

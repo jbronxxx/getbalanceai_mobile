@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
@@ -9,8 +8,8 @@ import '../widgets/budgets/budgets.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 
-/// Экран «Финансы»: инфографика расходов, лимиты по категориям за выбранный
-/// месяц/год и выгрузка отчётов за период в CSV/PDF.
+/// Вкладка «Бюджет»: карточка бюджета месяца (сколько можно тратить в день),
+/// лимиты по категориям и выгрузка отчёта за месяц в CSV/PDF (кнопка в шапке).
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
 
@@ -23,8 +22,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   int get _selectedYear => SelectedPeriodService.instance.period.year;
 
   List<Budget> _budgets = [];
-  double _totalIncome = 0;
-  double _totalExpense = 0;
   Map<Category, double> _categoryExpenses = {};
   bool _shouldShowSwipeHint = false;
 
@@ -65,17 +62,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
-  /// Загружает лимиты бюджета и данные расходов/доходов за выбранный период.
+  /// Загружает лимиты и расходы по категориям за выбранный месяц — одним
+  /// проходом по операциям для карточки месяца и всех карточек лимитов.
   void _loadBudgets() {
-    final totals =
-        LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
     final catExpenses = LocalDbService.instance
         .getCategoryExpensesForPeriod(_selectedMonth, _selectedYear);
     setState(() {
       _budgets = LocalDbService.instance
           .getBudgetsForPeriod(_selectedMonth, _selectedYear);
-      _totalIncome = totals['income'] ?? 0;
-      _totalExpense = totals['expense'] ?? 0;
       _categoryExpenses = catExpenses;
     });
   }
@@ -134,66 +128,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  Widget _buildEmptyBudgetsBubble(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final borderColor =
-        isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFCBD5E1);
-
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 480),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: borderColor,
-            width: 1.0,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              color: Colors.transparent,
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.pie_chart_outline_rounded,
-                      color: colorScheme.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      context.l10n.no_budgets_subtitle,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -217,6 +151,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: ReportExportAction(
+              selectedMonth: _selectedMonth,
+              selectedYear: _selectedYear,
+            ),
+          ),
+        ],
       ),
       body: ScreenBodyCard(
         child: CustomPullToRefresh(
@@ -240,33 +183,23 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const PeriodSwitcher(),
-                      BudgetExpenseRatioCard(
-                        totalIncome: _totalIncome,
-                        totalExpense: _totalExpense,
-                        categoryExpenses: _categoryExpenses,
+                      MonthBudgetCard(
+                        summary: MonthBudgetSummary.calculate(
+                          budgets: _budgets,
+                          spentByCategory: _categoryExpenses,
+                          period: SelectedPeriodService.instance.period,
+                        ),
+                        onAddLimit: () => _openAddBudgetSheet(),
                       ),
-                      ReportExportCard(
-                        selectedMonth: _selectedMonth,
-                        selectedYear: _selectedYear,
-                      ),
-                      BudgetsSectionHeader(
-                        onAdd: () => _openAddBudgetSheet(),
-                      ),
+                      if (_budgets.isNotEmpty)
+                        BudgetsSectionHeader(
+                          onAdd: () => _openAddBudgetSheet(),
+                        ),
                     ],
                   ),
                 ),
               ),
-              if (_budgets.isEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: _buildEmptyBudgetsBubble(context),
-                  ),
-                )
-              else
+              if (_budgets.isNotEmpty)
                 SliverPadding(
                   padding: const EdgeInsets.only(
                     left: 16.0,
@@ -277,13 +210,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final b = _budgets[index];
-                        final currentSpent = LocalDbService.instance
-                            .getSpentForCategory(
-                                _selectedMonth, _selectedYear, b.dbCategory);
 
                         return BudgetItemCard(
                           budget: b,
-                          currentSpent: currentSpent,
+                          currentSpent: _categoryExpenses[b.category] ?? 0,
                           isFirst: index == 0,
                           showSwipeHint: index == 0 && _shouldShowSwipeHint,
                           onTap: () => _openAddBudgetSheet(b),

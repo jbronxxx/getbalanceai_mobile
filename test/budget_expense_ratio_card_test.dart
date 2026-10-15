@@ -53,6 +53,8 @@ void main() {
     // Проверяем бейдж и кольцо 50%
     expect(find.textContaining('50%'), findsWidgets);
     expect(find.text('от дохода'), findsWidgets);
+    // Процент не дублируется бейджем: он есть только при перерасходе
+    expect(find.textContaining('!'), findsNothing);
     // Проверяем категории в легенде
     expect(find.text(Category.food.getLocalizedName()), findsOneWidget);
     expect(find.text(Category.transport.getLocalizedName()), findsOneWidget);
@@ -78,8 +80,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Проверяем бейдж расхода при отсутствии прихода
-    expect(find.text('Только расходы'), findsOneWidget);
+    // Без дохода бейджа нет: «всего трат» в центре кольца
+    expect(find.textContaining('!'), findsNothing);
     // Проверяем центр кольца (100% расходов распределено)
     expect(find.text('100%'), findsOneWidget);
     expect(find.text('всего трат'), findsOneWidget);
@@ -136,8 +138,8 @@ void main() {
     // Топ-2 должны присутствовать
     expect(find.text(Category.food.getLocalizedName()), findsOneWidget);
     expect(find.text(Category.transport.getLocalizedName()), findsOneWidget);
-    // Оставшиеся 3 категории сворачиваются в строку "+3 другие"
-    expect(find.textContaining('+3'), findsOneWidget);
+    // Оставшиеся 3 категории сворачиваются в строку «ещё 3 категории»
+    expect(find.text('ещё 3 категории'), findsOneWidget);
   });
 
   testWidgets('Реактивность: карточка обновляет анимацию при изменении пропсов',

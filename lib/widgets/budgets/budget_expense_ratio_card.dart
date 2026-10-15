@@ -218,31 +218,19 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
     bool hasIncome,
     bool hasExpenses,
   ) {
-    String badgeText;
-    Color badgeBg = Colors.white.withValues(alpha: 0.14);
-    Color badgeTextColor = Colors.white;
-
-    if (!hasExpenses) {
-      badgeText = '0%';
-    } else if (hasIncome) {
-      final ratio = ((widget.totalExpense / widget.totalIncome) * 100).round();
-      if (ratio > 100) {
-        badgeText = '! $ratio%';
-        badgeBg = const Color(0xFFF43F5E).withValues(alpha: 0.28);
-        badgeTextColor = const Color(0xFFFFE4E6);
-      } else {
-        badgeText = '$ratio%';
-      }
-    } else {
-      badgeText = _getOnlyExpensesBadge(context);
-    }
+    // Процент уже в центре кольца; бейдж — только предупреждение, когда
+    // расходы превысили доход.
+    final overspendRatio = hasIncome && hasExpenses
+        ? ((widget.totalExpense / widget.totalIncome) * 100).round()
+        : 0;
+    final showOverspendBadge = overspendRatio > 100;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
-            _getCardTitle(context),
+            context.l10n.structure_title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textTheme.titleSmall?.copyWith(
@@ -252,89 +240,31 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-          decoration: BoxDecoration(
-            color: badgeBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.22),
-              width: 0.8,
+        if (showOverspendBadge) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF43F5E).withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.22),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              '! $overspendRatio%',
+              style: textTheme.labelSmall?.copyWith(
+                color: const Color(0xFFFFE4E6),
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                letterSpacing: 0.1,
+              ),
             ),
           ),
-          child: Text(
-            badgeText,
-            style: textTheme.labelSmall?.copyWith(
-              color: badgeTextColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              letterSpacing: 0.1,
-            ),
-          ),
-        ),
+        ],
       ],
     );
-  }
-
-  static String _getCardTitle(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
-    switch (lang) {
-      case 'uz':
-        return 'Xarajatlar tarkibi';
-      case 'en':
-        return 'Expense structure';
-      default:
-        return 'Структура расходов';
-    }
-  }
-
-  static String _getIncomeSuffix(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
-    switch (lang) {
-      case 'uz':
-        return 'daromaddan';
-      case 'en':
-        return 'of income';
-      default:
-        return 'от дохода';
-    }
-  }
-
-  static String _getOnlyExpensesBadge(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
-    switch (lang) {
-      case 'uz':
-        return 'Faqat xarajat';
-      case 'en':
-        return 'Expenses only';
-      default:
-        return 'Только расходы';
-    }
-  }
-
-  static String _getTotalExpensesCenterText(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
-    switch (lang) {
-      case 'uz':
-        return 'xarajat';
-      case 'en':
-        return 'expenses';
-      default:
-        return 'всего трат';
-    }
-  }
-
-  static String _getNoExpensesCenterText(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
-    switch (lang) {
-      case 'uz':
-        return "xarajat yo'q";
-      case 'en':
-        return 'no expenses';
-      default:
-        return 'нет трат';
-    }
   }
 
   Widget _buildDonutSection(
@@ -349,14 +279,14 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
 
     if (!hasExpenses) {
       centerPrimaryText = '0%';
-      centerSubText = _getNoExpensesCenterText(context);
+      centerSubText = context.l10n.structure_no_expenses;
     } else if (hasIncome) {
       final ratio = ((widget.totalExpense / widget.totalIncome) * 100).round();
       centerPrimaryText = '$ratio%';
-      centerSubText = _getIncomeSuffix(context);
+      centerSubText = context.l10n.structure_of_income;
     } else {
       centerPrimaryText = '100%';
-      centerSubText = _getTotalExpensesCenterText(context);
+      centerSubText = context.l10n.structure_total_expenses;
     }
 
     return SizedBox(
@@ -489,9 +419,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
           ),
         if (remainingCount > 0)
           _CategoryLegendRow(
-            color: const Color(0xFFCBD5E1),
-            name:
-                '+$remainingCount ${context.l10n.category_other.toLowerCase()}',
+            color: Colors.white.withValues(alpha: 0.7),
+            name: context.l10n.structure_more_categories(remainingCount),
             amount: remainingSum,
             percentage: ((remainingSum / widget.totalExpense) * 100).round(),
           ),
