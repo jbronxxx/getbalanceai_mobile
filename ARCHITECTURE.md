@@ -33,6 +33,7 @@ lib/
 ├── models/
 │   ├── auth_model.dart          # DTO для авторизации (Login, Register, Me)
 │   ├── budget_model.dart        # DTO для бюджетов
+│   ├── report_model.dart        # Отчёты: ReportPeriod, ReportFormat, ReportData (операции, итоги, лимиты) — чистые Dart-типы
 │   ├── paginated_response.dart  # Универсальный DTO для пагинированных ответов (items, total, limit, offset)
 │   ├── transaction_model.dart   # DTO для транзакций (с поддержкой created_at и безопасного парсинга дат)
 │   ├── sync_model.dart          # Модель для пакетной синхронизации
@@ -49,11 +50,17 @@ lib/
 │   ├── currency_exchange_service.dart # Конвертация и актуализация курсов валют (офлайн fallback).
 │   │                                 # При смене базовой валюты Presentation-слой динамически пересчитывает суммы
 │   │                                 # в представлении (on-the-fly) без мутации исторической базы и без ложных флагов isModified.
+│   ├── entitlement_service.dart  # Доступ к платным функциям (AppFeature); до монетизации всё открыто
+│   ├── report_data_service.dart  # Сборка ReportData из ObjectBox за период, конвертация в базовую валюту
+│   ├── csv_report_generator.dart # CSV (UTF-8 BOM, диалект по языку, защита от формул)
+│   ├── pdf_report_generator.dart # PDF (пакет pdf, шрифт Inter из ассетов): сводка, категории, лимиты, операции
+│   ├── report_export_service.dart # Доставка файла: «Поделиться» (временный файл + share_plus) или «Сохранить» (системный диалог file_picker.saveFile)
 │   ├── device_capability_service.dart # Определение аппаратных возможностей устройства (поддержка RenderEffect/BackdropFilter, Android API < 31)
 │   ├── tracing_interceptor.dart  # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
 │   ├── auth/                    # AuthCubit: глобальное состояние авторизации
+│   ├── report_export/           # ReportExportCubit: период (месяц/год/свой диапазон), формат CSV/PDF, проверка доступа и выгрузка
 │   ├── insights/                # InsightsCubit: загрузка AI-инсайтов с фильтрацией по периоду (month, year), отмена запросов, реакция на смену валюты/языка/авторизации
 │   └── profile/                 # ProfileCubit: статус авторизации, облачная синхронизация, выход
 ├── widgets/
@@ -72,7 +79,7 @@ lib/
     ├── main_shell.dart            # Каркас с IndexedStack, сохранением состояния вкладок (PageStorageKey) и локализацией слушателя валюты
     ├── dashboard_screen.dart      # Баланс и список операций
     ├── add_transaction_sheet.dart # Форма добавления транзакции
-    ├── budgets_screen.dart        # Лимиты бюджета
+    ├── budgets_screen.dart        # «Финансы»: инфографика, лимиты бюджета, выгрузка отчётов
     ├── insights_screen.dart       # AI-инсайты
     ├── profile_screen.dart        # Профиль пользователя и настройки приложения
     ├── auth_screen.dart           # Вход и регистрация
@@ -208,7 +215,7 @@ main.dart`. Это было исправлено переносом состоя
     - Механика `CustomPullToRefresh` (Liquid Glass / Material 3): контент экрана (`BalanceCard`, `BudgetExpenseRatioCard` и списки) зафиксирован на месте и не съезжает вниз при оверскролле, а индикатор обновления отображается в виде плавающей стеклянной капсулы (Floating Pill) с прогрессом и спиннером непосредственно под `LiquidGlassAppBar`.
     - `TransactionItemTile`: поверхность строки транзакции сделана непрозрачной (`tileBgColor`), исключая просвечивание красной подложки удаления при анимации свайпа.
     - `CategoryGroupWidget` суммирует итог категории строго в базовой валюте пользователя (`effectiveBaseAmount`) со знаком валюты, обеспечивая 100% сходимость с общим балансом дашборда. При наличии мультивалютных трат выводит подстроку с оригинальной валютой чека, счетчик операций с корректным склонением (`LanguageManager.formatOperationsCount`) и анимированный шеврон раскрытия аккордеона (`AnimatedRotation`). Для внутреннего `ExpansionTile` используется изолированный `PageStorageKey<String>`, исключающий коллизию типов (`type 'double' is not a subtype of type 'bool?'`) с сохраненным смещением скролла родительского `CustomScrollView`.
-  - `BudgetsScreen`: декомпозирован на `BudgetExpenseRatioCard`, `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
+  - `BudgetsScreen` (вкладка «Финансы», ранее «Лимиты»): декомпозирован на `BudgetExpenseRatioCard`, `ReportExportCard`, `BudgetPeriodSelector`, `BudgetItemCard`, `AddBudgetSheet` (`lib/widgets/budgets/`).
     - В верхней части экрана размещена большая бирюзовая стеклянная карточка `BudgetExpenseRatioCard` (того же размера и визуального стиля Polished Turquoise Liquid Glass, что и `BalanceCard` на дашборде). Карточка визуализирует соотношение расходов за месяц к доходу с помощью кастомной кольцевой диаграммы (Donut Chart, `CustomPainter`):
       - **Инфо-ядро Donut**: В центре кольца отображается текущий процент расходов от дохода (или общая сумма расходов при отсутствии прихода).
       - **Кейс отсутствия прихода (0 дохода)**: Карточка автоматически адаптируется, визуализируя 100% расходов по категориям без деления на ноль, отображает статус «Только расходы» и нулевой приход в нижнем чипе.
@@ -223,6 +230,8 @@ main.dart`. Это было исправлено переносом состоя
     - Поле «Описание» настроено на ввод с заглавной первой буквы (`textCapitalization: TextCapitalization.sentences`).
     - Поле ввода суммы бюджета унифицировано с транзакциями: отображает краткую метку «Сумма» без валюты в скобках.
   - `ProfileScreen`: декомпозирован на `ProfileHeader`, `ProfileSyncCard`, `ProfileSettingsCard`, `ProfileDataCard`, `ProfileAppVersion`, `CurrencyPickerSheet`, `LanguagePickerSheet` (`lib/widgets/profile/`).
+  - **Выгрузка отчётов (`ReportExportCard` → `ReportExportSheet`)**: карточка на экране «Финансы» открывает лист с выбором периода (месяц/год из селектора экрана или свой диапазон через `showDateRangePicker`) и формата (PDF/CSV). Данные берутся из локальной ObjectBox (`LocalDbService.getTransactionsInRange`), файл формируется на устройстве, бэкенд не используется; две кнопки: «Сохранить» (`ReportDeliveryMode.save`: системный диалог выбора места через `file_picker.saveFile` с байтами — SAF на Android, «Файлы» на iOS, разрешения на хранилище не нужны; отмена диалога возвращает форму в `idle` без ошибки) и «Поделиться» (`ReportDeliveryMode.share`: системное меню, на iPad передаётся `sharePositionOrigin`). CSV: UTF-8 с BOM; для `ru/kk/uz` разделитель `;` и десятичная запятая (ожидание Excel), для `en` — `,` и `.`; описания, начинающиеся с `= + - @`, экранируются апострофом (CSV-инъекция). PDF: сводка, расходы по категориям, выполнение лимитов (только за месяцы, целиком входящие в период), таблица операций; суммы с кодом валюты, лимит страниц `MultiPage` увеличен до 5000. Суммы приводятся к базовой валюте аккаунта. Временные файлы режима «Поделиться» удаляются при следующей выгрузке (сразу после «Поделиться» удалять нельзя — целевое приложение читает файл позже).
+  - **Тарифы и доступ к функциям (`EntitlementService`)**: платные функции перечислены в `AppFeature` (сейчас `reportExport`). `EntitlementService.instance.isEnabled(feature)` до подключения монетизации всегда возвращает `true`; при подключении биллинга достаточно заменить реализацию проверкой подписки. Бесплатный тариф: локальный функционал и инфографика на экране «Финансы». `ReportExportCubit` при отказе переходит в `ReportExportStatus.locked` (UI показывает предупреждение; сюда же подключается paywall).
   - `ProfileDataCard`: раздел «Данные» в профиле (виден всегда). Пункт «Удаление аккаунта и данных» с иконкой и подзаголовком-пояснением (справка, а не само удаление) открывает во внешнем браузере публичную страницу бэкенда `/delete-account?lang=<код языка>`. Само удаление остаётся кнопкой «Удалить аккаунт» внизу профиля. При ошибке открытия показывается тост `open_link_error`.
   - **Юридические ссылки (`lib/config/legal_links.dart`)**: `LegalLinks.url(LegalPage, languageCode)` строит URL страниц бэкенда `/terms`, `/privacy`, `/delete-account` от origin `EnvironmentConfig.baseUrl` (без `/api/v1`): release ведёт на прод, debug/local — на выбранный бэкенд (например, `http://10.0.2.2:8000`). Используется в `AuthScreen` («Условия использования», «Политика конфиденциальности») и в `ProfileDataCard`. Тексты хранятся и обновляются на бэкенде; в ARB ссылок нет.
   - `UserAvatar` (`lib/widgets/user_avatar.dart`): переиспользуемый отказоустойчивый виджет аватара пользователя с `Image.network`, `errorBuilder` и `loadingBuilder`. Исключает необработанные `SocketException` при сбоях сети/DNS (например, для аватаров Google `lh3.googleusercontent.com`) и плавно переключается на инициалы или иконку.

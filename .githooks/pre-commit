@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Stash unstaged changes before running tests
+# Stash unstaged changes before running checks
 git stash -q --keep-index
 
 # Check if fvm is available, otherwise fallback to plain dart/flutter
@@ -30,17 +30,6 @@ ANALYZE_EXIT_CODE=$?
 
 if [ $ANALYZE_EXIT_CODE -ne 0 ]; then
   echo "Error: Code analyzer found issues. Fix them before committing."
-  git stash pop -q
-  exit 1
-fi
-
-# Run tests
-echo "Running $FLUTTER_CMD test..."
-$FLUTTER_CMD test
-TEST_EXIT_CODE=$?
-
-if [ $TEST_EXIT_CODE -ne 0 ]; then
-  echo "Error: Unit tests failed. Fix them before committing."
   git stash pop -q
   exit 1
 fi

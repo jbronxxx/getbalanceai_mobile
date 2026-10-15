@@ -112,7 +112,7 @@ class _MainShellState extends State<MainShell> {
                     ),
                     LiquidGlassNavItem(
                       icon: Icons.donut_small_rounded,
-                      label: context.l10n.limits,
+                      label: context.l10n.finances,
                     ),
                     LiquidGlassNavItem(
                       icon: Icons.auto_awesome_rounded,

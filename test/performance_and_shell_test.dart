@@ -271,8 +271,8 @@ void main() {
         findsOneWidget,
       );
 
-      // Переключаемся на вкладку Лимиты (индекс 1)
-      await tester.tap(find.text('Лимиты'));
+      // Переключаемся на вкладку Финансы (индекс 1)
+      await tester.tap(find.text('Финансы'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

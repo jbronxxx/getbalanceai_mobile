@@ -8,8 +8,8 @@ import '../utils/utils.dart';
 import '../widgets/budgets/budgets.dart';
 import '../widgets/widgets.dart';
 
-/// Экран лимитов бюджета: показывает установленные лимиты по категориям за
-/// выбранный месяц/год и позволяет добавить новый лимит.
+/// Экран «Финансы»: инфографика расходов, лимиты по категориям за выбранный
+/// месяц/год и выгрузка отчётов за период в CSV/PDF.
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
 
@@ -201,7 +201,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       extendBodyBehindAppBar: true,
       appBar: LiquidGlassAppBar(
         title: Text(
-          context.l10n.budgets_title,
+          context.l10n.finances,
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -235,6 +235,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         totalIncome: _totalIncome,
                         totalExpense: _totalExpense,
                         categoryExpenses: _categoryExpenses,
+                      ),
+                      ReportExportCard(
+                        selectedMonth: _selectedMonth,
+                        selectedYear: _selectedYear,
                       ),
                       BudgetPeriodSelector(
                         padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
