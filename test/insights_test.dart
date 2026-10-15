@@ -90,6 +90,20 @@ void main() {
       expect(model.generatedAt, isNull);
     });
 
+    test('parses report state including busy; unknown or missing is ready', () {
+      InsightsReportState parse(dynamic state) =>
+          InsightsModel.fromJson({'insights': [], 'state': state}).state;
+
+      expect(parse('ready'), InsightsReportState.ready);
+      expect(parse('not_generated'), InsightsReportState.notGenerated);
+      expect(parse('no_data'), InsightsReportState.noData);
+      expect(parse('quota_exceeded'), InsightsReportState.quotaExceeded);
+      expect(parse('busy'), InsightsReportState.busy);
+      expect(parse('something_new'), InsightsReportState.ready);
+      expect(InsightsModel.fromJson({'insights': []}).state,
+          InsightsReportState.ready);
+    });
+
     test('handles wrapped data field in json', () {
       final json = {
         'status': 'success',

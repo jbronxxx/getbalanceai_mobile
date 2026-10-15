@@ -10,7 +10,10 @@ enum InsightsReportState {
   noData,
 
   /// Суточная квота исчерпана; `insights` — сообщение о лимите.
-  quotaExceeded;
+  quotaExceeded,
+
+  /// AI временно недоступен; ответ нельзя показывать как отчёт и кэшировать.
+  busy;
 
   /// Значение из JSON; неизвестное или отсутствующее (старый бэкенд) — [ready].
   static InsightsReportState fromJson(dynamic value) {
@@ -21,6 +24,8 @@ enum InsightsReportState {
         return InsightsReportState.noData;
       case 'quota_exceeded':
         return InsightsReportState.quotaExceeded;
+      case 'busy':
+        return InsightsReportState.busy;
       default:
         return InsightsReportState.ready;
     }

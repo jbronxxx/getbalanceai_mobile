@@ -560,6 +560,35 @@ void main() {
       await cubit.close();
     });
 
+    test('busy response shows friendly error and is not cached', () async {
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
+            generate: any(named: 'generate'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((_) async => {
+            'insights': ['Server busy text'],
+            'state': 'busy',
+          });
+      final cubit = build();
+
+      await cubit.loadInsights();
+      expect(
+        cubit.state,
+        isA<InsightsError>().having((s) => s.message, 'message',
+            LanguageManager.l10n.insights_assistants_busy),
+      );
+
+      // Повторный запрос снова идёт на сервер: ошибка не попала в кэш сессии.
+      await cubit.loadInsights();
+      expect(capturedGenerateFlags(), [true, true]);
+
+      await cubit.close();
+    });
+
     test('pull-to-refresh (force) bypasses session cache', () async {
       when(() => api.isAuthenticated).thenReturn(true);
       stubInsights(['First']);
