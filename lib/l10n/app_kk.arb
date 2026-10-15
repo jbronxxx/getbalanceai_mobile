@@ -52,7 +52,7 @@
   "welcome_currency_subtitle": "Бұл валютада жалпы баланс пен бюджеттер есептеледі",
   "currency_rate_hint": "бағамы бойынша",
   "continue_btn": "Жалғастыру",
-  "total_balance": "Жалпы баланс",
+  "month_total": "Ай қорытындысы",
   "expense_title": "Шығыс",
   "income_title": "Кіріс",
   "no_transactions": "Осы айда жазбалар жоқ",
@@ -339,5 +339,10 @@
   "insights_not_generated": "Осы айдың AI-талдауы әлі жасалмаған.",
   "insights_generate_btn": "Талдау жасау",
   "insights_future_month": "Бұл ай әлі басталған жоқ — талдайтын ештеңе жоқ.",
-  "insights_no_transactions": "Бұл айда операциялар жоқ — әзірге талдайтын ештеңе жоқ."
+  "insights_no_transactions": "Бұл айда операциялар жоқ — әзірге талдайтын ештеңе жоқ.",
+  "view_by_days": "Күндер бойынша",
+  "view_by_categories": "Санаттар бойынша",
+  "edit_btn": "Өңдеу",
+  "details_original_amount": "Чек сомасы",
+  "details_in_base_currency": "Негізгі валютада"
 }

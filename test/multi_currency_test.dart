@@ -660,113 +660,118 @@ void main() {
     });
   });
 
-  group('CategoryGroupWidget Multi-Currency & Expansion Tests', () {
-    testWidgets(
-        'Отображает сумму в базовой валюте со знаком валюты, оригинальную валюту чека, количество операций и шеврон',
-        (WidgetTester tester) async {
+  group('DayGroupWidget: лента операций дня', () {
+    /// Как сумма выглядит на экране: formatText ставит типографский минус.
+    String onScreen(String formatted) =>
+        formatted.replaceAll('-', CurrencyFormatter.typographicMinus);
+
+    Transaction tx({
+      required int id,
+      required double amount,
+      required String type,
+      String description = '',
+      Category category = Category.food,
+      String currencyCode = 'USD',
+      double exchangeRate = 1.0,
+      double? baseAmount,
+    }) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      return Transaction(
+        localId: id,
+        amount: amount,
+        description: description,
+        dbCategory: category.name,
+        dbType: type,
+        dateMilliseconds: now,
+        dateCreatedMilliseconds: now,
+        currencyCode: currencyCode,
+        exchangeRate: exchangeRate,
+        baseAmount: baseAmount ?? amount,
+      );
+    }
+
+    Future<void> pumpDay(WidgetTester tester, List<Transaction> items) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('ru'),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: DayGroupWidget(
+                date: DateTime.now(),
+                transactions: items,
+                onTransactionTap: (_) {},
+                onTransactionDelete: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    setUp(() {
       LanguageManager.setLanguage(AppLanguage.ru, save: false);
       CurrencyFormatter.setCurrency(Currency.usd);
+    });
 
-      final foreignTx = Transaction(
-        localId: 1,
+    testWidgets(
+        'Операция в иностранной валюте: описание, категория, сумма чека и пересчёт',
+        (tester) async {
+      final foreignTx = tx(
+        id: 1,
         amount: 1000000,
+        type: TransactionType.expense.name,
         description: 'Кинотеатр',
-        dbCategory: Category.entertainment.name,
-        dbType: TransactionType.expense.name,
-        dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
-        dateCreatedMilliseconds: DateTime.now().millisecondsSinceEpoch,
+        category: Category.entertainment,
         currencyCode: 'UZS',
         exchangeRate: 1 / 12800.0,
         baseAmount: 78.125,
       );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('ru'),
-          home: Scaffold(
-            body: CategoryGroupWidget(
-              category: Category.entertainment,
-              transactions: [foreignTx],
-              onTransactionTap: (_) {},
-              onTransactionDelete: (_) {},
-            ),
-          ),
-        ),
-      );
+      await pumpDay(tester, [foreignTx]);
 
-      await tester.pumpAndSettle();
-
-      // Проверяем заголовок категории и счетчик операций
-      expect(find.text('Развлечения'), findsOneWidget);
-      expect(find.text('1 операция'), findsOneWidget);
-
-      // В шапке сумма приведена к базовой валюте со знаком валюты
-      expect(
-        find.text(
-          CurrencyFormatter.format(-foreignTx.effectiveBaseAmount,
-              showSign: true),
-        ),
-        findsOneWidget,
-      );
-
-      // Под суммой отображается оригинальная сумма в валюте чека
-      expect(find.text('-1 000 000 сум'), findsOneWidget);
-
-      // Проверяем наличие шеврона
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
-
-      // Раскрываем карточку тапом
-      await tester.tap(find.text('Развлечения'));
-      await tester.pumpAndSettle();
-
-      // Внутри отображается дочерняя транзакция с описанием
       expect(find.text('Кинотеатр'), findsOneWidget);
+      expect(find.text('Развлечения'), findsOneWidget);
+      expect(find.text(onScreen('-1 000 000 сум')), findsOneWidget);
+      final baseText = onScreen(CurrencyFormatter.format(
+        -foreignTx.effectiveBaseAmount,
+        showSign: true,
+      ));
+      expect(
+          find.text(
+              '≈ ${onScreen(CurrencyFormatter.format(-foreignTx.effectiveBaseAmount))}'),
+          findsOneWidget);
+      // Итог дня — в базовой валюте
+      expect(find.text(baseText), findsOneWidget);
+      // Групп по категориям больше нет
+      expect(find.text('1 операция'), findsNothing);
+    });
+
+    testWidgets('Итог дня: доходы минус расходы в базовой валюте',
+        (tester) async {
+      await pumpDay(tester, [
+        tx(id: 1, amount: 100, type: TransactionType.income.name),
+        tx(id: 2, amount: 30, type: TransactionType.expense.name),
+      ]);
+
+      expect(find.text(CurrencyFormatter.format(70, showSign: true)),
+          findsOneWidget);
+      expect(find.byType(TransactionItemTile), findsNWidgets(2));
     });
 
     testWidgets(
-        'Для операций только в базовой валюте не показывает подстроку иностранной валюты',
-        (WidgetTester tester) async {
-      LanguageManager.setLanguage(AppLanguage.ru, save: false);
-      CurrencyFormatter.setCurrency(Currency.usd);
-
-      final usdTx = Transaction(
-        localId: 2,
-        amount: 50,
-        description: 'Кофе',
-        dbCategory: Category.food.name,
-        dbType: TransactionType.expense.name,
-        dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
-        dateCreatedMilliseconds: DateTime.now().millisecondsSinceEpoch,
-        currencyCode: 'USD',
-        exchangeRate: 1.0,
-        baseAmount: 50.0,
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('ru'),
-          home: Scaffold(
-            body: CategoryGroupWidget(
-              category: Category.food,
-              transactions: [usdTx],
-              onTransactionTap: (_) {},
-              onTransactionDelete: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
+        'Без описания заголовком строки служит название категории, подписи нет',
+        (tester) async {
+      await pumpDay(tester, [
+        tx(id: 1, amount: 50, type: TransactionType.expense.name),
+      ]);
 
       expect(find.text('Питание'), findsOneWidget);
-      expect(find.text('1 операция'), findsOneWidget);
-      expect(find.text(r'-$50,00'), findsOneWidget);
-      // Нет подстроки иностранной валюты
-      expect(find.text('-50 сум'), findsNothing);
+      expect(find.text(LanguageManager.l10n.no_description), findsNothing);
+      expect(find.text(onScreen(r'-$50,00')), findsNWidgets(2));
+      expect(find.textContaining('-'), findsNothing);
     });
   });
 

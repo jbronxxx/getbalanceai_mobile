@@ -26,7 +26,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _selectedYear => SelectedPeriodService.instance.period.year;
 
   final List<Transaction> _transactions = [];
-  Map<DateTime, Map<Category, List<Transaction>>> _groupedTransactions = {};
+  Map<DateTime, List<Transaction>> _groupedTransactions = {};
+  DashboardViewMode _viewMode = DashboardViewMode.days;
+  List<CategoryMonthSummary> _categorySummaries = [];
   double _totalIncome = 0;
   double _totalExpense = 0;
   double _totalBalance = 0;
@@ -90,10 +92,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _onViewModeChanged(DashboardViewMode mode) {
+    if (mode == _viewMode) return;
+    setState(() => _viewMode = mode);
+    _loadTransactions();
+  }
+
+  /// Режим «По категориям»: итоги категорий за весь месяц, без пагинации —
+  /// иначе итоги считались бы по первой странице.
+  void _loadCategorySummaries() {
+    final totals =
+        LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
+    final all = LocalDbService.instance
+        .getTransactionsForPeriod(_selectedMonth, _selectedYear);
+    setState(() {
+      _totalIncome = totals['income'] ?? 0;
+      _totalExpense = totals['expense'] ?? 0;
+      _totalBalance = _totalIncome - _totalExpense;
+      _transactions
+        ..clear()
+        ..addAll(all);
+      _categorySummaries = CategoryMonthSummary.fromTransactions(all);
+      _groupedTransactions = {};
+      _hasMore = false;
+      _offset = all.length;
+    });
+  }
+
   /// Перечитывает транзакции из локальной БД с использованием пагинации
   /// и фильтрации на уровне базы данных.
   void _loadTransactions({bool isLoadMore = false}) {
     if (_isLoading) return;
+
+    if (_viewMode == DashboardViewMode.categories) {
+      if (!isLoadMore) _loadCategorySummaries();
+      return;
+    }
 
     if (!isLoadMore) {
       setState(() {
@@ -130,21 +164,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _transactions.addAll(newBatch);
     _offset += newBatch.length;
 
-    final Map<DateTime, Map<Category, List<Transaction>>> grouped =
-        isLoadMore ? Map.from(_groupedTransactions) : {};
-
-    for (var t in newBatch) {
-      final date = DateTime(t.date.year, t.date.month, t.date.day);
-      grouped.putIfAbsent(date, () => {});
-      grouped[date]!.putIfAbsent(t.category, () => []);
-      grouped[date]![t.category]!.add(t);
-    }
-
-    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final Map<DateTime, Map<Category, List<Transaction>>> sortedGrouped = {};
-    for (var date in sortedDates) {
-      sortedGrouped[date] = grouped[date]!;
-    }
+    final sortedGrouped = DayGroupWidget.groupByDay(
+      newBatch,
+      appendTo: isLoadMore ? _groupedTransactions : const {},
+    );
 
     setState(() {
       _groupedTransactions = sortedGrouped;
@@ -183,15 +206,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _openTransactionSheet(Transaction transaction) {
-    showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddTransactionSheet(
-        transactionToEdit: transaction,
-      ),
-    );
+  /// Тап по операции открывает карточку «только для чтения»; правка и
+  /// удаление — её кнопками.
+  Future<void> _openTransactionDetails(Transaction transaction) async {
+    final action = await TransactionDetailsSheet.show(context, transaction);
+    if (!mounted || action == null) return;
+    switch (action) {
+      case TransactionDetailsAction.edit:
+        showModalBottomSheet<bool>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => AddTransactionSheet(
+            transactionToEdit: transaction,
+          ),
+        );
+      case TransactionDetailsAction.delete:
+        _deleteTransaction(transaction);
+    }
   }
 
   void _deleteTransaction(Transaction transaction) {
@@ -247,43 +279,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: StreamBuilder<bool>(
-              stream: ApiService.instance.authStream,
-              builder: (context, _) {
-                final isAuth = ApiService.instance.isAuthenticated;
-                if (!isAuth) {
-                  return TextButton(
-                    onPressed: _openAuthScreen,
-                    style: TextButton.styleFrom(
-                      foregroundColor: colorScheme.primary,
-                      backgroundColor:
-                          colorScheme.primary.withValues(alpha: 0.1),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      context.l10n.login_btn_short,
-                      maxLines: 1,
-                      style: textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  );
-                }
-
-                return GestureDetector(
-                  onTap: _openProfile,
-                  child: UserAvatar(
-                    radius: 18,
-                    avatarUrl: ApiService.instance.avatarUrl,
-                    defaultIcon: Icons.person,
-                  ),
-                );
-              },
+            child: DashboardAccountAction(
+              onLogin: _openAuthScreen,
+              onOpenProfile: _openProfile,
             ),
           ),
         ],
@@ -317,6 +315,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         expense: _totalExpense,
                       ),
                       const SizedBox(height: 16),
+                      DashboardViewSwitcher(
+                        mode: _viewMode,
+                        onChanged: _onViewModeChanged,
+                      ),
+                      const SizedBox(height: 8),
                       if (_transactions.isEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0),
@@ -333,21 +336,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              if (_transactions.isNotEmpty)
+              if (_transactions.isNotEmpty &&
+                  _viewMode == DashboardViewMode.categories)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final summary = _categorySummaries[index];
+                        return CategoryMonthGroup(
+                          key: ValueKey(
+                              'category_month_${summary.category.name}'),
+                          summary: summary,
+                          onTransactionTap: _openTransactionDetails,
+                          onTransactionDelete: _deleteTransaction,
+                        );
+                      },
+                      childCount: _categorySummaries.length,
+                    ),
+                  ),
+                ),
+              if (_transactions.isNotEmpty &&
+                  _viewMode == DashboardViewMode.days)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final date = _groupedTransactions.keys.elementAt(index);
-                        final categories = _groupedTransactions[date]!;
 
                         return DayGroupWidget(
+                          key: ValueKey('day_${date.millisecondsSinceEpoch}'),
                           date: date,
-                          categories: categories,
-                          showHintOnFirstCategory:
+                          transactions: _groupedTransactions[date]!,
+                          showHintOnFirstTransaction:
                               index == 0 && _shouldShowSwipeHint,
-                          onTransactionTap: _openTransactionSheet,
+                          onTransactionTap: _openTransactionDetails,
                           onTransactionDelete: _deleteTransaction,
                           onHintShown: () {
                             PreferencesService.instance

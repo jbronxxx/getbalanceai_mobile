@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
-import '../dashboard/category_group_widget.dart';
+import '../category_style.dart';
 
 /// Чип категории с иконкой и цветом категории.
 class CategoryChip extends StatelessWidget {
@@ -21,9 +21,9 @@ class CategoryChip extends StatelessWidget {
 
     return ChoiceChip(
       avatar: Icon(
-        CategoryGroupWidget.getCategoryIcon(category),
+        CategoryStyle.icon(category),
         size: 18,
-        color: CategoryGroupWidget.getCategoryColor(category),
+        color: CategoryStyle.color(category),
       ),
       label: Text(category.getLocalizedName(context)),
       selected: isSelected,

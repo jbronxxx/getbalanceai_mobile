@@ -373,7 +373,7 @@ API_BASE_URL=http://localhost:8000/api/v1
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(LanguageManager.l10n.total_balance), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.month_total), findsOneWidget);
       expect(find.text(LanguageManager.l10n.income_title), findsOneWidget);
       expect(find.text(LanguageManager.l10n.expense_title), findsOneWidget);
       expect(tester.takeException(), isNull);

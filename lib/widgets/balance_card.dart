@@ -55,7 +55,7 @@ class BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.total_balance,
+            context.l10n.month_total,
             style: textTheme.titleSmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.82),
               letterSpacing: 0.3,
