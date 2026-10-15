@@ -46,7 +46,7 @@
   "logout_info": "Сіз жүйеден шықтыңыз",
   "logout_error_title": "Шығу кезіндегі қате",
   "transaction_deleted": "Жазба жойылды",
-  "welcome_lang_title": "Тілді таңдаңыз / Select Language",
+  "welcome_lang_title": "Тілді таңдаңыз",
   "welcome_lang_subtitle": "Қолданбамен ыңғайлы жұмыс істеу үшін",
   "welcome_currency_title": "Негізгі валюта",
   "welcome_currency_subtitle": "Бұл валютада жалпы баланс пен бюджеттер есептеледі",
@@ -359,10 +359,5 @@
   "structure_total_expenses": "барлық шығын",
   "structure_no_expenses": "шығын жоқ",
   "structure_more_categories": "{count, plural, other{тағы {count} санат}}",
-  "report_btn_short": "Есеп",
-  "insights_guest_title": "AI-дан жеке кеңестер",
-  "insights_guest_login_btn": "Кіріп, талдау алу",
-  "insight_demo_1": "Тамаққа шығын өткен аймен салыстырғанда 18%-ға өсті — негізінен жұмыс күндері кафеде.",
-  "insight_demo_2": "Таксиге лимит қойып, сапарларды алдын ала жоспарласаңыз, шамамен 10% үнемдеуге болады.",
-  "insight_demo_3": "Осы қарқынмен ай бюджетіне аздаған қормен сыясыз."
+  "report_btn_short": "Есеп"
 }

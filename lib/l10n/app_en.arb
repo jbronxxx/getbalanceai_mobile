@@ -46,7 +46,7 @@
   "logout_info": "Logged out successfully",
   "logout_error_title": "Error logging out",
   "transaction_deleted": "Transaction deleted",
-  "welcome_lang_title": "Select Language / Выберите язык",
+  "welcome_lang_title": "Choose language",
   "welcome_lang_subtitle": "For a comfortable experience with the app",
   "welcome_currency_title": "Main Currency",
   "welcome_currency_subtitle": "Total balance and budgets are calculated in this currency",
@@ -390,10 +390,5 @@
       }
     }
   },
-  "report_btn_short": "Report",
-  "insights_guest_title": "Personal AI tips",
-  "insights_guest_login_btn": "Sign in and get analysis",
-  "insight_demo_1": "Food spending is 18% higher than last month — mostly cafes on weekdays.",
-  "insight_demo_2": "You can save about 10% by setting a limit on taxis and planning trips ahead.",
-  "insight_demo_3": "At this pace you will stay within the month budget with a small reserve."
+  "report_btn_short": "Report"
 }

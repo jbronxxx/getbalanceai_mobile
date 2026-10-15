@@ -46,7 +46,7 @@
   "logout_info": "Вы вышли из системы",
   "logout_error_title": "Ошибка при выходе",
   "transaction_deleted": "Запись удалена",
-  "welcome_lang_title": "Выберите язык / Tanlang",
+  "welcome_lang_title": "Выберите язык",
   "welcome_lang_subtitle": "Для комфортной работы с приложением",
   "welcome_currency_title": "Основная валюта",
   "welcome_currency_subtitle": "В этой валюте рассчитывается общий баланс и бюджеты",
@@ -359,10 +359,5 @@
   "structure_total_expenses": "всего трат",
   "structure_no_expenses": "нет трат",
   "structure_more_categories": "{count, plural, one{ещё {count} категория} few{ещё {count} категории} many{ещё {count} категорий} other{ещё {count} категории}}",
-  "report_btn_short": "Отчёт",
-  "insights_guest_title": "Персональные советы от AI",
-  "insights_guest_login_btn": "Войти и получить анализ",
-  "insight_demo_1": "Траты на питание выросли на 18% к прошлому месяцу — в основном кафе в будни.",
-  "insight_demo_2": "Задав лимит на такси и планируя поездки заранее, можно сэкономить около 10%.",
-  "insight_demo_3": "При таком темпе вы уложитесь в бюджет месяца с небольшим запасом."
+  "report_btn_short": "Отчёт"
 }

@@ -544,7 +544,7 @@ void main() {
 
       // Шаг 1: отображается выбор языка без флагов и без иконки настроек
       expect(find.byIcon(Icons.tune_rounded), findsNothing);
-      expect(find.text('Выберите язык / Tanlang'), findsOneWidget);
+      expect(find.text('Выберите язык'), findsOneWidget);
       expect(find.text('Для комфортной работы с приложением'), findsOneWidget);
       expect(find.text('Русский'), findsOneWidget);
       expect(find.text('O\'zbekcha'), findsOneWidget);
