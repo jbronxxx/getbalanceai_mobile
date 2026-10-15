@@ -142,6 +142,21 @@ class LocalDbService {
     return results;
   }
 
+  /// Возвращает транзакции за период (границы из [ReportPeriod] включительно),
+  /// от новых к старым. Фильтрация происходит на уровне БД.
+  List<Transaction> getTransactionsInRange(ReportPeriod period) {
+    final query = _transactionBox.query(
+      Transaction_.dateMilliseconds.greaterOrEqual(period.startMilliseconds) &
+          Transaction_.dateMilliseconds
+              .lessThan(period.endExclusiveMilliseconds),
+    )..order(Transaction_.dateMilliseconds, flags: Order.descending);
+
+    final q = query.build();
+    final results = q.find();
+    q.close();
+    return results;
+  }
+
   /// Считает общие итоги (доход и расход) за выбранный месяц с динамической
   /// конвертацией всех операций в текущую валюту аккаунта.
   Map<String, double> getMonthTotals(int month, int year,

@@ -67,7 +67,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Лимиты'), findsOneWidget);
+    expect(find.text('Финансы'), findsOneWidget);
   });
 }
 
