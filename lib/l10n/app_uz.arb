@@ -52,7 +52,7 @@
   "welcome_currency_subtitle": "Umumiy balans va byudjetlar ushbu valyutada hisoblanadi",
   "currency_rate_hint": "kurs bo'yicha",
   "continue_btn": "Davom etish",
-  "total_balance": "Umumiy balans",
+  "month_total": "Oy yakuni",
   "expense_title": "Xarajat",
   "income_title": "Daromad",
   "no_transactions": "Bu oyda yozuvlar yo'q",
@@ -339,5 +339,10 @@
   "insights_not_generated": "Bu oy uchun AI-tahlil hali tayyorlanmagan.",
   "insights_generate_btn": "Tahlil tayyorlash",
   "insights_future_month": "Bu oy hali boshlanmagan — tahlil qiladigan narsa yo'q.",
-  "insights_no_transactions": "Bu oyda operatsiyalar yo'q — hozircha tahlil qiladigan narsa yo'q."
+  "insights_no_transactions": "Bu oyda operatsiyalar yo'q — hozircha tahlil qiladigan narsa yo'q.",
+  "view_by_days": "Kunlar bo'yicha",
+  "view_by_categories": "Toifalar bo'yicha",
+  "edit_btn": "Tahrirlash",
+  "details_original_amount": "Chek summasi",
+  "details_in_base_currency": "Asosiy valyutada"
 }

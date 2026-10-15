@@ -175,8 +175,15 @@ class CurrencyFormatter {
     }
   }
 
+  /// Типографский минус для отображения сумм.
+  static const String typographicMinus = '\u2212';
+
   /// Виджет для безопасного отображения текста суммы.
   /// Использует FittedBox или ellipsis, чтобы длинные числа (UZS/KZT) не ломали верстку.
+  ///
+  /// Только для экрана: минус заменяется типографским «−» (ширина как у «+»),
+  /// цифры моноширинные, чтобы суммы в колонках не «прыгали». Для файлов
+  /// и полей ввода используйте [format].
   static Widget formatText(
     double amount, {
     TextStyle? style,
@@ -187,17 +194,21 @@ class CurrencyFormatter {
     bool showSign = false,
     Currency? currency,
     String? locale,
+    String prefix = '',
   }) {
+    final formatted = format(
+      amount,
+      showSymbol: showSymbol,
+      decimalDigits: decimalDigits,
+      showSign: showSign,
+      currency: currency,
+      locale: locale,
+    ).replaceAll('-', typographicMinus);
     final text = Text(
-      format(
-        amount,
-        showSymbol: showSymbol,
-        decimalDigits: decimalDigits,
-        showSign: showSign,
-        currency: currency,
-        locale: locale,
+      '$prefix$formatted',
+      style: (style ?? const TextStyle()).copyWith(
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
-      style: style,
       textAlign: textAlign,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

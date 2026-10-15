@@ -52,7 +52,7 @@
   "welcome_currency_subtitle": "В этой валюте рассчитывается общий баланс и бюджеты",
   "currency_rate_hint": "по курсу",
   "continue_btn": "Продолжить",
-  "total_balance": "Общий баланс",
+  "month_total": "Итог месяца",
   "expense_title": "Расход",
   "income_title": "Доход",
   "no_transactions": "Нет записей за этот месяц",
@@ -339,5 +339,10 @@
   "insights_not_generated": "AI-анализ за этот месяц ещё не сформирован.",
   "insights_generate_btn": "Сформировать анализ",
   "insights_future_month": "Этот месяц ещё не наступил — анализировать пока нечего.",
-  "insights_no_transactions": "За этот месяц нет операций — анализировать пока нечего."
+  "insights_no_transactions": "За этот месяц нет операций — анализировать пока нечего.",
+  "view_by_days": "По дням",
+  "view_by_categories": "По категориям",
+  "edit_btn": "Редактировать",
+  "details_original_amount": "Сумма чека",
+  "details_in_base_currency": "В основной валюте"
 }

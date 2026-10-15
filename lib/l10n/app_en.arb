@@ -52,7 +52,7 @@
   "welcome_currency_subtitle": "Total balance and budgets are calculated in this currency",
   "currency_rate_hint": "at rate",
   "continue_btn": "Continue",
-  "total_balance": "Total Balance",
+  "month_total": "Month total",
   "expense_title": "Expense",
   "income_title": "Income",
   "no_transactions": "No transactions for this month",
@@ -346,5 +346,10 @@
   "insights_not_generated": "The AI analysis for this month has not been generated yet.",
   "insights_generate_btn": "Generate analysis",
   "insights_future_month": "This month has not started yet — there is nothing to analyze.",
-  "insights_no_transactions": "No transactions this month — there is nothing to analyze yet."
+  "insights_no_transactions": "No transactions this month — there is nothing to analyze yet.",
+  "view_by_days": "By day",
+  "view_by_categories": "By category",
+  "edit_btn": "Edit",
+  "details_original_amount": "Receipt amount",
+  "details_in_base_currency": "In main currency"
 }

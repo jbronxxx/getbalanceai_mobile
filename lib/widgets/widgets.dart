@@ -1,6 +1,7 @@
 export 'ai_sparkles_loader.dart';
 export 'app_alerts.dart';
 export 'balance_card.dart';
+export 'category_style.dart';
 export 'custom_pull_to_refresh.dart';
 export 'glass_container.dart';
 export 'liquid_glass_app_bar.dart';
