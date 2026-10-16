@@ -39,6 +39,10 @@ class LocalDbService {
   /// с сервера даёт один сигнал, и только если пришли изменения (не 304).
   static final ValueNotifier<int> transactionsChanged = ValueNotifier(0);
 
+  /// Растёт при сохранении или удалении лимита пользователем (изменения
+  /// с сервера при синхронизации сообщает [transactionsChanged]).
+  static final ValueNotifier<int> budgetsChanged = ValueNotifier(0);
+
   late final Store _store;
   late final Box<Transaction> _transactionBox;
   late final Box<Budget> _budgetBox;
@@ -490,6 +494,7 @@ class LocalDbService {
     _linkToExistingBudget(budget);
     final id = _budgetBox.put(budget);
     AppLogger.d('[LocalDbService] Saved budget localId: $id');
+    budgetsChanged.value++;
   }
 
   /// Ищет локальную строку, которую должен обновить этот лимит.
@@ -600,6 +605,7 @@ class LocalDbService {
   bool deleteBudget(int id) {
     final removed = _budgetBox.remove(id);
     AppLogger.d('[LocalDbService] Removed budget $id: $removed');
+    if (removed) budgetsChanged.value++;
     return removed;
   }
 

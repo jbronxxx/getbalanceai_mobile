@@ -18,13 +18,30 @@ part 'insights_state.dart';
 ///   отчёт, пока данные месяца почти не менялись;
 /// * прошлые месяцы и смена валюты/языка — только сохранённый отчёт
 ///   (`generate=false`); если его нет — [InsightsAwaitingRequest] с кнопкой;
-/// * полученные отчёты кэшируются на сессию (очищается при выходе).
+/// * полученные отчёты кэшируются на сессию (очищается при выходе);
+/// * изменение операций или лимитов (в том числе загрузка с сервера при
+///   синхронизации) сбрасывает кэш сессии: видимая вкладка сразу
+///   запрашивает отчёт заново, скрытая — при следующем открытии. Бэкенд
+///   перегенерирует отчёт текущего месяца, а сохранённый устаревший отдаёт
+///   с пометкой [InsightsLoaded.isOutdated], чтобы суммы в тексте не
+///   выдавались за актуальные.
 class InsightsCubit extends Cubit<InsightsState> {
   final ApiService _api;
   final Connectivity _connectivity;
   CancelToken? _cancelToken;
   StreamSubscription<bool>? _authSub;
   bool _hasLoadedOnce = false;
+
+  /// Вкладка аналитики видна пользователю ([setActive]).
+  bool _isActive = false;
+
+  /// Данные менялись, пока вкладка была скрыта.
+  bool _dataChangedWhileHidden = false;
+
+  /// Несколько изменений подряд (сохранение операции и синхронизация) —
+  /// один запрос отчёта.
+  Timer? _dataChangeDebounce;
+  static const _dataChangeDelay = Duration(milliseconds: 400);
 
   /// Отчёты, полученные за сессию: ключ — период, валюта и язык.
   final Map<String, InsightsLoaded> _cache = {};
@@ -54,6 +71,8 @@ class InsightsCubit extends Cubit<InsightsState> {
     CurrencyFormatter.currencyNotifier
         .addListener(_onCurrencyOrLanguageChanged);
     LanguageManager.languageNotifier.addListener(_onCurrencyOrLanguageChanged);
+    LocalDbService.transactionsChanged.addListener(_onDataChanged);
+    LocalDbService.budgetsChanged.addListener(_onDataChanged);
     _authSub = _api.authStream.listen((isAuthenticated) {
       if (isClosed) return;
       if (isAuthenticated) {
@@ -94,6 +113,28 @@ class InsightsCubit extends Cubit<InsightsState> {
     return null;
   }
 
+  /// Вкладка аналитики показана или скрыта.
+  void setActive(bool active) => _isActive = active;
+
+  /// Данные менялись, пока вкладка была скрыта, — показанный отчёт нужно
+  /// запросить заново.
+  bool get hasDataChangedWhileHidden => _dataChangedWhileHidden;
+
+  /// Операции или лимиты изменились: отчёты сессии больше не соответствуют
+  /// данным.
+  void _onDataChanged() {
+    _cache.clear();
+    if (!_hasLoadedOnce) return;
+    if (!_isActive) {
+      _dataChangedWhileHidden = true;
+      return;
+    }
+    _dataChangeDebounce?.cancel();
+    _dataChangeDebounce = Timer(_dataChangeDelay, () {
+      if (!isClosed) resolvePeriod();
+    });
+  }
+
   /// Валюта или язык сменились: только сохранённые отчёты, без генерации
   /// (событие приходит и при неактивной вкладке).
   void _onCurrencyOrLanguageChanged() {
@@ -123,6 +164,8 @@ class InsightsCubit extends Cubit<InsightsState> {
   /// [force] — не брать отчёт из кэша сессии (pull-to-refresh).
   Future<void> loadInsights({bool force = false, bool generate = true}) async {
     _hasLoadedOnce = true;
+    _dataChangedWhileHidden = false;
+    _dataChangeDebounce?.cancel();
     _cancelToken?.cancel();
 
     if (!_api.isAuthenticated) {
@@ -238,11 +281,15 @@ class InsightsCubit extends Cubit<InsightsState> {
               ? parsed.insights
               : [LanguageManager.l10n.insight_no_data],
           generatedAt: parsed.generatedAt,
+          isOutdated: parsed.isOutdated,
+          canRefresh: parsed.state != InsightsReportState.quotaExceeded,
           selectedMonth: _selectedMonth,
           selectedYear: _selectedYear,
         );
-        // Сообщение о квоте — не отчёт: в кэш не кладём.
+        // Сообщение о квоте и устаревший отчёт — не актуальный отчёт: в кэш
+        // не кладём, следующее открытие спросит бэкенд снова.
         if (parsed.state == InsightsReportState.ready &&
+            !parsed.isOutdated &&
             parsed.insights.isNotEmpty) {
           _cache[requestKey] = loaded;
         }
@@ -256,6 +303,9 @@ class InsightsCubit extends Cubit<InsightsState> {
         .removeListener(_onCurrencyOrLanguageChanged);
     LanguageManager.languageNotifier
         .removeListener(_onCurrencyOrLanguageChanged);
+    LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    LocalDbService.budgetsChanged.removeListener(_onDataChanged);
+    _dataChangeDebounce?.cancel();
     _authSub?.cancel();
     _cancelToken?.cancel();
     return super.close();

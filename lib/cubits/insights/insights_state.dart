@@ -57,9 +57,19 @@ class InsightsLoaded extends InsightsState {
   final List<String> insights;
   final DateTime? generatedAt;
 
+  /// Отчёт сохранённый, а операции или лимиты месяца изменились после его
+  /// генерации: суммы в тексте могут не совпадать с экраном «Бюджет».
+  final bool isOutdated;
+
+  /// Устаревший отчёт можно перегенерировать сейчас (`false` — суточная
+  /// квота исчерпана, обновить можно завтра).
+  final bool canRefresh;
+
   const InsightsLoaded({
     required this.insights,
     this.generatedAt,
+    this.isOutdated = false,
+    this.canRefresh = true,
     required super.selectedMonth,
     required super.selectedYear,
   });

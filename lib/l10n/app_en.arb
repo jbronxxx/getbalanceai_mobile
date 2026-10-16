@@ -239,7 +239,7 @@
   "report_period_custom": "Custom range",
   "report_format_label": "Format",
   "report_exporting": "Preparing report...",
-  "report_save_action": "Save",
+  "report_save_action": "Download report",
   "report_share_action": "Share",
   "report_saved": "Report saved",
   "report_export_error": "Could not create the report",
@@ -390,5 +390,8 @@
       }
     }
   },
-  "report_btn_short": "Report"
+  "report_btn_short": "Report",
+  "insights_outdated_note": "Your data changed after this report — amounts in the tips may differ from the current ones.",
+  "insights_outdated_refresh": "Update report",
+  "insights_outdated_tomorrow": "A new report will be available tomorrow: the daily update limit is reached."
 }

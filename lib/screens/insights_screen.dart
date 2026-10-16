@@ -6,6 +6,7 @@ import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/insights/expense_structure_section.dart';
 import '../widgets/insights/insights_generate_card.dart';
+import '../widgets/insights/insights_outdated_note.dart';
 import '../widgets/insights/insights_unavailable_card.dart';
 import '../widgets/insights/report_export_action.dart';
 import '../widgets/period/period.dart';
@@ -46,6 +47,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
     }
     SelectedPeriodService.instance.periodNotifier.addListener(_onPeriodChanged);
 
+    _cubit.setActive(widget.isActive);
     if (widget.isActive) _activate();
   }
 
@@ -55,13 +57,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
     if (widget.isActive) _activate();
   }
 
-  /// Применяет общий период к кубиту; правила генерации — в [InsightsCubit].
+  /// Применяет общий период к кубиту и перезапрашивает отчёт, если данные
+  /// менялись, пока вкладка была скрыта; правила генерации — в [InsightsCubit].
   void _activate() {
     final period = SelectedPeriodService.instance.period;
     if (_cubit.selectedMonth != period.month ||
         _cubit.selectedYear != period.year) {
       _cubit.setPeriod(month: period.month, year: period.year);
-    } else if (!_cubit.hasLoadedOnce) {
+    } else if (!_cubit.hasLoadedOnce || _cubit.hasDataChangedWhileHidden) {
       _cubit.resolvePeriod();
     }
   }
@@ -76,6 +79,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
       }
       _cubit = widget.cubit!;
     }
+    _cubit.setActive(widget.isActive);
     if (widget.isActive && !oldWidget.isActive) {
       _activate();
     }
@@ -201,8 +205,15 @@ class _InsightsBody extends StatelessWidget {
       return _InsightCard(text: state.hint);
     }
     if (state is InsightsLoaded) {
+      final cubit = context.read<InsightsCubit>();
       return Column(
         children: [
+          if (state.isOutdated)
+            InsightsOutdatedNote(
+              onRefresh: state.canRefresh
+                  ? () => cubit.loadInsights(force: true)
+                  : null,
+            ),
           for (final insight in state.insights) _InsightCard(text: insight),
         ],
       );
