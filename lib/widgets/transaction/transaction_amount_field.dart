@@ -29,7 +29,6 @@ class TransactionAmountField extends StatelessWidget {
     final textTheme = theme.textTheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final enteredAmount = CurrencyFormatter.parseInput(controller.text) ?? 0.0;
     final isDifferentCurrency = currency != CurrencyFormatter.currentCurrency;
 
     return Column(
@@ -98,30 +97,37 @@ class TransactionAmountField extends StatelessWidget {
             ),
           ),
         ),
-        if (isDifferentCurrency && enteredAmount > 0) ...[
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.currency_exchange,
-                  size: 14,
-                  color: colorScheme.outline,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _rateHint(context, enteredAmount),
-                    style: textTheme.bodySmall?.copyWith(
+        // Подсказка слушает поле сама: ввод суммы не перестраивает форму
+        if (isDifferentCurrency)
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) {
+              final enteredAmount =
+                  CurrencyFormatter.parseInput(value.text) ?? 0.0;
+              if (enteredAmount <= 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(left: 4, right: 4, top: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.currency_exchange,
+                      size: 14,
                       color: colorScheme.outline,
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _rateHint(context, enteredAmount),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
-        ],
       ],
     );
   }
