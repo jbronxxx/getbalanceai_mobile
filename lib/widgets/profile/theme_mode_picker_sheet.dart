@@ -72,6 +72,18 @@ class ThemeModePickerSheet extends StatelessWidget {
     }
   }
 
+  /// Иконка режима темы для пункта списка.
+  static IconData iconFor(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.brightness_auto_outlined;
+      case ThemeMode.light:
+        return Icons.light_mode_outlined;
+      case ThemeMode.dark:
+        return Icons.dark_mode_outlined;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -79,58 +91,59 @@ class ThemeModePickerSheet extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     final currentMode = PreferencesService.instance.themeModeNotifier.value;
+    final accent = AppColors.of(context).accentText;
 
     return Container(
-      padding: EdgeInsets.only(
-        top: 10,
-        left: 24,
-        right: 24,
-        bottom: 24 + MediaQuery.of(context).padding.bottom,
-      ),
+      padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
       decoration: AppSheet.decoration(context),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Center(
-              child: SheetHandle(),
-            ),
-            Text(
-              getThemeTitle(context),
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: SheetHandle(),
               ),
-            ),
-            const SizedBox(height: 16),
-            ...ThemeMode.values.map((mode) {
-              final isSelected = currentMode == mode;
-              final label = getThemeModeLabel(context, mode);
-
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  label,
-                  style: textTheme.bodyLarge?.copyWith(
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected
-                        ? AppColors.of(context).accentText
-                        : colorScheme.onSurface,
-                  ),
+              Text(
+                getThemeTitle(context),
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
                 ),
-                trailing: isSelected
-                    ? Icon(Icons.check, color: AppColors.of(context).accentText)
-                    : null,
-                onTap: () {
-                  PreferencesService.instance.saveThemeMode(mode);
-                  Navigator.pop(context);
-                  onThemeChanged?.call();
-                },
-              );
-            }),
-          ],
+              ),
+              const SizedBox(height: 16),
+              ...ThemeMode.values.map((mode) {
+                final isSelected = currentMode == mode;
+                final label = getThemeModeLabel(context, mode);
+
+                return ListTile(
+                  key: ValueKey('theme_mode_${mode.name}'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    iconFor(mode),
+                    color: isSelected ? accent : colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(
+                    label,
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? accent : colorScheme.onSurface,
+                    ),
+                  ),
+                  trailing:
+                      isSelected ? Icon(Icons.check, color: accent) : null,
+                  onTap: () {
+                    PreferencesService.instance.saveThemeMode(mode);
+                    Navigator.pop(context);
+                    onThemeChanged?.call();
+                  },
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );
