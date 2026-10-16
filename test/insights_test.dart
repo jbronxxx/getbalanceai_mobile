@@ -9,6 +9,7 @@ import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
+import 'package:getbalanceai_mobile/widgets/insights/report_export_action.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
 
 void main() {
@@ -249,6 +250,19 @@ void main() {
     await tester.pump();
 
     expect(find.byType(InsightsScreen), findsNothing);
+  });
+
+  testWidgets('InsightsScreen shows report export button in app bar',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen(isActive: false)));
+    await tester.pump();
+
+    expect(find.byType(ReportExportAction), findsOneWidget);
+    expect(find.byTooltip('Выгрузка отчёта'), findsOneWidget);
   });
 
   testWidgets(
