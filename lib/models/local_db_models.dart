@@ -296,6 +296,9 @@ class Transaction {
 
 /// Лимит расходов по категории на конкретный месяц/год.
 ///
+/// Сумма лимита — в его собственной валюте [currency], не зависящей от
+/// базовой валюты аккаунта.
+///
 /// `spent`/`remaining` — снимок состояния на момент сохранения лимита;
 /// актуальные потраченные суммы для отображения в UI пересчитываются на
 /// лету через [LocalDbService.getSpentForCategory], а не берутся из этих
@@ -310,6 +313,12 @@ class Budget {
 
   final String dbCategory;
   final double limitAmount;
+
+  /// Код валюты лимита. `null` — лимит из версии без валюты лимита, он
+  /// в базовой валюте; при смене базовой валюты за ним закрепляется
+  /// прежняя (`LocalDbService.pinLegacyBudgetsCurrency`).
+  String? currencyCode;
+
   final int month;
   final int year;
   final double spent;
@@ -321,6 +330,7 @@ class Budget {
     this.serverId,
     required this.dbCategory,
     required this.limitAmount,
+    this.currencyCode,
     required this.month,
     required this.year,
     required this.spent,
@@ -330,6 +340,27 @@ class Budget {
 
   @Transient()
   Category get category => Category.fromString(dbCategory);
+
+  @Transient()
+  Currency get currency {
+    final code = currencyCode?.toUpperCase();
+    return Currency.values.firstWhere(
+      (c) => c.code == code,
+      orElse: () => CurrencyFormatter.currentCurrency,
+    );
+  }
+
+  /// Лимит в базовой валюте по текущему курсу — для сводки по всем лимитам.
+  @Transient()
+  double get limitInBaseCurrency {
+    final base = CurrencyFormatter.currentCurrency;
+    if (currency == base) return limitAmount;
+    return CurrencyExchangeService.instance.convert(
+      limitAmount,
+      from: currency,
+      to: base,
+    );
+  }
 
   /// Разбирает ответ бэкенда (FastAPI) в локальную модель.
   /// Устойчив к отсутствующим полям и поддерживает парсинг `limit_amount`,
@@ -343,6 +374,7 @@ class Budget {
       serverId: json['id'] as String?,
       dbCategory: json['category'] as String? ?? Category.other.name,
       limitAmount: parseAmount(json['limit_amount']),
+      currencyCode: (json['currency'] as String?)?.toUpperCase(),
       month: parseInteger(json['month']),
       year: parseInteger(json['year']),
       spent: parseAmount(json['spent']),
@@ -361,6 +393,8 @@ class Budget {
       if (serverId != null) 'id': serverId,
       'category': category.name,
       'limit_amount': limitAmount,
+      // Без валюты сервер сохранит валюту существующего лимита
+      if (currencyCode != null) 'currency': currencyCode,
       'month': month,
       'year': year,
       if (isDeleted) 'is_deleted': true,

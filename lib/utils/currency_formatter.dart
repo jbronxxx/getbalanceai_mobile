@@ -66,7 +66,7 @@ class CurrencyFormatter {
     _currentCurrency = currency;
 
     if (LocalDbService.isInitialized) {
-      LocalDbService.instance.convertBudgetsCurrency(oldCurrency, currency);
+      LocalDbService.instance.pinLegacyBudgetsCurrency(oldCurrency);
     }
 
     // Сохраняем выбор в постоянное хранилище

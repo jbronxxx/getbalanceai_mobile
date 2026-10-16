@@ -5,14 +5,22 @@ import '../../services/services.dart';
 import '../../utils/utils.dart';
 import '../app_sheet.dart';
 import '../keyboard_inset_padding.dart';
+import '../profile/currency_picker_sheet.dart';
+import '../transaction/transaction.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
 /// Модальный лист создания или редактирования лимита бюджета.
+///
+/// Валюта лимита выбирается бейджем в поле суммы, как в форме операции
+/// (по умолчанию — базовая). Категория выбирается чипами. Категории из
+/// [limitedCategories] (лимит в этом месяце уже есть) не предлагаются; при
+/// редактировании категория не меняется.
 class AddBudgetSheet extends StatefulWidget {
   final int selectedMonth;
   final int selectedYear;
   final Budget? budgetToEdit;
+  final Set<Category> limitedCategories;
   final VoidCallback onSaved;
 
   const AddBudgetSheet({
@@ -20,6 +28,7 @@ class AddBudgetSheet extends StatefulWidget {
     required this.selectedMonth,
     required this.selectedYear,
     this.budgetToEdit,
+    this.limitedCategories = const {},
     required this.onSaved,
   });
 
@@ -28,6 +37,7 @@ class AddBudgetSheet extends StatefulWidget {
     required int selectedMonth,
     required int selectedYear,
     Budget? budgetToEdit,
+    Set<Category> limitedCategories = const {},
     required VoidCallback onSaved,
   }) {
     return showModalBottomSheet(
@@ -38,6 +48,7 @@ class AddBudgetSheet extends StatefulWidget {
         selectedMonth: selectedMonth,
         selectedYear: selectedYear,
         budgetToEdit: budgetToEdit,
+        limitedCategories: limitedCategories,
         onSaved: onSaved,
       ),
     );
@@ -48,21 +59,58 @@ class AddBudgetSheet extends StatefulWidget {
 }
 
 class _AddBudgetSheetState extends State<AddBudgetSheet> {
+  late final List<Category> _categories;
+  late final List<Category> _frequentCategories;
   late Category _selectedCategory;
+  late Currency _selectedCurrency;
   late final TextEditingController _amountController;
   String? _amountError;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.budgetToEdit?.category ?? Category.food;
+    final edited = widget.budgetToEdit?.category;
+    final limited = widget.limitedCategories;
+    _categories = edited != null
+        ? [edited]
+        : [...Category.expenseCategories.where((c) => !limited.contains(c))];
+    _frequentCategories = _loadFrequentCategories();
+    // Как и раньше — «Питание», если на него ещё нет лимита, иначе самая
+    // частая из свободных категорий
+    if (edited != null) {
+      _selectedCategory = edited;
+    } else if (_categories.contains(Category.food) || _categories.isEmpty) {
+      _selectedCategory = Category.food;
+    } else {
+      _selectedCategory = CategoryChipsSelector.orderByFrequency(
+        _categories,
+        _frequentCategories,
+      ).first;
+    }
+    final budget = widget.budgetToEdit;
+    _selectedCurrency = budget?.currency ?? CurrencyFormatter.currentCurrency;
     _amountController = TextEditingController(
-      text: widget.budgetToEdit != null
-          ? CurrencyFormatter.format(widget.budgetToEdit!.limitAmount,
-              showSymbol: false)
+      text: budget != null
+          ? CurrencyFormatter.format(
+              budget.limitAmount,
+              showSymbol: false,
+              currency: _selectedCurrency,
+            )
           : '',
     );
     _amountController.addListener(_onAmountChanged);
+  }
+
+  /// Частые категории расходов; без инициализированной базы — пусто.
+  List<Category> _loadFrequentCategories() {
+    if (!LocalDbService.isInitialized) return const [];
+    try {
+      return LocalDbService.instance
+          .getFrequentCategories(TransactionType.expense);
+    } catch (e, s) {
+      AppLogger.w('[AddBudget] Frequent categories failed', e, s);
+      return const [];
+    }
   }
 
   void _onAmountChanged() {
@@ -76,6 +124,33 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     super.dispose();
+  }
+
+  /// Меняет валюту лимита и пересчитывает введённую сумму по текущему
+  /// курсу: лимит тот же, меняется только валюта, в которой он выражен.
+  Future<void> _showCurrencyPicker() async {
+    final previous = _selectedCurrency;
+    final picked = await CurrencyPickerSheet.show(
+      context,
+      selectedCurrency: previous,
+      updateGlobalCurrency: false,
+    );
+    if (picked == null || picked == previous || !mounted) return;
+    setState(() {
+      _selectedCurrency = picked;
+      _amountError = null;
+      final currentAmount =
+          CurrencyFormatter.parseInput(_amountController.text);
+      if (currentAmount != null && currentAmount > 0) {
+        final converted = CurrencyExchangeService.instance
+            .convert(currentAmount, from: previous, to: picked);
+        _amountController.text = CurrencyFormatter.format(
+          converted,
+          showSymbol: false,
+          currency: picked,
+        );
+      }
+    });
   }
 
   void _saveBudget() {
@@ -95,13 +170,16 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       return;
     }
 
-    final currentCurrency = CurrencyFormatter.currentCurrency;
-    if (amount > currentCurrency.maxAmount) {
+    final currency = _selectedCurrency;
+    if (amount > currency.maxAmount) {
       setState(() {
         _amountError = context.l10n.amount_requirement_max(
-          CurrencyFormatter.format(currentCurrency.maxAmount,
-              showSymbol: false),
-          currentCurrency.code,
+          CurrencyFormatter.format(
+            currency.maxAmount,
+            showSymbol: false,
+            currency: currency,
+          ),
+          currency.code,
         );
       });
       return;
@@ -111,6 +189,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       widget.selectedMonth,
       widget.selectedYear,
       _selectedCategory.name,
+      currency,
     );
 
     final newBudget = Budget(
@@ -118,6 +197,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       serverId: widget.budgetToEdit?.serverId,
       dbCategory: _selectedCategory.name,
       limitAmount: amount,
+      currencyCode: currency.code,
       month: widget.selectedMonth,
       year: widget.selectedYear,
       spent: spent,
@@ -147,7 +227,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final isEditing = widget.budgetToEdit != null;
-    final isDark = theme.brightness == Brightness.dark;
+    final hasCategories = _categories.isNotEmpty;
 
     return KeyboardInsetPadding(
       child: Container(
@@ -183,13 +263,16 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    CurrencyInputFormatter(
-                        currency: CurrencyFormatter.currentCurrency),
+                    CurrencyInputFormatter(currency: _selectedCurrency),
                   ],
                   autofocus: false,
                   decoration: InputDecoration(
                     labelText: context.l10n.amount_label,
                     errorText: _amountError,
+                    suffixIcon: CurrencyBadge(
+                      currency: _selectedCurrency,
+                      onTap: _showCurrencyPicker,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -215,34 +298,26 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<Category>(
-                  value: _selectedCategory,
-                  borderRadius: BorderRadius.circular(20),
-                  dropdownColor: AppColors.of(context).dropdownBackground,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: isDark
-                        ? AppColors.highlightBase.withValues(alpha: 0.70)
-                        : colorScheme.onSurfaceVariant,
+                const SizedBox(height: 4),
+                if (hasCategories)
+                  CategoryChipsSelector(
+                    categories: _categories,
+                    frequent: _frequentCategories,
+                    selected: _selectedCategory,
+                    onSelected: (category) =>
+                        setState(() => _selectedCategory = category),
+                  )
+                else
+                  Padding(
+                    key: const ValueKey('budget_all_categories_limited'),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      context.l10n.budget_all_categories_limited,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                  alignment: Alignment.centerLeft,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.category_label,
-                  ),
-                  items: Category.expenseCategories.map((cat) {
-                    return DropdownMenuItem(
-                      value: cat,
-                      child: Text(cat.getLocalizedName(context)),
-                    );
-                  }).toList(),
-                  onChanged: isEditing
-                      ? null
-                      : (val) {
-                          if (val != null) {
-                            setState(() => _selectedCategory = val);
-                          }
-                        },
-                ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -255,7 +330,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: _saveBudget,
+                    onPressed: hasCategories ? _saveBudget : null,
                     child: Text(
                       context.l10n.save_btn,
                       style: textTheme.titleMedium?.copyWith(

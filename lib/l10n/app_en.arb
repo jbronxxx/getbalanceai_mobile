@@ -91,8 +91,6 @@
   "budget_amount_hint": "Limit Amount",
   "save_btn": "Save",
   "budget_exceeded": "Exceeded by",
-  "budget_remaining": "Remaining",
-  "budget_spent": "Spent",
   "budget_out_of": "out of",
   "no_budgets_title": "No Budgets Set",
   "no_budgets_subtitle": "Set limits by category to avoid overspending.",
@@ -367,8 +365,9 @@
   "budget_overspent": "Overspent",
   "budget_month_result": "Result for limits",
   "budget_planned": "Planned limits",
+  "budget_all_categories_limited": "All categories already have a limit this month",
   "add_limit_cta": "Add a limit",
-  "budget_spent_of": "{spent} of {limit}",
+  "budget_spent_of": "Spent: {spent} of {limit}",
   "@budget_spent_of": {
     "placeholders": {
       "spent": {

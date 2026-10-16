@@ -58,6 +58,15 @@ class ReportDataService {
         ),
     ];
 
+    // Лимит — в своей валюте (без валюты — в базовой, т. е. валюте отчёта);
+    // в отчёте все суммы в валюте отчёта
+    double limitInReportCurrency(Budget b) {
+      if (b.currencyCode == null || b.currency == currency) {
+        return b.limitAmount;
+      }
+      return exchange.convert(b.limitAmount, from: b.currency, to: currency);
+    }
+
     final lines = <ReportBudgetLine>[];
     for (final b in budgets) {
       final category = Category.fromString(b.dbCategory);
@@ -72,7 +81,7 @@ class ReportDataService {
         category: category,
         month: b.month,
         year: b.year,
-        limit: b.limitAmount,
+        limit: limitInReportCurrency(b),
         spent: spent,
       ));
     }

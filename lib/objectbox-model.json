@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:5574192560812130677",
-      "lastPropertyId": "9:8255407588655905292",
+      "lastPropertyId": "10:3633848475442890756",
       "name": "Budget",
       "properties": [
         {
@@ -55,6 +55,11 @@
           "id": "9:8255407588655905292",
           "name": "isModified",
           "type": 1
+        },
+        {
+          "id": "10:3633848475442890756",
+          "name": "currencyCode",
+          "type": 9
         }
       ],
       "relations": []

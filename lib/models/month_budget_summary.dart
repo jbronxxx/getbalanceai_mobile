@@ -7,7 +7,8 @@ enum BudgetPeriodState { past, current, future }
 /// Сводка лимитов за месяц: сколько заложено, потрачено по лимитированным
 /// категориям, остаток и сколько можно тратить в день до конца месяца.
 ///
-/// Все суммы — в базовой валюте (лимиты и траты уже приведены к ней).
+/// Все суммы — в базовой валюте: траты приходят уже в ней, лимиты в своих
+/// валютах переводятся по текущему курсу ([Budget.limitInBaseCurrency]).
 class MonthBudgetSummary {
   final double totalLimit;
   final double totalSpent;
@@ -42,7 +43,7 @@ class MonthBudgetSummary {
     var totalLimit = 0.0;
     var totalSpent = 0.0;
     for (final b in budgets) {
-      totalLimit += b.limitAmount;
+      totalLimit += b.limitInBaseCurrency;
       totalSpent += spentByCategory[b.category] ?? 0;
     }
 

@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 5574192560812130677),
     name: 'Budget',
-    lastPropertyId: const obx_int.IdUid(9, 8255407588655905292),
+    lastPropertyId: const obx_int.IdUid(10, 3633848475442890756),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -78,6 +78,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(9, 8255407588655905292),
         name: 'isModified',
         type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 3633848475442890756),
+        name: 'currencyCode',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -233,7 +239,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final serverIdOffset =
             object.serverId == null ? null : fbb.writeString(object.serverId!);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
-        fbb.startTable(10);
+        final currencyCodeOffset = object.currencyCode == null
+            ? null
+            : fbb.writeString(object.currencyCode!);
+        fbb.startTable(11);
         fbb.addInt64(0, object.localId);
         fbb.addOffset(1, serverIdOffset);
         fbb.addOffset(2, dbCategoryOffset);
@@ -243,6 +252,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addFloat64(6, object.spent);
         fbb.addFloat64(7, object.remaining);
         fbb.addBool(8, object.isModified);
+        fbb.addOffset(9, currencyCodeOffset);
         fbb.finish(fbb.endTable());
         return object.localId;
       },
@@ -267,6 +277,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           10,
           0,
         );
+        final currencyCodeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 22);
         final monthParam = const fb.Int64Reader().vTableGet(
           buffer,
           rootOffset,
@@ -302,6 +315,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           serverId: serverIdParam,
           dbCategory: dbCategoryParam,
           limitAmount: limitAmountParam,
+          currencyCode: currencyCodeParam,
           month: monthParam,
           year: yearParam,
           spent: spentParam,
@@ -471,6 +485,11 @@ class Budget_ {
   /// See [Budget.isModified].
   static final isModified = obx.QueryBooleanProperty<Budget>(
     _entities[0].properties[8],
+  );
+
+  /// See [Budget.currencyCode].
+  static final currencyCode = obx.QueryStringProperty<Budget>(
+    _entities[0].properties[9],
   );
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
@@ -38,6 +39,21 @@ void main() {
   const october = MonthPeriod(2026, 10);
 
   group('MonthBudgetSummary', () {
+    test('лимит в другой валюте входит в сводку по курсу к базовой', () {
+      final eurBudget = _budget(Category.food, 100)..currencyCode = 'EUR';
+      final summary = MonthBudgetSummary.calculate(
+        budgets: [eurBudget, _budget(Category.transport, 50)],
+        spentByCategory: const {},
+        period: october,
+        now: now,
+      );
+
+      final exchange = CurrencyExchangeService.instance;
+      final eurInUsd =
+          exchange.convert(100, from: Currency.eur, to: Currency.usd);
+      expect(summary.totalLimit, closeTo(eurInUsd + 50, 1e-9));
+    });
+
     test('текущий месяц: остаток делится на оставшиеся дни', () {
       final summary = MonthBudgetSummary.calculate(
         budgets: [
@@ -199,10 +215,19 @@ void main() {
         (tester) async {
       await pumpCard(tester, 300);
 
-      expect(find.text(CurrencyFormatter.format(700)), findsOneWidget);
+      // Над остатком — подпись «Осталось»
+      final remainingLabel = find.text(LanguageManager.l10n.budget_remaining);
+      final remainingAmount = find.text(CurrencyFormatter.format(700));
+      expect(remainingLabel, findsOneWidget);
+      expect(remainingAmount, findsOneWidget);
+      expect(
+        tester.getTopLeft(remainingLabel).dy,
+        lessThan(tester.getTopLeft(remainingAmount).dy),
+      );
+      // Потраченное — с подписью и валютой один раз, у лимита
       expect(
         find.text(LanguageManager.l10n.budget_spent_of(
-          CurrencyFormatter.format(300),
+          CurrencyFormatter.format(300, showSymbol: false),
           CurrencyFormatter.format(1000),
         )),
         findsOneWidget,
@@ -230,6 +255,61 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('125%'), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.budget_remaining), findsNothing);
+    });
+
+    testWidgets('суммы карточки — в валюте лимита', (tester) async {
+      final eurBudget = _budget(Category.food, 1000)..currencyCode = 'EUR';
+      await tester.pumpWidget(_buildTestApp(BudgetItemCard(
+        budget: eurBudget,
+        currentSpent: 300,
+        isFirst: false,
+        showSwipeHint: false,
+        onTap: () {},
+        onDelete: () {},
+        onHintShown: () {},
+      )));
+
+      String eur(double v, {bool symbol = true}) {
+        return CurrencyFormatter.format(
+          v,
+          showSymbol: symbol,
+          currency: Currency.eur,
+        );
+      }
+
+      expect(find.text(eur(700)), findsOneWidget);
+      expect(
+        find.text(LanguageManager.l10n.budget_spent_of(
+          eur(300, symbol: false),
+          eur(1000),
+        )),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('Budget currency', () {
+    test('валюта из ответа сервера уходит обратно при синхронизации', () {
+      final budget = Budget.fromJson({
+        'id': 'b1',
+        'category': 'food',
+        'limit_amount': '100.00',
+        'currency': 'eur',
+        'month': 10,
+        'year': 2026,
+      });
+
+      expect(budget.currency, Currency.eur);
+      expect(budget.toJson()['currency'], 'EUR');
+    });
+
+    test('лимит без валюты — в базовой и без поля currency в запросе', () {
+      final legacy = _budget(Category.food, 100);
+
+      expect(legacy.currency, CurrencyFormatter.currentCurrency);
+      expect(legacy.limitInBaseCurrency, 100);
+      expect(legacy.toJson().containsKey('currency'), isFalse);
     });
   });
 }
