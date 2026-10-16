@@ -76,11 +76,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (mounted) _amountFocusNode.requestFocus();
   }
 
+  /// Ошибка суммы сбрасывается при вводе. Лист перестраивается только ради
+  /// этого: подсказку курса поле суммы обновляет само.
   void _onAmountChanged() {
-    if (_amountError != null) {
-      _amountError = null;
-    }
-    if (mounted) setState(() {});
+    if (_amountError == null || !mounted) return;
+    setState(() => _amountError = null);
   }
 
   @override
@@ -276,61 +276,65 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     right: 24,
                     bottom: 8,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Center(
-                        child: SheetHandle(),
-                      ),
-                      Text(
-                        isEditing
-                            ? context.l10n.edit_transaction
-                            : context.l10n.new_transaction,
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
+                  // Отдельный слой: пока клавиатура сужает область прокрутки,
+                  // форма не перерисовывается, а только сдвигается.
+                  child: RepaintBoundary(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Center(
+                          child: SheetHandle(),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TransactionTypeToggle(
-                        type: _type,
-                        onChanged: _onTypeChanged,
-                      ),
-                      const SizedBox(height: 20),
-                      TransactionAmountField(
-                        controller: _amountController,
-                        currency: _selectedCurrency,
-                        errorText: _amountError,
-                        onCurrencyTap: _showCurrencyPicker,
-                        focusNode: _amountFocusNode,
-                      ),
-                      const SizedBox(height: 12),
-                      TransactionDateSelector(
-                        date: _date,
-                        onChanged: _onDayChanged,
-                      ),
-                      const SizedBox(height: 20),
-                      CategoryChipsSelector(
-                        categories: _type == TransactionType.income
-                            ? Category.incomeCategories
-                            : Category.expenseCategories,
-                        frequent: _frequentCategories,
-                        selected: _category,
-                        onSelected: (category) =>
-                            setState(() => _category = category),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _descriptionController,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          labelText: context.l10n.description_label,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                        Text(
+                          isEditing
+                              ? context.l10n.edit_transaction
+                              : context.l10n.new_transaction,
+                          style: textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        TransactionTypeToggle(
+                          type: _type,
+                          onChanged: _onTypeChanged,
+                        ),
+                        const SizedBox(height: 20),
+                        TransactionAmountField(
+                          controller: _amountController,
+                          currency: _selectedCurrency,
+                          errorText: _amountError,
+                          onCurrencyTap: _showCurrencyPicker,
+                          focusNode: _amountFocusNode,
+                        ),
+                        const SizedBox(height: 12),
+                        TransactionDateSelector(
+                          date: _date,
+                          onChanged: _onDayChanged,
+                        ),
+                        const SizedBox(height: 20),
+                        CategoryChipsSelector(
+                          categories: _type == TransactionType.income
+                              ? Category.incomeCategories
+                              : Category.expenseCategories,
+                          frequent: _frequentCategories,
+                          selected: _category,
+                          onSelected: (category) =>
+                              setState(() => _category = category),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _descriptionController,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.description_label,
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

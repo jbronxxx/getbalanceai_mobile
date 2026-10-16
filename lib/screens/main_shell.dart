@@ -66,85 +66,87 @@ class _MainShellState extends State<MainShell> {
         final shellBg = AppColors.of(context).shellBackground;
 
         // Полей ввода во вкладках нет: клавиатура листа операции не должна
-        // перекладывать вкладки и навбар под модальным окном.
-        return Scaffold(
-          backgroundColor: shellBg,
-          resizeToAvoidBottomInset: false,
-          body: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Positioned.fill(
-                child: ValueListenableBuilder<Currency>(
-                  valueListenable: CurrencyFormatter.currencyNotifier,
-                  builder: (context, currency, _) {
-                    return IndexedStack(
-                      key: const Key('main_shell_indexed_stack'),
-                      index: _currentIndex,
-                      children: [
-                        DashboardScreen(
-                          key: const PageStorageKey('dashboard_tab'),
-                          onAuthenticated: (_, __) {},
-                          onOpenProfile: _openProfileTab,
-                        ),
-                        const BudgetsScreen(
-                          key: PageStorageKey('budgets_tab'),
-                        ),
-                        InsightsScreen(
-                          key: const PageStorageKey('insights_tab'),
-                          isActive: _currentIndex == 2,
-                        ),
-                        ProfileScreen(
-                          key: const PageStorageKey('profile_tab'),
-                          userEmail: email,
-                          userName: name,
-                          avatarUrl: avatarUrl,
-                          onLogout: _logout,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: LiquidGlassNavBar(
-                  selectedIndex: _currentIndex,
-                  centerAction: LiquidGlassNavAction(
-                    tooltip: context.l10n.new_transaction,
-                    onPressed: _openNewTransaction,
+        // ни перекладывать, ни перестраивать вкладки и навбар под окном.
+        return KeyboardInsetsIsolation(
+          child: Scaffold(
+            backgroundColor: shellBg,
+            resizeToAvoidBottomInset: false,
+            body: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Positioned.fill(
+                  child: ValueListenableBuilder<Currency>(
+                    valueListenable: CurrencyFormatter.currencyNotifier,
+                    builder: (context, currency, _) {
+                      return IndexedStack(
+                        key: const Key('main_shell_indexed_stack'),
+                        index: _currentIndex,
+                        children: [
+                          DashboardScreen(
+                            key: const PageStorageKey('dashboard_tab'),
+                            onAuthenticated: (_, __) {},
+                            onOpenProfile: _openProfileTab,
+                          ),
+                          const BudgetsScreen(
+                            key: PageStorageKey('budgets_tab'),
+                          ),
+                          InsightsScreen(
+                            key: const PageStorageKey('insights_tab'),
+                            isActive: _currentIndex == 2,
+                          ),
+                          ProfileScreen(
+                            key: const PageStorageKey('profile_tab'),
+                            userEmail: email,
+                            userName: name,
+                            avatarUrl: avatarUrl,
+                            onLogout: _logout,
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  onDestinationSelected: (index) {
-                    if (_currentIndex != index) {
-                      // Тост относится к вкладке, где он появился
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    }
-                  },
-                  destinations: [
-                    LiquidGlassNavItem(
-                      icon: Icons.wallet_rounded,
-                      label: context.l10n.balance,
-                    ),
-                    LiquidGlassNavItem(
-                      icon: Icons.donut_small_rounded,
-                      label: context.l10n.finances,
-                    ),
-                    LiquidGlassNavItem(
-                      icon: Icons.auto_awesome_rounded,
-                      label: context.l10n.insights,
-                    ),
-                    LiquidGlassNavItem(
-                      icon: Icons.person_rounded,
-                      label: context.l10n.profile,
-                    ),
-                  ],
                 ),
-              ),
-            ],
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: LiquidGlassNavBar(
+                    selectedIndex: _currentIndex,
+                    centerAction: LiquidGlassNavAction(
+                      tooltip: context.l10n.new_transaction,
+                      onPressed: _openNewTransaction,
+                    ),
+                    onDestinationSelected: (index) {
+                      if (_currentIndex != index) {
+                        // Тост относится к вкладке, где он появился
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      }
+                    },
+                    destinations: [
+                      LiquidGlassNavItem(
+                        icon: Icons.wallet_rounded,
+                        label: context.l10n.balance,
+                      ),
+                      LiquidGlassNavItem(
+                        icon: Icons.donut_small_rounded,
+                        label: context.l10n.finances,
+                      ),
+                      LiquidGlassNavItem(
+                        icon: Icons.auto_awesome_rounded,
+                        label: context.l10n.insights,
+                      ),
+                      LiquidGlassNavItem(
+                        icon: Icons.person_rounded,
+                        label: context.l10n.profile,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
