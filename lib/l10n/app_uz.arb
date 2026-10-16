@@ -239,7 +239,7 @@
   "report_period_custom": "Oraliq tanlash",
   "report_format_label": "Format",
   "report_exporting": "Hisobot tayyorlanmoqda...",
-  "report_save_action": "Saqlash",
+  "report_save_action": "Hisobotni yuklab olish",
   "report_share_action": "Ulashish",
   "report_saved": "Hisobot saqlandi",
   "report_export_error": "Hisobotni yaratib bo'lmadi",
@@ -359,5 +359,8 @@
   "structure_total_expenses": "jami xarajat",
   "structure_no_expenses": "xarajat yo'q",
   "structure_more_categories": "{count, plural, other{yana {count} toifa}}",
-  "report_btn_short": "Hisobot"
+  "report_btn_short": "Hisobot",
+  "insights_outdated_note": "Ushbu hisobotdan keyin ma'lumotlar o'zgardi — maslahatlardagi summalar joriylaridan farq qilishi mumkin.",
+  "insights_outdated_refresh": "Hisobotni yangilash",
+  "insights_outdated_tomorrow": "Yangi hisobot ertaga mavjud bo'ladi: kunlik yangilash limiti tugadi."
 }

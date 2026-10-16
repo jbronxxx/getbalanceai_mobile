@@ -536,8 +536,17 @@ void main() {
       expect(find.text('Год 2030'), findsOneWidget);
       expect(find.text('PDF'), findsOneWidget);
       expect(find.text('CSV'), findsOneWidget);
-      expect(find.text('Сохранить'), findsOneWidget);
-      expect(find.text('Поделиться'), findsOneWidget);
+      // Одна широкая кнопка «Скачать отчёт» и компактная иконка «Поделиться»
+      expect(find.text('Скачать отчёт'), findsOneWidget);
+      expect(find.text('Сохранить'), findsNothing);
+      expect(find.text('Поделиться'), findsNothing);
+      expect(find.byTooltip('Поделиться'), findsOneWidget);
+      final download = tester.getSize(
+        find.byKey(const ValueKey('report_download_button')),
+      );
+      final share =
+          tester.getSize(find.byKey(const ValueKey('report_share_button')));
+      expect(download.width, greaterThan(share.width * 3));
 
       await tester.tap(find.text('CSV'));
       await tester.pump();

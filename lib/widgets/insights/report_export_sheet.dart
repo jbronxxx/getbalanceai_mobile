@@ -198,7 +198,9 @@ class _PeriodChips extends StatelessWidget {
   }
 }
 
-/// Кнопки «Сохранить» (в память устройства) и «Поделиться».
+/// Широкая акцентная кнопка «Скачать отчёт» (сохранение в память устройства
+/// через системный диалог) и компактная иконка «Поделиться» (системное меню:
+/// мессенджеры, почта, «Файлы»).
 class _ExportButtons extends StatelessWidget {
   final ReportExportState state;
 
@@ -233,28 +235,34 @@ class _ExportButtons extends StatelessWidget {
       children: [
         Expanded(
           child: Builder(
-            builder: (buttonContext) => OutlinedButton.icon(
+            builder: (buttonContext) => FilledButton.icon(
+              key: const ValueKey('report_download_button'),
               onPressed: state.canExport
                   ? () => _export(buttonContext, ReportDeliveryMode.save)
                   : null,
               icon: busy(ReportDeliveryMode.save)
                   ? _spinner()
-                  : const Icon(Icons.save_alt_rounded),
+                  : const Icon(Icons.download_rounded),
               label: Text(l10n.report_save_action),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: Builder(
-            builder: (buttonContext) => FilledButton.icon(
-              onPressed: state.canExport
-                  ? () => _export(buttonContext, ReportDeliveryMode.share)
-                  : null,
-              icon: busy(ReportDeliveryMode.share)
-                  ? _spinner()
-                  : const Icon(Icons.ios_share_rounded),
-              label: Text(l10n.report_share_action),
+        Builder(
+          builder: (buttonContext) => IconButton.outlined(
+            key: const ValueKey('report_share_button'),
+            tooltip: l10n.report_share_action,
+            onPressed: state.canExport
+                ? () => _export(buttonContext, ReportDeliveryMode.share)
+                : null,
+            icon: busy(ReportDeliveryMode.share)
+                ? _spinner()
+                : const Icon(Icons.ios_share_rounded),
+            style: IconButton.styleFrom(
+              fixedSize: const Size.square(52),
             ),
           ),
         ),

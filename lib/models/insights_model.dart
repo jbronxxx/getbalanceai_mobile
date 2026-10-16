@@ -9,7 +9,8 @@ enum InsightsReportState {
   /// Будущий месяц или нет операций за период.
   noData,
 
-  /// Суточная квота исчерпана; `insights` — сообщение о лимите.
+  /// Суточная квота исчерпана; `insights` — сообщение о лимите или
+  /// устаревший сохранённый отчёт ([InsightsModel.isOutdated]).
   quotaExceeded,
 
   /// AI временно недоступен; ответ нельзя показывать как отчёт и кэшировать.
@@ -38,10 +39,15 @@ class InsightsModel {
   final DateTime? generatedAt;
   final InsightsReportState state;
 
+  /// Сохранённый отчёт, а операции или лимиты месяца изменились после его
+  /// генерации: суммы в тексте могут не совпадать с экраном.
+  final bool isOutdated;
+
   const InsightsModel({
     required this.insights,
     this.generatedAt,
     this.state = InsightsReportState.ready,
+    this.isOutdated = false,
   });
 
   /// Безопасный парсинг даты из ответа бэкенда.
@@ -76,6 +82,7 @@ class InsightsModel {
           const [],
       generatedAt: parseGeneratedAt(payload['generated_at']),
       state: InsightsReportState.fromJson(payload['state']),
+      isOutdated: payload['is_outdated'] == true,
     );
   }
 

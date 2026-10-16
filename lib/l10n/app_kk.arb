@@ -239,7 +239,7 @@
   "report_period_custom": "Өз аралығы",
   "report_format_label": "Формат",
   "report_exporting": "Есеп дайындалуда...",
-  "report_save_action": "Сақтау",
+  "report_save_action": "Есепті жүктеу",
   "report_share_action": "Бөлісу",
   "report_saved": "Есеп сақталды",
   "report_export_error": "Есепті қалыптастыру мүмкін болмады",
@@ -359,5 +359,8 @@
   "structure_total_expenses": "барлық шығын",
   "structure_no_expenses": "шығын жоқ",
   "structure_more_categories": "{count, plural, other{тағы {count} санат}}",
-  "report_btn_short": "Есеп"
+  "report_btn_short": "Есеп",
+  "insights_outdated_note": "Бұл есептен кейін деректер өзгерді — кеңестердегі сомалар қазіргімен сәйкес келмеуі мүмкін.",
+  "insights_outdated_refresh": "Есепті жаңарту",
+  "insights_outdated_tomorrow": "Жаңа есеп ертең қолжетімді болады: күндік жаңарту шегі таусылды."
 }

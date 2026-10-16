@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
@@ -103,6 +104,15 @@ void main() {
       expect(parse('something_new'), InsightsReportState.ready);
       expect(InsightsModel.fromJson({'insights': []}).state,
           InsightsReportState.ready);
+    });
+
+    test('parses is_outdated; missing (old backend) is false', () {
+      expect(
+        InsightsModel.fromJson({'insights': [], 'is_outdated': true})
+            .isOutdated,
+        isTrue,
+      );
+      expect(InsightsModel.fromJson({'insights': []}).isOutdated, isFalse);
     });
 
     test('handles wrapped data field in json', () {
@@ -523,6 +533,115 @@ void main() {
       await ApiService.instance.clearAllUserData();
     }
   });
+
+  final outdatedNote = find.byKey(const ValueKey('insights_outdated_note'));
+  final outdatedRefresh =
+      find.byKey(const ValueKey('insights_outdated_refresh'));
+
+  testWidgets('устаревший отчёт показывается с пометкой и кнопкой обновления',
+      (tester) async {
+    await _pumpInsights(
+      tester,
+      (request) => {
+        'insights': ['Совет $request'],
+        'is_outdated': request == 1,
+      },
+      (requests) async {
+        expect(find.text('Совет 1'), findsOneWidget);
+        expect(outdatedNote, findsOneWidget);
+        expect(requests(), 1);
+
+        await tester.tap(outdatedRefresh);
+        await tester.pumpAndSettle();
+
+        expect(requests(), 2);
+        expect(find.text('Совет 2'), findsOneWidget);
+        expect(outdatedNote, findsNothing);
+      },
+    );
+  });
+
+  testWidgets('квота исчерпана: пометка «обновить завтра» без кнопки',
+      (tester) async {
+    await _pumpInsights(
+      tester,
+      (_) => {
+        'insights': ['Старый совет'],
+        'state': 'quota_exceeded',
+        'is_outdated': true,
+      },
+      (_) async {
+        expect(find.text('Старый совет'), findsOneWidget);
+        expect(outdatedNote, findsOneWidget);
+        expect(
+          find.textContaining(LanguageManager.l10n.insights_outdated_tomorrow),
+          findsOneWidget,
+        );
+        expect(outdatedRefresh, findsNothing);
+      },
+    );
+  });
+
+  testWidgets('изменение операций или лимитов перезапрашивает отчёт',
+      (tester) async {
+    await _pumpInsights(
+      tester,
+      (request) => {
+        'insights': ['Совет $request'],
+      },
+      (requests) async {
+        expect(requests(), 1);
+
+        // Операция и синхронизация подряд — один запрос
+        LocalDbService.transactionsChanged.value++;
+        LocalDbService.transactionsChanged.value++;
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+        expect(requests(), 2);
+        expect(find.text('Совет 2'), findsOneWidget);
+
+        LocalDbService.budgetsChanged.value++;
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+        expect(requests(), 3);
+      },
+    );
+  });
+}
+
+/// Запускает экран аналитики с фиктивным ответом бэкенда и считает запросы.
+Future<void> _pumpInsights(
+  WidgetTester tester,
+  Map<String, dynamic> Function(int request) data,
+  Future<void> Function(int Function() requests) body,
+) async {
+  await ApiService.instance.setTokens('test_token', 'test_refresh');
+  final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+  var requestCount = 0;
+  ApiService.instance.dio.httpClientAdapter =
+      _MockHttpClientAdapter((options) async {
+    requestCount++;
+    return ResponseBody.fromString(
+      jsonEncode({'status': 'success', 'data': data(requestCount)}),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  });
+
+  try {
+    await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen()));
+    await tester.pumpAndSettle();
+    await body(() => requestCount);
+  } finally {
+    ApiService.instance.dio.httpClientAdapter = originalAdapter;
+    await ApiService.instance.clearAllUserData();
+  }
 }
 
 class _MockHttpClientAdapter implements HttpClientAdapter {
