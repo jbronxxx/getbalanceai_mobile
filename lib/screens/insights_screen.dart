@@ -108,6 +108,7 @@ class _InsightsScreenView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: scaffoldBg,
+      resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       appBar: LiquidGlassAppBar(
         title: Text(

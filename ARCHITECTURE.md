@@ -61,7 +61,8 @@ lib/
 │   ├── report_export_service.dart # Доставка файла: «Поделиться» (временный файл + share_plus) или «Сохранить» (системный диалог file_picker.saveFile)
 │   ├── device_capability_service.dart # Определение аппаратных возможностей устройства (поддержка RenderEffect/BackdropFilter, Android API < 31)
 │   ├── tracing_interceptor.dart  # Сквозная трассировка сетевых запросов (X-Request-ID)
-│   └── pending_deletions_store.dart # Очередь отложенных удалений
+│   ├── pending_deletions_store.dart # Очередь отложенных удалений
+│   └── undoable_deletions.dart  # Удаление операций и лимитов с отменой: скрыть сразу, удалить из базы и с сервера через 5 с, если не нажали «Отменить»
 ├── cubits/
 │   ├── auth/                    # AuthCubit: глобальное состояние авторизации
 │   ├── report_export/           # ReportExportCubit: период (месяц/год/свой диапазон), формат CSV/PDF, проверка доступа и выгрузка
@@ -78,6 +79,7 @@ lib/
 │   ├── ai_sparkles_loader.dart  # Анимированный лоадер генерации ИИ (пульсирующие звёздочки)
 │   ├── custom_pull_to_refresh.dart # Кастомный Pull-to-Refresh со шторкой и режимом releaseImmediately
 │   ├── glass_container.dart     # Переиспользуемый контейнер Liquid Glass с BackdropFilter, RepaintBoundary и непрозрачным fallback
+│   ├── keyboard_inset_padding.dart # Отступ модального листа под клавиатуру (подписан только на viewInsets, содержимое листа не перестраивается)
 │   ├── liquid_glass_app_bar.dart# Хэдер экрана из полированного полупрозрачного стекла со скругленным низом (20px, BackdropFilter, topContentPadding)
 │   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass с единой полупрозрачностью и блюром (RepaintBoundary, sigma 18)
 │   ├── liquid_glass_fab.dart    # Кнопка действия с градиентным стеклом и неоновым свечением (центральная «+» навбара)

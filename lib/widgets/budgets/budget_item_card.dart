@@ -188,6 +188,9 @@ class BudgetItemCard extends StatelessWidget {
     final dismissibleItem = Dismissible(
       key: Key('budget_${budget.localId}'),
       direction: DismissDirection.endToStart,
+      dismissThresholds: const {
+        DismissDirection.endToStart: kSwipeDeleteThreshold,
+      },
       onDismissed: (_) => onDelete(),
       background: background,
       child: cardContent,

@@ -256,6 +256,16 @@ void main() {
       expect(indexedStack.index, equals(0));
       expect(indexedStack.children.length, equals(4));
 
+      // Клавиатура модальной формы не перекладывает оболочку и вкладки
+      final scaffolds = tester.widgetList<Scaffold>(
+        find.byType(Scaffold, skipOffstage: false),
+      );
+      expect(scaffolds.length, equals(5));
+      expect(
+        scaffolds.map((s) => s.resizeToAvoidBottomInset),
+        everyElement(isFalse),
+      );
+
       // Проверяем наличие PageStorageKey у всех вкладок (неактивные вкладки в IndexedStack находятся в offstage)
       expect(find.byKey(const PageStorageKey('dashboard_tab')), findsOneWidget);
       expect(

@@ -16,3 +16,4 @@ export 'selected_period_service.dart';
 export 'sync_service.dart';
 export 'tracing_interceptor.dart';
 export 'transaction_api_service.dart';
+export 'undoable_deletions.dart';

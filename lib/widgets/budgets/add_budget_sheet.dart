@@ -4,6 +4,7 @@ import '../../models/models.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
 import '../app_sheet.dart';
+import '../keyboard_inset_padding.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
@@ -148,16 +149,13 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     final isEditing = widget.budgetToEdit != null;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return KeyboardInsetPadding(
       child: Container(
         padding: EdgeInsets.only(
           top: 10,
           left: 24,
           right: 24,
-          bottom: 24 + MediaQuery.of(context).padding.bottom,
+          bottom: 24 + MediaQuery.paddingOf(context).bottom,
         ),
         decoration: AppSheet.decoration(context),
         child: SafeArea(

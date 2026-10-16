@@ -26,8 +26,9 @@ Widget _buildTestApp(Widget child) {
 }
 
 /// Открывает форму поверх стартового экрана, чтобы `Navigator.pop` после
-/// сохранения закрывал её, а не корневой маршрут.
-Future<void> _pumpSheet(WidgetTester tester) async {
+/// сохранения закрывал её, а не корневой маршрут. Без [settle] анимация
+/// маршрута не прокручивается до конца.
+Future<void> _pumpSheet(WidgetTester tester, {bool settle = true}) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('ru'),
@@ -51,8 +52,11 @@ Future<void> _pumpSheet(WidgetTester tester) async {
     ),
   );
   await tester.tap(find.text('open'));
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
+
+bool _amountHasFocus(WidgetTester tester) =>
+    tester.widget<TextField>(find.byType(TextField).first).focusNode!.hasFocus;
 
 /// Чип внутри [CategoryChip] с ключом [key].
 ChoiceChip _chipFor(String key, WidgetTester tester) {
@@ -331,6 +335,21 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(saved.category, Category.transport);
       expect(saved.type, TransactionType.expense);
       expect(find.byType(AddTransactionSheet), findsNothing);
+    });
+
+    testWidgets('фокус суммы ставится после выезда формы, а не во время',
+        (tester) async {
+      final mockDb = _MockLocalDbService();
+      when(() => mockDb.getFrequentCategories(any())).thenReturn(const []);
+      LocalDbService.instance = mockDb;
+
+      await _pumpSheet(tester, settle: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_amountHasFocus(tester), isFalse);
+
+      await tester.pumpAndSettle();
+      expect(_amountHasFocus(tester), isTrue);
     });
 
     testWidgets('пустая сумма не сохраняет операцию', (tester) async {

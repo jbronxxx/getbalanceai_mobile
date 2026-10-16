@@ -7,7 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
 /// Строка операции в ленте дашборда: иконка категории, описание, категория
-/// и сумма. Свайп влево удаляет, тап открывает редактирование.
+/// и сумма. Свайп влево удаляет (с отменой в тосте), тап открывает карточку.
 ///
 /// [showDate] — для группировки по категориям: вместо категории (она уже в
 /// заголовке группы) под описанием показывается день операции.
@@ -61,6 +61,9 @@ class TransactionItemTile extends StatelessWidget {
     final item = Dismissible(
       key: Key(transaction.localId.toString()),
       direction: DismissDirection.endToStart,
+      dismissThresholds: const {
+        DismissDirection.endToStart: kSwipeDeleteThreshold,
+      },
       onDismissed: (_) => onDelete(),
       background: background,
       child: Material(

@@ -46,6 +46,7 @@
   "logout_info": "Вы вышли из системы",
   "logout_error_title": "Ошибка при выходе",
   "transaction_deleted": "Запись удалена",
+  "undo_action": "Отменить",
   "welcome_lang_title": "Выберите язык",
   "welcome_lang_subtitle": "Для комфортной работы с приложением",
   "welcome_currency_title": "Основная валюта",

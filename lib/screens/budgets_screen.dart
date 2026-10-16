@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
@@ -26,6 +25,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   Map<Category, double> _categoryExpenses = {};
   bool _shouldShowSwipeHint = false;
 
+  /// Удалённые свайпом лимиты ждут здесь отмены.
+  final _deletions = UndoableDeletions.budgets();
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +36,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
     SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
+    _deletions.addListener(_onDataChanged);
   }
 
   /// Перечитывает лимиты и расходы при смене валюты, периода или операций
@@ -50,6 +53,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onDataChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    _deletions
+      ..removeListener(_onDataChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -70,7 +76,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         .getCategoryExpensesForPeriod(_selectedMonth, _selectedYear);
     setState(() {
       _budgets = LocalDbService.instance
-          .getBudgetsForPeriod(_selectedMonth, _selectedYear);
+          .getBudgetsForPeriod(_selectedMonth, _selectedYear)
+          .where((b) => !_deletions.isPending(b))
+          .toList();
       _categoryExpenses = catExpenses;
     });
   }
@@ -106,17 +114,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
-  /// Удаляет лимит бюджета локально и на сервере.
+  /// Скрывает лимит и предлагает отменить удаление, пока виден тост.
   void _deleteBudget(Budget budget) {
-    unawaited(
-      ApiService.instance.deleteBudgetEverywhere(budget).catchError(
-        (Object e, StackTrace s) {
-          AppLogger.w('[Budgets] Delete budget everywhere failed', e, s);
-        },
-      ),
+    _deletions.schedule(budget);
+    AppAlerts.showToast(
+      context,
+      message: context.l10n.budget_deleted,
+      duration: _deletions.delay,
+      actionLabel: context.l10n.undo_action,
+      onAction: () => _deletions.undo(budget),
     );
-    _loadBudgets();
-    AppAlerts.info(context, context.l10n.budget_deleted);
   }
 
   void _openAddBudgetSheet([Budget? budgetToEdit]) {
@@ -135,6 +142,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
     return Scaffold(
       backgroundColor: scaffoldBg,
+      resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       appBar: LiquidGlassAppBar(
         title: Text(

@@ -246,6 +246,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
         return Scaffold(
           backgroundColor: scaffoldBg,
+          resizeToAvoidBottomInset: false,
           extendBodyBehindAppBar: true,
           appBar: LiquidGlassAppBar(
             title: Text(

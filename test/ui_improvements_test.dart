@@ -189,6 +189,102 @@ void main() {
       expect(find.byType(LiquidGlassFab), findsNothing);
     });
 
+    testWidgets('Лента главного экрана не растягивается у краёв',
+        (tester) async {
+      SelectedPeriodService.instance.reset();
+      await tester.pumpWidget(_buildTestApp(const DashboardScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(StretchingOverscrollIndicator), findsNothing);
+      expect(find.byType(GlowingOverscrollIndicator), findsNothing);
+    });
+
+    testWidgets(
+        'Свайп скрывает операцию, «Отменить» возвращает, без отмены — удаляет',
+        (tester) async {
+      SelectedPeriodService.instance.reset();
+      final now = DateTime.now();
+      Transaction tx(String description, int hour) => Transaction(
+            amount: 1000,
+            description: description,
+            dbCategory: Category.food.name,
+            dbType: TransactionType.expense.name,
+            dateMilliseconds: DateTime(now.year, now.month, now.day, hour)
+                .millisecondsSinceEpoch,
+            dateCreatedMilliseconds: 0,
+          );
+      // Свайпаем вторую строку: на первой играет подсказка свайпа
+      LocalDbService.instance.saveTransaction(tx('Новая', 2));
+      LocalDbService.instance.saveTransaction(tx('Удаляемая', 1));
+
+      await tester.pumpWidget(_buildTestApp(const DashboardScreen()));
+      await tester.pumpAndSettle();
+      final row = find.text('Удаляемая');
+      expect(row, findsOneWidget);
+
+      Future<void> swipeLeft() async {
+        await tester.drag(row, const Offset(-700, 0));
+        await tester.pumpAndSettle();
+      }
+
+      // Отмена: операция снова в ленте и в базе
+      await swipeLeft();
+      expect(row, findsNothing);
+      expect(find.text(LanguageManager.l10n.undo_action), findsOneWidget);
+      // Тост с отменой закрывается смахиванием, без крестика
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('toast_action')));
+      await tester.pumpAndSettle();
+      expect(row, findsOneWidget);
+      await tester.pump(const Duration(seconds: 6));
+      expect(LocalDbService.instance.getAllTransactions().length, 2);
+
+      // Без отмены операция удаляется по истечении тоста
+      await swipeLeft();
+      expect(row, findsNothing);
+      expect(LocalDbService.instance.getAllTransactions().length, 2);
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+      expect(row, findsNothing);
+      expect(
+        LocalDbService.instance.getAllTransactions().map((t) => t.description),
+        ['Новая'],
+      );
+    });
+
+    testWidgets('Короткий свайп не удаляет операцию', (tester) async {
+      SelectedPeriodService.instance.reset();
+      final now = DateTime.now();
+      // Проверяем вторую строку: на первой играет подсказка свайпа
+      for (final (description, hour) in [('Первая', 2), ('Строка', 1)]) {
+        LocalDbService.instance.saveTransaction(Transaction(
+          amount: 1000,
+          description: description,
+          dbCategory: Category.food.name,
+          dbType: TransactionType.expense.name,
+          dateMilliseconds: DateTime(now.year, now.month, now.day, hour)
+              .millisecondsSinceEpoch,
+          dateCreatedMilliseconds: 0,
+        ));
+      }
+      await tester.pumpWidget(_buildTestApp(const DashboardScreen()));
+      await tester.pumpAndSettle();
+
+      // Половина ширины строки — ниже порога в 60%
+      final row = find.text('Строка');
+      final width = tester.getSize(find.byType(Dismissible).last).width;
+      await tester.timedDrag(
+        row,
+        Offset(-width * 0.5, 0),
+        const Duration(seconds: 1),
+      );
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 6));
+
+      expect(row, findsOneWidget);
+      expect(LocalDbService.instance.getAllTransactions().length, 2);
+    });
+
     testWidgets('Переключатель на дашборде меняет общий период',
         (tester) async {
       SelectedPeriodService.instance.reset();
@@ -322,6 +418,74 @@ void main() {
 
       // Проверяем начальный рендер
       expect(find.byKey(key), findsOneWidget);
+    });
+
+    testWidgets('Свайп лимита скрывает его с отменой, без отмены — удаляет',
+        (tester) async {
+      // Обе карточки лимитов должны поместиться под карточкой месяца
+      tester.view
+        ..physicalSize = const Size(800, 1600)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SelectedPeriodService.instance.reset();
+      final period = SelectedPeriodService.instance.period;
+      for (final category in [Category.food, Category.transport]) {
+        LocalDbService.instance.saveBudget(Budget(
+          dbCategory: category.name,
+          limitAmount: 50000,
+          spent: 0,
+          remaining: 50000,
+          month: period.month,
+          year: period.year,
+        ));
+      }
+
+      await tester.pumpWidget(_buildTestApp(const BudgetsScreen()));
+      await tester.pumpAndSettle();
+      final cards = find.byType(BudgetItemCard);
+      expect(cards, findsNWidgets(2));
+
+      // Свайпаем вторую карточку: на первой играет подсказка свайпа
+      Future<void> swipeSecond() async {
+        await tester.drag(cards.last, const Offset(-700, 0));
+        await tester.pumpAndSettle();
+      }
+
+      await swipeSecond();
+      expect(cards, findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('toast_action')));
+      await tester.pumpAndSettle();
+      expect(cards, findsNWidgets(2));
+      await tester.pump(const Duration(seconds: 6));
+      expect(LocalDbService.instance.getAllBudgets().length, 2);
+
+      await swipeSecond();
+      expect(LocalDbService.instance.getAllBudgets().length, 2);
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+      expect(cards, findsOneWidget);
+      expect(LocalDbService.instance.getAllBudgets().length, 1);
+    });
+
+    testWidgets('Обычный тост сохраняет крестик закрытия', (tester) async {
+      await tester.pumpWidget(_buildTestApp(Builder(
+        builder: (context) => TextButton(
+          onPressed: () => AppAlerts.info(context, 'info'),
+          child: const Text('show'),
+        ),
+      )));
+      await tester.tap(find.text('show'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byKey(const ValueKey('toast_action')), findsNothing);
+      // SnackBar не обрезает тень стекла второй рамкой
+      expect(
+        tester.widget<SnackBar>(find.byType(SnackBar)).clipBehavior,
+        Clip.none,
+      );
+      await tester.pump(const Duration(seconds: 5));
     });
 
     testWidgets('BudgetItemCard использует скругление 24 для фона удаления',

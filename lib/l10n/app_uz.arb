@@ -46,6 +46,7 @@
   "logout_info": "Tizimdan chiqdingiz",
   "logout_error_title": "Chiqishda xatolik",
   "transaction_deleted": "Yozuv o'chirildi",
+  "undo_action": "Bekor qilish",
   "welcome_lang_title": "Tilni tanlang",
   "welcome_lang_subtitle": "Ilovadan qulay foydalanish uchun",
   "welcome_currency_title": "Asosiy valyuta",
