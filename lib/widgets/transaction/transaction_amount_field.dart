@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
-import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
+import 'currency_badge.dart';
 
 /// Поле суммы операции с кнопкой выбора валюты и подсказкой пересчёта
 /// в базовую валюту, если валюта чека отличается от базовой.
@@ -27,7 +27,6 @@ class TransactionAmountField extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     final isDifferentCurrency = currency != CurrencyFormatter.currentCurrency;
 
@@ -42,42 +41,9 @@ class TransactionAmountField extends StatelessWidget {
           decoration: InputDecoration(
             labelText: context.l10n.amount_label,
             errorText: errorText,
-            suffixIcon: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: UnconstrainedBox(
-                child: Material(
-                  color: AppColors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: onCurrencyTap,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.highlightBase.withValues(alpha: 0.10)
-                            : colorScheme.primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.highlightBase.withValues(alpha: 0.20)
-                              : colorScheme.primary.withValues(alpha: 0.25),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Text(
-                        currency.code,
-                        style: textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.of(context).accentText,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            suffixIcon: CurrencyBadge(
+              currency: currency,
+              onTap: onCurrencyTap,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

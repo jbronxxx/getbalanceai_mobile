@@ -176,6 +176,24 @@ void main() {
       expect(row.baseAmount,
           exchange.convert(100000, from: Currency.uzs, to: Currency.usd));
     });
+
+    test('лимит в другой валюте переводится в валюту отчёта', () {
+      final exchange = CurrencyExchangeService.instance;
+      final eurBudget = _budget('food', 100, 3, 2030)..currencyCode = 'EUR';
+      final data = ReportDataService.assemble(
+        period: ReportPeriod.month(3, 2030),
+        currency: Currency.usd,
+        transactions: const [],
+        budgets: [eurBudget],
+        exchange: exchange,
+        now: DateTime(2030, 4, 1),
+      );
+
+      expect(
+        data.budgetLines.single.limit,
+        exchange.convert(100, from: Currency.eur, to: Currency.usd),
+      );
+    });
   });
 
   group('ReportData.balance', () {

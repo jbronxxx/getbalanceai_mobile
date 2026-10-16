@@ -622,44 +622,27 @@ class LocalDbService {
     return totalSpent;
   }
 
-  /// Пересчитывает лимиты бюджетов при смене базовой валюты аккаунта.
-  void convertBudgetsCurrency(Currency from, Currency to) {
-    if (from == to) return;
+  /// Закрепляет прежнюю базовую валюту за лимитами без своей валюты
+  /// (созданы до появления валюты лимита и велись в базовой).
+  ///
+  /// Суммы лимитов при смене базовой валюты не пересчитываются: у каждого
+  /// лимита своя валюта, как и на сервере. Синхронизированные лимиты
+  /// помечаются изменёнными, чтобы сервер получил их валюту явно.
+  void pinLegacyBudgetsCurrency(Currency previousBase) {
     try {
-      final budgets = _budgetBox.getAll();
-      if (budgets.isEmpty) return;
+      final legacy =
+          _budgetBox.getAll().where((b) => b.currencyCode == null).toList();
+      if (legacy.isEmpty) return;
 
-      final exchange = CurrencyExchangeService.instance;
-      final updated = <Budget>[];
-
-      for (final b in budgets) {
-        final convertedLimit =
-            exchange.convert(b.limitAmount, from: from, to: to);
-        final roundedLimit = to.defaultDecimalDigits == 0
-            ? convertedLimit.roundToDouble()
-            : double.parse(
-                convertedLimit.toStringAsFixed(to.defaultDecimalDigits));
-
-        final spent = getSpentForCategory(b.month, b.year, b.dbCategory, to);
-
-        updated.add(Budget(
-          localId: b.localId,
-          serverId: b.serverId,
-          dbCategory: b.dbCategory,
-          limitAmount: roundedLimit,
-          month: b.month,
-          year: b.year,
-          spent: spent,
-          remaining: roundedLimit - spent,
-          isModified: b.serverId != null,
-        ));
+      for (final b in legacy) {
+        b.currencyCode = previousBase.code;
+        if (b.serverId != null) b.isModified = true;
       }
-
-      _budgetBox.putMany(updated);
-      AppLogger.d(
-          '[LocalDbService] Converted ${updated.length} budgets from ${from.code} to ${to.code}');
-    } catch (e) {
-      AppLogger.e('[LocalDbService] convertBudgetsCurrency error', e);
+      _budgetBox.putMany(legacy);
+      AppLogger.d('[LocalDbService] Pinned ${legacy.length} budgets to '
+          '${previousBase.code}');
+    } catch (e, s) {
+      AppLogger.e('[LocalDbService] pinLegacyBudgetsCurrency error', e, s);
     }
   }
 

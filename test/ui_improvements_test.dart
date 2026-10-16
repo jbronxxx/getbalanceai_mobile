@@ -17,6 +17,7 @@ import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
+import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -364,7 +365,7 @@ void main() {
       expect(textField.textCapitalization, TextCapitalization.sentences);
     });
 
-    testWidgets('В AddBudgetSheet поле Сумма идет перед полем Категория',
+    testWidgets('В AddBudgetSheet поле Сумма идет перед чипсами категорий',
         (tester) async {
       await tester.pumpWidget(
         _buildTestApp(
@@ -378,18 +379,160 @@ void main() {
       await tester.pumpAndSettle();
 
       final textFieldFinder = find.byType(TextField);
-      final dropdownFinder = find.byType(DropdownButtonFormField<Category>);
+      final chipsFinder = find.byType(CategoryChipsSelector);
 
       expect(textFieldFinder, findsOneWidget);
-      expect(dropdownFinder, findsOneWidget);
+      expect(chipsFinder, findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<Category>), findsNothing);
 
       final textField = tester.widget<TextField>(textFieldFinder);
       expect(textField.decoration?.labelText, equals('Сумма'));
+      // Бейдж валюты — как в форме операции
+      expect(textField.decoration?.suffixIcon, isA<CurrencyBadge>());
+      expect(
+        find.text(CurrencyFormatter.currentCurrency.code),
+        findsOneWidget,
+      );
 
-      // Поле Сумма расположено выше по Y, чем дропдаун Категории
+      // Поле Сумма расположено выше по Y, чем чипсы категорий
       final amountDy = tester.getTopLeft(textFieldFinder).dy;
-      final categoryDy = tester.getTopLeft(dropdownFinder).dy;
+      final categoryDy = tester.getTopLeft(chipsFinder).dy;
       expect(amountDy, lessThan(categoryDy));
+    });
+
+    testWidgets('AddBudgetSheet: бейдж валюты открывает выбор валюты лимита',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          AddBudgetSheet(
+            selectedMonth: 10,
+            selectedYear: 2026,
+            onSaved: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CurrencyBadge));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CurrencyPickerSheet), findsOneWidget);
+    });
+
+    testWidgets('AddBudgetSheet: смена валюты пересчитывает сумму лимита',
+        (tester) async {
+      final budget = Budget(
+        localId: 3,
+        dbCategory: Category.food.name,
+        limitAmount: 1000,
+        currencyCode: 'KZT',
+        month: 10,
+        year: 2026,
+        spent: 0,
+        remaining: 1000,
+      );
+      await tester.pumpWidget(
+        _buildTestApp(
+          AddBudgetSheet(
+            selectedMonth: 10,
+            selectedYear: 2026,
+            budgetToEdit: budget,
+            onSaved: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CurrencyBadge));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Currency.uzs.localizedName));
+      await tester.pumpAndSettle();
+
+      final expected = CurrencyFormatter.format(
+        CurrencyExchangeService.instance
+            .convert(1000, from: Currency.kzt, to: Currency.uzs),
+        showSymbol: false,
+        currency: Currency.uzs,
+      );
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.controller!.text, expected);
+      expect(find.text(Currency.uzs.code), findsOneWidget);
+    });
+
+    testWidgets('AddBudgetSheet не предлагает категории с лимитом',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          AddBudgetSheet(
+            selectedMonth: 10,
+            selectedYear: 2026,
+            limitedCategories: const {Category.food, Category.transport},
+            onSaved: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final chips = find.byType(CategoryChipsSelector);
+      final selector = tester.widget<CategoryChipsSelector>(chips);
+      expect(selector.categories, isNot(contains(Category.food)));
+      expect(selector.categories, isNot(contains(Category.transport)));
+      expect(selector.categories, isNotEmpty);
+      expect(selector.categories, contains(selector.selected));
+    });
+
+    testWidgets('AddBudgetSheet при редактировании — только своя категория',
+        (tester) async {
+      final budget = Budget(
+        localId: 7,
+        dbCategory: Category.food.name,
+        limitAmount: 1000,
+        month: 10,
+        year: 2026,
+        spent: 0,
+        remaining: 1000,
+      );
+      await tester.pumpWidget(
+        _buildTestApp(
+          AddBudgetSheet(
+            selectedMonth: 10,
+            selectedYear: 2026,
+            budgetToEdit: budget,
+            limitedCategories: const {Category.food},
+            onSaved: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final chips = find.byType(CategoryChipsSelector);
+      final selector = tester.widget<CategoryChipsSelector>(chips);
+      expect(selector.categories, [Category.food]);
+      expect(selector.selected, Category.food);
+    });
+
+    testWidgets(
+        'AddBudgetSheet: на всё есть лимиты — подсказка, кнопка неактивна',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          AddBudgetSheet(
+            selectedMonth: 10,
+            selectedYear: 2026,
+            limitedCategories: Category.expenseCategories.toSet(),
+            onSaved: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryChipsSelector), findsNothing);
+      expect(
+        find.text(LanguageManager.l10n.budget_all_categories_limited),
+        findsOneWidget,
+      );
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNull);
     });
   });
 

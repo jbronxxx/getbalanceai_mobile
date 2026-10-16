@@ -6,6 +6,8 @@ import '../swipe_hint_wrapper.dart';
 import '../../theme/app_colors.dart';
 
 /// Карточка элемента бюджета с индикатором выполнения и поддержкой свайпа для удаления.
+///
+/// [currentSpent] и все суммы карточки — в валюте лимита.
 class BudgetItemCard extends StatelessWidget {
   final Budget budget;
   final double currentSpent;
@@ -34,7 +36,13 @@ class BudgetItemCard extends StatelessWidget {
     return colors.accentText;
   }
 
-  static String _display(double amount) => CurrencyFormatter.format(amount);
+  /// Суммы карточки — в валюте лимита.
+  String _display(double amount, {bool showSymbol = true}) =>
+      CurrencyFormatter.format(
+        amount,
+        showSymbol: showSymbol,
+        currency: budget.currency,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -124,22 +132,35 @@ class BudgetItemCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Flexible(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: CurrencyFormatter.formatText(
-                          (budget.limitAmount - currentSpent).abs(),
-                          prefix: isExceeded
-                              ? '${context.l10n.budget_exceeded} '
-                              : '',
-                          useFittedBox: true,
-                          textAlign: TextAlign.end,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isExceeded
-                                ? exceededColor
-                                : colorScheme.onSurface,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          // Подпись отличает остаток от потраченного под шкалой
+                          if (!isExceeded)
+                            Text(
+                              context.l10n.budget_remaining,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                          CurrencyFormatter.formatText(
+                            (budget.limitAmount - currentSpent).abs(),
+                            currency: budget.currency,
+                            prefix: isExceeded
+                                ? '${context.l10n.budget_exceeded} '
+                                : '',
+                            useFittedBox: true,
+                            textAlign: TextAlign.end,
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isExceeded
+                                  ? exceededColor
+                                  : colorScheme.onSurface,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ],
@@ -158,7 +179,7 @@ class BudgetItemCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         context.l10n.budget_spent_of(
-                          _display(currentSpent),
+                          _display(currentSpent, showSymbol: false),
                           _display(budget.limitAmount),
                         ),
                         maxLines: 1,

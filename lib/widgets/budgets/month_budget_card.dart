@@ -166,7 +166,7 @@ class _Figure extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.onBrandBase.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(18),
@@ -176,13 +176,18 @@ class _Figure extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.labelSmall?.copyWith(
-              color: AppColors.onBrandBase.withValues(alpha: 0.85),
-              fontWeight: FontWeight.w500,
+          // Подпись не обрезается, а уменьшается: три плашки в ряд узкие,
+          // а «Перерасход» и переводы длиннее русских «Траты»/«Осталось».
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: textTheme.labelSmall?.copyWith(
+                color: AppColors.onBrandBase.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           const SizedBox(height: 4),

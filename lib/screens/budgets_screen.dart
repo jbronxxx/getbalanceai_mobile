@@ -22,7 +22,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   int get _selectedYear => SelectedPeriodService.instance.period.year;
 
   List<Budget> _budgets = [];
+
+  /// Расходы по категориям в базовой валюте — для сводки месяца.
   Map<Category, double> _categoryExpenses = {};
+
+  /// Расходы по категориям в валютах лимитов, отличных от базовой.
+  Map<Currency, Map<Category, double>> _foreignExpenses = {};
   bool _shouldShowSwipeHint = false;
 
   /// Удалённые свайпом лимиты ждут здесь отмены.
@@ -69,18 +74,38 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
-  /// Загружает лимиты и расходы по категориям за выбранный месяц — одним
-  /// проходом по операциям для карточки месяца и всех карточек лимитов.
+  /// Загружает лимиты и расходы по категориям за выбранный месяц: один
+  /// проход по операциям в базовой валюте и по одному на каждую другую
+  /// валюту лимитов.
   void _loadBudgets() {
-    final catExpenses = LocalDbService.instance
-        .getCategoryExpensesForPeriod(_selectedMonth, _selectedYear);
+    final db = LocalDbService.instance;
+    final catExpenses =
+        db.getCategoryExpensesForPeriod(_selectedMonth, _selectedYear);
+    final budgets = db
+        .getBudgetsForPeriod(_selectedMonth, _selectedYear)
+        .where((b) => !_deletions.isPending(b))
+        .toList();
+    final base = CurrencyFormatter.currentCurrency;
+    final foreign = <Currency, Map<Category, double>>{};
+    for (final currency in budgets.map((b) => b.currency).toSet()) {
+      if (currency == base) continue;
+      foreign[currency] = db.getCategoryExpensesForPeriod(
+        _selectedMonth,
+        _selectedYear,
+        currency,
+      );
+    }
     setState(() {
-      _budgets = LocalDbService.instance
-          .getBudgetsForPeriod(_selectedMonth, _selectedYear)
-          .where((b) => !_deletions.isPending(b))
-          .toList();
+      _budgets = budgets;
       _categoryExpenses = catExpenses;
+      _foreignExpenses = foreign;
     });
+  }
+
+  /// Потрачено по лимиту в его валюте.
+  double _spentFor(Budget budget) {
+    final expenses = _foreignExpenses[budget.currency] ?? _categoryExpenses;
+    return expenses[budget.category] ?? 0;
   }
 
   Future<void> _handleRefresh() async {
@@ -132,6 +157,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       selectedMonth: _selectedMonth,
       selectedYear: _selectedYear,
       budgetToEdit: budgetToEdit,
+      limitedCategories: {for (final b in _budgets) b.category},
       onSaved: _loadBudgets,
     );
   }
@@ -203,7 +229,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
                         return BudgetItemCard(
                           budget: b,
-                          currentSpent: _categoryExpenses[b.category] ?? 0,
+                          currentSpent: _spentFor(b),
                           isFirst: index == 0,
                           showSwipeHint: index == 0 && _shouldShowSwipeHint,
                           onTap: () => _openAddBudgetSheet(b),
