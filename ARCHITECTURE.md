@@ -35,7 +35,7 @@ lib/
 │   ├── auth_model.dart          # DTO для авторизации (Login, Register, Me)
 │   ├── budget_model.dart        # DTO для бюджетов
 │   ├── report_model.dart        # Отчёты: ReportPeriod, ReportFormat, ReportData (операции, итоги, лимиты) — чистые Dart-типы
-│   ├── paginated_response.dart  # Универсальный DTO для пагинированных ответов (items, total, limit, offset)
+│   ├── paginated_response.dart  # Универсальный DTO для пагинированных ответов (items, has_more, next_cursor, limit)
 │   ├── transaction_model.dart   # DTO для транзакций (с поддержкой created_at и безопасного парсинга дат)
 │   ├── sync_model.dart          # Модель для пакетной синхронизации
 │   ├── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
@@ -148,7 +148,7 @@ main.dart`. Это было исправлено переносом состоя
 - `Transaction` и `Budget` — сущности ObjectBox (`@Entity()`).
 - **Денежные суммы (Decimal / Numeric(12, 2))**: На бэкенде денежные поля переведены на `Decimal(12, 2)` (`amount`, `limit_amount`, `spent`, `remaining`). На клиенте десериализация моделей (`Transaction`, `Budget`, `TransactionModel`, `BudgetModel`) выполняется через безопасный хелпер `parseAmount()`, корректно обрабатывающий как числовой `num` (int/double), так и строковый формат `"123.45"`, исключая ошибки приведения типов.
 - **Временные метки**: Все даты передаются по API в формате UTC ISO 8601 (`.toUtc().toIso8601String()`), а на клиенте разбираются через `.toLocal()`.
-- **Пагинация транзакций (API GET /api/v1/transactions/)**: Эндпоинт поддерживает Query-параметры `limit` (1..100, default 50), `offset` (min 0) и `since` (ISO 8601). Ответ бэкенда возвращается в формате `PaginatedResponse<TransactionModel>` (`items`, `total`, `limit`, `offset`). Фоновый процесс синхронизации `syncBackendDataToLocal` прозрачно выкачивает страницы с поддержкой отслеживания прогресса (`onTransactionProgress`) и защитой от переполнения памяти/бесконечных циклов через лимит `maxPages`.
+- **Пагинация транзакций (API GET /api/v1/transactions/)**: курсорная (keyset). Query-параметры: `limit` (1..100, default 50), `cursor` (непрозрачная строка из `next_cursor` предыдущей страницы; без него — первая страница) и `since` (ISO 8601, фильтр по `created_at`). Ответ — `PaginatedResponse<TransactionModel>` (`items`, `has_more`, `next_cursor`, `limit`); страницы упорядочены по дате операции от новых к старым. ETag и `If-None-Match` (ответ `304`) применяются только к первой странице. Фоновый процесс синхронизации `syncBackendDataToLocal` прозрачно выкачивает страницы с поддержкой отслеживания прогресса (`onTransactionProgress`) и защитой от переполнения памяти/бесконечных циклов через лимит `maxPages`.
 - **Синхронизация и защита целостности данных (Sync Integrity & ETag Lifecycle)**:
   - **Привязка ETag к пользователю и окружению**: ETag сохраняется в защищенном хранилище по составному ключу `${entity}_etag_${userId}_${env}`, что исключает коллизии между сессиями разных пользователей и средами (dev/prod).
   - **Подавление ETag при пустой локальной базе**: Если локальная база пуста (`!LocalDbService.instance.hasTransactions`), заголовок `If-None-Match` намеренно не отправляется. Это предотвращает ошибочный ответ 304 Not Modified после переустановки приложения или очистки локальной базы при сохранившемся в Keychain ключе ETag.
