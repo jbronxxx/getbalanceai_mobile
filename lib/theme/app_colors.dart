@@ -120,6 +120,11 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Текст и элементы на фирменной бирюзовой карточке (в обеих темах).
   static const Color onBrandBase = Color(0xFFFFFFFF);
 
+  /// Акценты направлений «Доход» / «Расход» на фирменной карточке:
+  /// мятно-зелёный и мягкий коралловый.
+  static const Color incomeOnBrand = Color(0xFF6EE7B7);
+  static const Color expenseOnBrand = Color(0xFFFCA5A5);
+
   static const _brandStart = Color(0xFF0F766E);
   static const _brandEnd = Color(0xFF115E59);
 

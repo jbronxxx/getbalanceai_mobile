@@ -376,6 +376,8 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(find.text(LanguageManager.l10n.month_total), findsOneWidget);
       expect(find.text(LanguageManager.l10n.income_title), findsOneWidget);
       expect(find.text(LanguageManager.l10n.expense_title), findsOneWidget);
+      expect(find.byIcon(Icons.south_west_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.north_east_rounded), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

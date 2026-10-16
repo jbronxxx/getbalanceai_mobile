@@ -6,11 +6,13 @@ import '../swipe_hint_wrapper.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
-/// Строка операции в ленте дашборда: иконка категории, описание, категория
-/// и сумма. Свайп влево удаляет (с отменой в тосте), тап открывает карточку.
+/// Строка операции в ленте дашборда: иконка категории, категория, описание
+/// под ней и сумма. Свайп влево удаляет (с отменой в тосте), тап открывает
+/// карточку.
 ///
-/// [showDate] — для группировки по категориям: вместо категории (она уже в
-/// заголовке группы) под описанием показывается день операции.
+/// [showDate] — для группировки по категориям: без иконки (она уже в
+/// заголовке группы), с отступом под текст заголовка; вместо категории
+/// показывается день операции.
 class TransactionItemTile extends StatelessWidget {
   final Transaction transaction;
   final bool isFirst;
@@ -46,10 +48,9 @@ class TransactionItemTile extends StatelessWidget {
     final categoryColor = CategoryStyle.color(category);
     final categoryName = category.getLocalizedName(context);
     final hasDescription = transaction.description.trim().isNotEmpty;
-    final secondary = showDate
+    final title = showDate
         ? LanguageManager.formatDayMonth(transaction.date)
         : categoryName;
-    final title = hasDescription ? transaction.description : secondary;
 
     final background = Container(
       alignment: Alignment.centerRight,
@@ -70,28 +71,32 @@ class TransactionItemTile extends StatelessWidget {
         color: backgroundColor(context),
         child: ListTile(
           onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: categoryColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: categoryColor.withValues(alpha: 0.25),
-                width: 0.8,
-              ),
-            ),
-            child: Icon(
-              CategoryStyle.icon(category),
-              color: categoryColor,
-              size: 20,
-            ),
-          ),
-          // Две строки: длинное описание читается в ленте без перехода
+          // В группе категории текст выравнивается по заголовку группы
+          contentPadding: showDate
+              ? const EdgeInsets.only(left: 72, right: 16)
+              : const EdgeInsets.symmetric(horizontal: 16),
+          leading: showDate
+              ? null
+              : Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: categoryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: categoryColor.withValues(alpha: 0.25),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Icon(
+                    CategoryStyle.icon(category),
+                    color: categoryColor,
+                    size: 20,
+                  ),
+                ),
           title: Text(
             title,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
@@ -100,11 +105,12 @@ class TransactionItemTile extends StatelessWidget {
           ),
           subtitle: hasDescription
               ? Text(
-                  secondary,
+                  transaction.description,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.outline,
+                    fontSize: AppFontSize.hint,
                   ),
                 )
               : null,
