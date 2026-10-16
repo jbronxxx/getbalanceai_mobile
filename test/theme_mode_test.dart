@@ -117,7 +117,7 @@ void main() {
       LanguageManager.initFallback();
     });
 
-    testWidgets('Отображает заголовок «Тема оформления» и 3 пункта без иконок',
+    testWidgets('Отображает заголовок «Тема оформления» и 3 пункта с иконками',
         (tester) async {
       await tester.pumpWidget(
         buildTestApp(
@@ -133,6 +133,37 @@ void main() {
 
       // Проверяем наличие галочки только у выбранного пункта «Системная»
       expect(find.byIcon(Icons.check), findsOneWidget);
+
+      // Иконки режимов слева от пунктов
+      expect(find.byIcon(Icons.brightness_auto_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.dark_mode_outlined), findsOneWidget);
+    });
+
+    testWidgets('Выбранный пункт: иконка, текст и галочка — акцентного цвета',
+        (tester) async {
+      PreferencesService.instance.themeModeNotifier.value = ThemeMode.dark;
+      await tester.pumpWidget(buildTestApp(const ThemeModePickerSheet()));
+      await tester.pump();
+
+      final accent = AppColors.light.accentText;
+      Color? iconColor(IconData icon) =>
+          tester.widget<Icon>(find.byIcon(icon)).color;
+
+      expect(iconColor(Icons.dark_mode_outlined), accent);
+      expect(iconColor(Icons.check), accent);
+      expect(tester.widget<Text>(find.text('Темная')).style?.color, accent);
+      expect(iconColor(Icons.light_mode_outlined), isNot(accent));
+      // Нижний отступ системы — SafeArea листа (у ListTile свои, только боковые)
+      expect(
+        find.descendant(
+          of: find.byType(ThemeModePickerSheet),
+          matching: find.byWidgetPredicate(
+            (w) => w is SafeArea && !w.top && w.bottom,
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Выбор пункта «Темная» сохраняет режим и вызывает колбэк',
