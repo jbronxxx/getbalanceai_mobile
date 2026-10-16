@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
+import '../models/month_period.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/insights/expense_structure_section.dart';
 import '../widgets/insights/insights_generate_card.dart';
 import '../widgets/insights/insights_unavailable_card.dart';
+import '../widgets/insights/report_export_action.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 import '../theme/theme.dart';
 
-/// Экран AI-инсайтов.
+/// Экран AI-инсайтов и выгрузки отчёта за месяц в CSV/PDF (кнопка в шапке).
 class InsightsScreen extends StatefulWidget {
   final InsightsCubit? cubit;
   final bool isActive;
@@ -116,6 +118,18 @@ class _InsightsScreenView extends StatelessWidget {
           style: AppTypography.screenTitle(context),
         ),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: ValueListenableBuilder<MonthPeriod>(
+              valueListenable: SelectedPeriodService.instance.periodNotifier,
+              builder: (context, period, _) => ReportExportAction(
+                selectedMonth: period.month,
+                selectedYear: period.year,
+              ),
+            ),
+          ),
+        ],
       ),
       body: ScreenBodyCard(
         child: CustomPullToRefresh(

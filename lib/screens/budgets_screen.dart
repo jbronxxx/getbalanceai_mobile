@@ -8,8 +8,8 @@ import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 import '../theme/theme.dart';
 
-/// Вкладка «Бюджет»: карточка бюджета месяца (сколько можно тратить в день),
-/// лимиты по категориям и выгрузка отчёта за месяц в CSV/PDF (кнопка в шапке).
+/// Вкладка «Бюджет»: карточка бюджета месяца (сколько можно тратить в день)
+/// и лимиты по категориям.
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
 
@@ -150,15 +150,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           style: AppTypography.screenTitle(context),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: ReportExportAction(
-              selectedMonth: _selectedMonth,
-              selectedYear: _selectedYear,
-            ),
-          ),
-        ],
       ),
       body: ScreenBodyCard(
         child: CustomPullToRefresh(

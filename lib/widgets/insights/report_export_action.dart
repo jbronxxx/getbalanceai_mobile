@@ -3,8 +3,8 @@ import '../../utils/utils.dart';
 import 'report_export_sheet.dart';
 import '../../theme/app_colors.dart';
 
-/// Кнопка «Отчёт» в шапке вкладки «Бюджет» — в том же стиле, что «Войти» на
-/// дашборде; открывает выгрузку отчёта в CSV/PDF за выбранный месяц.
+/// Кнопка «Отчёт» в шапке вкладки «Аналитика» — в том же стиле, что «Войти»
+/// на дашборде; открывает выгрузку отчёта в CSV/PDF за выбранный месяц.
 class ReportExportAction extends StatelessWidget {
   final int selectedMonth;
   final int selectedYear;

@@ -340,8 +340,9 @@ void main() {
           find.byKey(const ValueKey('month_budget_add_limit')), findsOneWidget);
       expect(find.byType(BudgetsSectionHeader), findsNothing);
       expect(find.byType(BudgetItemCard), findsNothing);
-      // Выгрузка отчёта — кнопкой в шапке
-      expect(find.byType(ReportExportAction), findsOneWidget);
+      // Выгрузка отчёта перенесена на «Аналитику»
+      expect(find.byTooltip(LanguageManager.l10n.report_export_title),
+          findsNothing);
     });
   });
 
