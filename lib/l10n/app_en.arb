@@ -46,6 +46,7 @@
   "logout_info": "Logged out successfully",
   "logout_error_title": "Error logging out",
   "transaction_deleted": "Transaction deleted",
+  "undo_action": "Undo",
   "welcome_lang_title": "Choose language",
   "welcome_lang_subtitle": "For a comfortable experience with the app",
   "welcome_currency_title": "Main Currency",

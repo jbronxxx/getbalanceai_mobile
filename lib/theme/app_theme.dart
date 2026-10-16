@@ -30,6 +30,9 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      // InkSparkle (по умолчанию M3 на Android) оставляет зернистую рябь
+      // при касании строк в начале скролла.
+      splashFactory: InkRipple.splashFactory,
       scaffoldBackgroundColor: lightSurface,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryTeal,
@@ -139,6 +142,9 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      // InkSparkle (по умолчанию M3 на Android) оставляет зернистую рябь
+      // при касании строк в начале скролла.
+      splashFactory: InkRipple.splashFactory,
       scaffoldBackgroundColor: darkSurface,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryTeal,
@@ -314,7 +320,8 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
     activeItemBg: Color(0x1A0F766E),
     inactiveItemColor: Color(0xB3334155),
     toastSurface: Color(0xE0FFFFFF),
-    toastRim: Color(0xD9FFFFFF),
+    // Граница тоста и диалога: контраст ≥ 3:1 к стеклу и к фону экрана
+    toastRim: Color(0xFF7C8BA1),
     blurSigma: 18.0,
   );
 
@@ -328,7 +335,7 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
     activeItemBg: Color(0x1FFFFFFF),
     inactiveItemColor: Color(0xB394A3B8),
     toastSurface: Color(0xE0141416),
-    toastRim: Color(0x3DFFFFFF),
+    toastRim: Color(0x66FFFFFF),
     blurSigma: 18.0,
   );
 

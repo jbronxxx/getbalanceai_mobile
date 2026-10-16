@@ -10,6 +10,8 @@ import '../theme/app_colors.dart';
 enum AlertType { success, error, warning, info }
 
 class AppAlerts {
+  static const double _toastRadius = 22;
+
   /// Отображает всплывающее уведомление (Toast) с кастомным дизайном в стиле Liquid Glass.
   ///
   /// Имеет размытие заднего плана (BackdropFilter), тонкую световую фаску (specular rim)
@@ -20,6 +22,8 @@ class AppAlerts {
     String? title,
     AlertType type = AlertType.info,
     Duration duration = const Duration(seconds: 4),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     final messenger = ScaffoldMessenger.of(context);
     final theme = Theme.of(context);
@@ -49,9 +53,15 @@ class AppAlerts {
         break;
     }
 
+    // Форма и обрезка SnackBar из темы (радиус 16) срезали тень стекла
+    // по своему контуру — получалась вторая рамка с другими углами.
     final snackBar = SnackBar(
       backgroundColor: AppColors.transparent,
       elevation: 0,
+      clipBehavior: Clip.none,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(_toastRadius)),
+      ),
       behavior: SnackBarBehavior.floating,
       duration: duration,
       padding: EdgeInsets.zero,
@@ -64,12 +74,12 @@ class AppAlerts {
         top: 8,
       ),
       content: GlassContainer(
-        borderRadius: 22,
+        borderRadius: _toastRadius,
         blurSigma: 20,
         color: glassTheme.toastSurface,
         border: Border.all(
           color: glassTheme.toastRim,
-          width: 1.2,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
@@ -141,17 +151,36 @@ class AppAlerts {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
-            IconButton(
-              icon: Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(width: 6),
+              TextButton(
+                key: const ValueKey('toast_action'),
+                onPressed: () {
+                  messenger.hideCurrentSnackBar();
+                  onAction();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.of(context).accentText,
+                  textStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                child: Text(actionLabel),
               ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: messenger.hideCurrentSnackBar,
-            ),
+            ] else ...[
+              // Тост с действием закрывается смахиванием, без крестика
+              const SizedBox(width: 6),
+              IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: messenger.hideCurrentSnackBar,
+              ),
+            ],
           ],
         ),
       ),
@@ -842,7 +871,7 @@ class _LiquidGlassDialog extends StatelessWidget {
         color: glassTheme.toastSurface,
         border: Border.all(
           color: glassTheme.toastRim,
-          width: 1.2,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(

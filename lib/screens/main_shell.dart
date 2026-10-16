@@ -65,8 +65,11 @@ class _MainShellState extends State<MainShell> {
 
         final shellBg = AppColors.of(context).shellBackground;
 
+        // Полей ввода во вкладках нет: клавиатура листа операции не должна
+        // перекладывать вкладки и навбар под модальным окном.
         return Scaffold(
           backgroundColor: shellBg,
+          resizeToAvoidBottomInset: false,
           body: Stack(
             alignment: Alignment.bottomCenter,
             children: [

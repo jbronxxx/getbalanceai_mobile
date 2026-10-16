@@ -29,6 +29,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   List<Category> _frequentCategories = const [];
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
+  final FocusNode _amountFocusNode = FocusNode();
+  Animation<double>? _routeAnimation;
   late Currency _selectedCurrency;
   String? _amountError;
 
@@ -49,6 +51,29 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     );
     _amountController.addListener(_onAmountChanged);
     _descriptionController = TextEditingController(text: t?.description ?? '');
+    if (t == null) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _focusAmountAfterOpen());
+    }
+  }
+
+  /// Клавиатура для новой операции открывается после выезда листа:
+  /// одновременная анимация листа и клавиатуры даёт заметный фриз.
+  void _focusAmountAfterOpen() {
+    if (!mounted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation == null || animation.isCompleted) {
+      _amountFocusNode.requestFocus();
+      return;
+    }
+    _routeAnimation = animation..addStatusListener(_onRouteAnimationStatus);
+  }
+
+  void _onRouteAnimationStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
+    _routeAnimation = null;
+    if (mounted) _amountFocusNode.requestFocus();
   }
 
   void _onAmountChanged() {
@@ -60,6 +85,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
+    _amountFocusNode.dispose();
     _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     _descriptionController.dispose();
@@ -231,10 +258,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return KeyboardInsetPadding(
       child: Container(
         decoration: AppSheet.decoration(context),
         child: SafeArea(
@@ -270,7 +294,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   currency: _selectedCurrency,
                   errorText: _amountError,
                   onCurrencyTap: _showCurrencyPicker,
-                  autofocus: !isEditing,
+                  focusNode: _amountFocusNode,
                 ),
                 const SizedBox(height: 12),
                 TransactionDateSelector(

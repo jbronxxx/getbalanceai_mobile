@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import 'category_chip.dart';
 import '../app_sheet.dart';
+import '../keyboard_inset_padding.dart';
 import '../../theme/app_colors.dart';
 
 /// Модальный лист со всеми категориями операции.
@@ -60,10 +61,7 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
                 c.getLocalizedName(context).toLowerCase().contains(query))
             .toList();
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return KeyboardInsetPadding(
       child: Container(
         decoration: AppSheet.decoration(context),
         child: SafeArea(

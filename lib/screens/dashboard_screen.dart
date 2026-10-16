@@ -28,11 +28,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<Transaction> _transactions = [];
   Map<DateTime, List<Transaction>> _groupedTransactions = {};
+  List<DateTime> _days = const [];
   DashboardViewMode _viewMode = DashboardViewMode.days;
   List<CategoryMonthSummary> _categorySummaries = [];
   double _totalIncome = 0;
   double _totalExpense = 0;
   double _totalBalance = 0;
+
+  /// Удалённые свайпом или из карточки операции ждут здесь отмены.
+  final _deletions = UndoableDeletions.transactions();
 
   bool _shouldShowSwipeHint = false;
   Timer? _swipeHintDismissTimer;
@@ -53,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
     SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
+    _deletions.addListener(_onDataChanged);
   }
 
   /// Перечитывает данные при смене валюты, периода или операций.
@@ -68,6 +73,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onDataChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    _deletions
+      ..removeListener(_onDataChanged)
+      ..dispose();
     _swipeHintDismissTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
@@ -102,10 +110,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Режим «По категориям»: итоги категорий за весь месяц, без пагинации —
   /// иначе итоги считались бы по первой странице.
   void _loadCategorySummaries() {
-    final totals =
-        LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
-    final all = LocalDbService.instance
-        .getTransactionsForPeriod(_selectedMonth, _selectedYear);
+    final all = _visibleMonthTransactions();
+    final totals = LocalDbService.instance.totalsFor(all);
     setState(() {
       _totalIncome = totals['income'] ?? 0;
       _totalExpense = totals['expense'] ?? 0;
@@ -115,6 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ..addAll(all);
       _categorySummaries = CategoryMonthSummary.fromTransactions(all);
       _groupedTransactions = {};
+      _days = const [];
       _hasMore = false;
       _offset = all.length;
     });
@@ -136,6 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _hasMore = true;
         _transactions.clear();
         _groupedTransactions = {};
+        _days = const [];
       });
     }
 
@@ -145,7 +153,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (!isLoadMore) {
       final totals =
-          LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
+          LocalDbService.instance.totalsFor(_visibleMonthTransactions());
       _totalIncome = totals['income'] ?? 0;
       _totalExpense = totals['expense'] ?? 0;
       _totalBalance = _totalIncome - _totalExpense;
@@ -162,19 +170,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _hasMore = false;
     }
 
-    _transactions.addAll(newBatch);
+    // Смещение считается по базе, скрытые операции только не показываются
     _offset += newBatch.length;
+    final visibleBatch =
+        newBatch.where((t) => !_deletions.isPending(t)).toList(growable: false);
+    _transactions.addAll(visibleBatch);
 
     final sortedGrouped = DayGroupWidget.groupByDay(
-      newBatch,
+      visibleBatch,
       appendTo: isLoadMore ? _groupedTransactions : const {},
     );
 
     setState(() {
       _groupedTransactions = sortedGrouped;
+      _days = sortedGrouped.keys.toList(growable: false);
       _isLoading = false;
     });
   }
+
+  /// Операции месяца без скрытых в ожидании удаления.
+  List<Transaction> _visibleMonthTransactions() => LocalDbService.instance
+      .getTransactionsForPeriod(_selectedMonth, _selectedYear)
+      .where((t) => !_deletions.isPending(t))
+      .toList(growable: false);
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
@@ -227,16 +245,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  /// Скрывает операцию и предлагает отменить удаление, пока виден тост.
   void _deleteTransaction(Transaction transaction) {
-    unawaited(
-      ApiService.instance.deleteTransactionEverywhere(transaction).catchError(
-        (Object e, StackTrace s) {
-          AppLogger.w('[Dashboard] Delete transaction everywhere failed', e, s);
-        },
-      ),
+    _deletions.schedule(transaction);
+    AppAlerts.showToast(
+      context,
+      message: context.l10n.transaction_deleted,
+      duration: _deletions.delay,
+      actionLabel: context.l10n.undo_action,
+      onAction: () => _deletions.undo(transaction),
     );
-    _loadTransactions();
-    AppAlerts.info(context, context.l10n.transaction_deleted);
   }
 
   void _openAuthScreen() async {
@@ -263,6 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: scaffoldBg,
+      resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       appBar: LiquidGlassAppBar(
         title: Text(
@@ -284,126 +303,136 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: CustomPullToRefresh(
           topPadding: LiquidGlassAppBar.topContentPadding(context),
           onRefresh: _handleRefresh,
-          child: CustomScrollView(
-            key: const PageStorageKey('dashboard_custom_scroll_view'),
-            controller: _scrollController,
-            physics: const ClampingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
+          // Без растяжения у краёв (Android 12+): растянутая лента
+          // перерисовывается со сглаживанием и даёт зернистую рябь под
+          // размытым хэдером. Обратную связь у верхнего края даёт капсула
+          // обновления.
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              overscroll: false,
             ),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: LiquidGlassAppBar.topContentPadding(context) + 8.0,
-                    left: 16.0,
-                    right: 16.0,
-                    bottom: 8.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const PeriodSwitcher(),
-                      BalanceCard(
-                        balance: _totalBalance,
-                        income: _totalIncome,
-                        expense: _totalExpense,
-                      ),
-                      const SizedBox(height: 16),
-                      DashboardViewSwitcher(
-                        mode: _viewMode,
-                        onChanged: _onViewModeChanged,
-                      ),
-                      const SizedBox(height: 8),
-                      if (_transactions.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 40.0),
-                          child: Center(
-                            child: Text(
-                              context.l10n.no_transactions,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.outline,
+            child: CustomScrollView(
+              key: const PageStorageKey('dashboard_custom_scroll_view'),
+              controller: _scrollController,
+              physics: const ClampingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      top: LiquidGlassAppBar.topContentPadding(context) + 8.0,
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 8.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const PeriodSwitcher(),
+                        BalanceCard(
+                          balance: _totalBalance,
+                          income: _totalIncome,
+                          expense: _totalExpense,
+                        ),
+                        const SizedBox(height: 16),
+                        DashboardViewSwitcher(
+                          mode: _viewMode,
+                          onChanged: _onViewModeChanged,
+                        ),
+                        const SizedBox(height: 8),
+                        if (_transactions.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 40.0),
+                            child: Center(
+                              child: Text(
+                                context.l10n.no_transactions,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.outline,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_transactions.isNotEmpty &&
-                  _viewMode == DashboardViewMode.categories)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final summary = _categorySummaries[index];
-                        return CategoryMonthGroup(
-                          key: ValueKey(
-                              'category_month_${summary.category.name}'),
-                          summary: summary,
-                          onTransactionTap: _openTransactionDetails,
-                          onTransactionDelete: _deleteTransaction,
-                        );
-                      },
-                      childCount: _categorySummaries.length,
+                      ],
                     ),
                   ),
                 ),
-              if (_transactions.isNotEmpty &&
-                  _viewMode == DashboardViewMode.days)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final date = _groupedTransactions.keys.elementAt(index);
-
-                        return DayGroupWidget(
-                          key: ValueKey('day_${date.millisecondsSinceEpoch}'),
-                          date: date,
-                          transactions: _groupedTransactions[date]!,
-                          showHintOnFirstTransaction:
-                              index == 0 && _shouldShowSwipeHint,
-                          onTransactionTap: _openTransactionDetails,
-                          onTransactionDelete: _deleteTransaction,
-                          onHintShown: () {
-                            PreferencesService.instance
-                                .recordHintShown('dashboard');
-                            _swipeHintDismissTimer?.cancel();
-                            _swipeHintDismissTimer = Timer(
-                              const Duration(milliseconds: 2000),
-                              () {
-                                if (mounted) {
-                                  setState(() => _shouldShowSwipeHint = false);
-                                }
-                              },
-                            );
-                          },
-                        );
-                      },
-                      childCount: _groupedTransactions.length,
-                    ),
-                  ),
-                ),
-              if (_isLoading && _transactions.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.of(context).accentText,
+                if (_transactions.isNotEmpty &&
+                    _viewMode == DashboardViewMode.categories)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final summary = _categorySummaries[index];
+                          return CategoryMonthGroup(
+                            key: ValueKey(
+                                'category_month_${summary.category.name}'),
+                            summary: summary,
+                            onTransactionTap: _openTransactionDetails,
+                            onTransactionDelete: _deleteTransaction,
+                          );
+                        },
+                        childCount: _categorySummaries.length,
                       ),
                     ),
                   ),
+                if (_transactions.isNotEmpty &&
+                    _viewMode == DashboardViewMode.days)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final date = _days[index];
+
+                          return DayGroupWidget(
+                            key: ValueKey('day_${date.millisecondsSinceEpoch}'),
+                            date: date,
+                            transactions: _groupedTransactions[date]!,
+                            showHintOnFirstTransaction:
+                                index == 0 && _shouldShowSwipeHint,
+                            onTransactionTap: _openTransactionDetails,
+                            onTransactionDelete: _deleteTransaction,
+                            onHintShown: () {
+                              PreferencesService.instance
+                                  .recordHintShown('dashboard');
+                              _swipeHintDismissTimer?.cancel();
+                              _swipeHintDismissTimer = Timer(
+                                const Duration(milliseconds: 2000),
+                                () {
+                                  if (mounted) {
+                                    setState(
+                                        () => _shouldShowSwipeHint = false);
+                                  }
+                                },
+                              );
+                            },
+                          );
+                        },
+                        childCount: _days.length,
+                      ),
+                    ),
+                  ),
+                if (_isLoading && _transactions.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.of(context).accentText,
+                        ),
+                      ),
+                    ),
+                  ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: LiquidGlassNavBar.bottomContentPadding(context),
+                  ),
                 ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: LiquidGlassNavBar.bottomContentPadding(context),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -11,7 +11,7 @@ class TransactionAmountField extends StatelessWidget {
   final Currency currency;
   final String? errorText;
   final VoidCallback onCurrencyTap;
-  final bool autofocus;
+  final FocusNode? focusNode;
 
   const TransactionAmountField({
     super.key,
@@ -19,7 +19,7 @@ class TransactionAmountField extends StatelessWidget {
     required this.currency,
     required this.onCurrencyTap,
     this.errorText,
-    this.autofocus = false,
+    this.focusNode,
   });
 
   @override
@@ -39,7 +39,7 @@ class TransactionAmountField extends StatelessWidget {
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [CurrencyInputFormatter(currency: currency)],
-          autofocus: autofocus,
+          focusNode: focusNode,
           decoration: InputDecoration(
             labelText: context.l10n.amount_label,
             errorText: errorText,

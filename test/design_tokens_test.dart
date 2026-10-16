@@ -22,6 +22,25 @@ void main() {
     });
 
     for (final entry in {
+      'светлая': (GlassTheme.light, AppColors.light),
+      'тёмная': (GlassTheme.dark, AppColors.dark),
+    }.entries) {
+      test('${entry.key}: граница тоста видна на стекле и на фоне (≥ 3:1)', () {
+        final (glass, colors) = entry.value;
+        final toast =
+            Color.alphaBlend(glass.toastSurface, colors.shellBackground);
+        final rim = Color.alphaBlend(glass.toastRim, toast);
+        expect(_contrast(rim, toast), greaterThanOrEqualTo(3));
+        expect(_contrast(rim, colors.shellBackground), greaterThanOrEqualTo(3));
+      });
+    }
+
+    test('обе темы используют InkRipple вместо зернистого InkSparkle', () {
+      expect(AppTheme.lightTheme.splashFactory, InkRipple.splashFactory);
+      expect(AppTheme.darkTheme.splashFactory, InkRipple.splashFactory);
+    });
+
+    for (final entry in {
       'светлая': AppColors.light,
       'тёмная': AppColors.dark,
     }.entries) {

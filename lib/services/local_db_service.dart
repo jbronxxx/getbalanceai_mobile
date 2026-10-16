@@ -183,12 +183,16 @@ class LocalDbService {
                   .greaterOrEqual(since.millisecondsSinceEpoch),
         )
         .build();
-    final transactions = q.find();
+    // Читаем только поле категории: форма открывается без загрузки
+    // целых операций за весь период.
+    final pq = q.property(Transaction_.dbCategory);
+    final names = pq.find();
+    pq.close();
     q.close();
 
     final counts = <Category, int>{};
-    for (final t in transactions) {
-      counts.update(t.category, (c) => c + 1, ifAbsent: () => 1);
+    for (final name in names) {
+      counts.update(Category.fromString(name), (c) => c + 1, ifAbsent: () => 1);
     }
     final sorted = counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -198,8 +202,13 @@ class LocalDbService {
   /// Считает общие итоги (доход и расход) за выбранный месяц с динамической
   /// конвертацией всех операций в текущую валюту аккаунта.
   Map<String, double> getMonthTotals(int month, int year,
+          [Currency? targetCurrency]) =>
+      totalsFor(getTransactionsForPeriod(month, year), targetCurrency);
+
+  /// Итоги (доход и расход) по готовому списку операций — например, без
+  /// скрытых в ожидании удаления.
+  Map<String, double> totalsFor(Iterable<Transaction> transactions,
       [Currency? targetCurrency]) {
-    final transactions = getTransactionsForPeriod(month, year);
     final currency = targetCurrency ?? CurrencyFormatter.currentCurrency;
     final exchange = CurrencyExchangeService.instance;
 
