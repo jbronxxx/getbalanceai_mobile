@@ -352,6 +352,60 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(_amountHasFocus(tester), isTrue);
     });
 
+    testWidgets(
+        'кнопка закреплена над клавиатурой, сумма и категории видны без скролла',
+        (tester) async {
+      final mockDb = _MockLocalDbService();
+      when(() => mockDb.getFrequentCategories(any())).thenReturn(const []);
+      LocalDbService.instance = mockDb;
+
+      // Типичный Android-экран 412×892 и клавиатура высотой 320
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(412, 892);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: AppTheme.lightTheme,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => showModalBottomSheet<bool>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => const AddTransactionSheet(),
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      const keyboardTop = 892.0 - 320;
+      final submitButton = find.byKey(const ValueKey('add_transaction_submit'));
+      final submit = tester.getRect(submitButton);
+      expect(submit.bottom, lessThanOrEqualTo(keyboardTop));
+      expect(submit.top, greaterThanOrEqualTo(0));
+
+      final amount = tester.getRect(find.byType(TextField).first);
+      expect(amount.top, greaterThanOrEqualTo(0));
+      expect(amount.bottom, lessThanOrEqualTo(submit.top));
+
+      final foodChip = find.byKey(const ValueKey('category_chip_food'));
+      final chip = tester.getRect(foodChip);
+      expect(chip.bottom, lessThanOrEqualTo(submit.top));
+    });
+
     testWidgets('пустая сумма не сохраняет операцию', (tester) async {
       final mockDb = _MockLocalDbService();
       when(() => mockDb.getFrequentCategories(any())).thenReturn(const []);

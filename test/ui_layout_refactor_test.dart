@@ -305,7 +305,7 @@ API_BASE_URL=http://localhost:8000/api/v1
 
   group('AddTransactionSheet Tests', () {
     testWidgets(
-        'AddTransactionSheet has no close button and uses SingleChildScrollView to avoid keyboard overflow',
+        'AddTransactionSheet has no close button, scrolls the form and pins the submit button',
         (tester) async {
       await tester.pumpWidget(
         _buildTestApp(
@@ -317,6 +317,14 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(find.text(LanguageManager.l10n.new_transaction), findsOneWidget);
       expect(find.byIcon(Icons.close), findsNothing);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
+      // Кнопка вне прокручиваемой области
+      expect(
+        find.descendant(
+          of: find.byType(SingleChildScrollView),
+          matching: find.byKey(const ValueKey('add_transaction_submit')),
+        ),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     });
 

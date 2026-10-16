@@ -258,71 +258,87 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
+    // Лист поднимается на высоту клавиатуры; форма прокручивается, а кнопка
+    // сохранения закреплена внизу и всегда видна над клавиатурой.
     return KeyboardInsetPadding(
       child: Container(
         decoration: AppSheet.decoration(context),
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(
-              top: 10,
-              left: 24,
-              right: 24,
-              bottom: 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Center(
-                  child: SheetHandle(),
-                ),
-                Text(
-                  isEditing
-                      ? context.l10n.edit_transaction
-                      : context.l10n.new_transaction,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                    top: 10,
+                    left: 24,
+                    right: 24,
+                    bottom: 8,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: SheetHandle(),
+                      ),
+                      Text(
+                        isEditing
+                            ? context.l10n.edit_transaction
+                            : context.l10n.new_transaction,
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TransactionTypeToggle(
+                        type: _type,
+                        onChanged: _onTypeChanged,
+                      ),
+                      const SizedBox(height: 20),
+                      TransactionAmountField(
+                        controller: _amountController,
+                        currency: _selectedCurrency,
+                        errorText: _amountError,
+                        onCurrencyTap: _showCurrencyPicker,
+                        focusNode: _amountFocusNode,
+                      ),
+                      const SizedBox(height: 12),
+                      TransactionDateSelector(
+                        date: _date,
+                        onChanged: _onDayChanged,
+                      ),
+                      const SizedBox(height: 20),
+                      CategoryChipsSelector(
+                        categories: _type == TransactionType.income
+                            ? Category.incomeCategories
+                            : Category.expenseCategories,
+                        frequent: _frequentCategories,
+                        selected: _category,
+                        onSelected: (category) =>
+                            setState(() => _category = category),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _descriptionController,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.description_label,
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                TransactionTypeToggle(type: _type, onChanged: _onTypeChanged),
-                const SizedBox(height: 20),
-                TransactionAmountField(
-                  controller: _amountController,
-                  currency: _selectedCurrency,
-                  errorText: _amountError,
-                  onCurrencyTap: _showCurrencyPicker,
-                  focusNode: _amountFocusNode,
-                ),
-                const SizedBox(height: 12),
-                TransactionDateSelector(
-                  date: _date,
-                  onChanged: _onDayChanged,
-                ),
-                const SizedBox(height: 20),
-                CategoryChipsSelector(
-                  categories: _type == TransactionType.income
-                      ? Category.incomeCategories
-                      : Category.expenseCategories,
-                  frequent: _frequentCategories,
-                  selected: _category,
-                  onSelected: (category) =>
-                      setState(() => _category = category),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _descriptionController,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.description_label,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: SizedBox(
+                  key: const ValueKey('add_transaction_submit'),
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
@@ -344,8 +360,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
