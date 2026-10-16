@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/category_style.dart';
 import 'package:getbalanceai_mobile/widgets/dashboard/dashboard.dart';
 
 Widget _buildTestApp(Widget child) {
@@ -170,10 +171,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TransactionItemTile), findsNWidgets(2));
-      // С описанием — дата в подписи; без описания — дата в заголовке
+      // Дата в заголовке строки, описание — под ней
       expect(find.text('Обед'), findsOneWidget);
       expect(find.text(LanguageManager.formatDayMonth(oct15)), findsOneWidget);
       expect(find.text(LanguageManager.formatDayMonth(oct14)), findsOneWidget);
+      // Иконка категории только в заголовке группы, не в строках
+      expect(
+        find.descendant(
+          of: find.byType(TransactionItemTile),
+          matching: find.byIcon(CategoryStyle.icon(Category.food)),
+        ),
+        findsNothing,
+      );
     });
   });
 
@@ -315,7 +324,8 @@ void main() {
   });
 
   group('TransactionItemTile', () {
-    testWidgets('описание занимает до двух строк', (tester) async {
+    testWidgets('описание выводится одной строкой под категорией',
+        (tester) async {
       final t = _tx(
           id: 1,
           amount: 30,
@@ -330,8 +340,34 @@ void main() {
         onDelete: () {},
       )));
 
-      final title = tester.widget<Text>(find.text('Длинное описание операции'));
-      expect(title.maxLines, 2);
+      final description =
+          tester.widget<Text>(find.text('Длинное описание операции'));
+      expect(description.maxLines, 1);
+      expect(description.overflow, TextOverflow.ellipsis);
+      expect(description.style?.fontSize, AppFontSize.hint);
+      expect(
+        tester.getTopLeft(find.text('Питание')).dy,
+        lessThan(tester.getTopLeft(find.text('Длинное описание операции')).dy),
+      );
+      expect(find.byIcon(CategoryStyle.icon(Category.food)), findsOneWidget);
+    });
+
+    testWidgets('без описания — только категория', (tester) async {
+      final t = _tx(
+          id: 1,
+          amount: 30,
+          type: TransactionType.expense,
+          category: Category.food,
+          date: oct15);
+
+      await tester.pumpWidget(_buildTestApp(TransactionItemTile(
+        transaction: t,
+        onTap: () {},
+        onDelete: () {},
+      )));
+
+      expect(find.text('Питание'), findsOneWidget);
+      expect(tester.widget<ListTile>(find.byType(ListTile)).subtitle, isNull);
     });
   });
 }

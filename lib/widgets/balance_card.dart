@@ -75,8 +75,8 @@ class BalanceCard extends StatelessWidget {
                 child: _IncomeExpenseInfo(
                   label: context.l10n.income_title,
                   amount: income,
-                  icon: Icons.arrow_downward_rounded,
-                  color: AppColors.onBrandBase,
+                  icon: Icons.south_west_rounded,
+                  color: AppColors.incomeOnBrand,
                 ),
               ),
               const SizedBox(width: 12),
@@ -84,8 +84,8 @@ class BalanceCard extends StatelessWidget {
                 child: _IncomeExpenseInfo(
                   label: context.l10n.expense_title,
                   amount: expense,
-                  icon: Icons.arrow_upward_rounded,
-                  color: AppColors.onBrandBase,
+                  icon: Icons.north_east_rounded,
+                  color: AppColors.expenseOnBrand,
                 ),
               ),
             ],
@@ -131,12 +131,12 @@ class _IncomeExpenseInfo extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: AppColors.onBrandBase.withValues(alpha: 0.22),
+                  color: color.withValues(alpha: 0.24),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: AppColors.onBrandBase,
+                  color: color,
                   size: 13,
                 ),
               ),
