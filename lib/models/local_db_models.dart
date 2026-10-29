@@ -165,6 +165,9 @@ enum Category {
 /// [category]/[type]/[date] — то, чем пользуется остальной код.
 @Entity()
 class Transaction {
+  /// Длина описания — как у колонки `transactions.description` на сервере.
+  static const descriptionMaxLength = 255;
+
   @Id()
   int localId;
 
