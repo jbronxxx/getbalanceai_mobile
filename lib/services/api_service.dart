@@ -16,6 +16,7 @@ import 'transaction_api_service.dart';
 /// [AuthApiService], [TransactionApiService], [BudgetApiService] и [SyncService].
 class ApiService {
   static const String _kRetriedKey = 'retried';
+  static const String _kTimezoneOffsetHeader = 'X-Timezone-Offset';
 
   final Dio _dio;
   late final AuthApiService _authService;
@@ -61,6 +62,11 @@ class ApiService {
     _dio.interceptors.add(TracingInterceptor());
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
+        // Месяцы бюджетов и AI-отчётов сервер считает по часам пользователя
+        if (!_isForeignHost(options.path)) {
+          options.headers[_kTimezoneOffsetHeader] =
+              DateTime.now().timeZoneOffset.inMinutes.toString();
+        }
         final token = _authService.token;
         if (token != null &&
             !options.headers.containsKey('Authorization') &&
@@ -131,18 +137,19 @@ class ApiService {
     }
   }
 
-  static bool _isAuthExcludedPath(String path) {
+  /// Абсолютный URL на чужой хост: служебные заголовки бэкенда туда не уходят.
+  static bool _isForeignHost(String path) {
     final uri = Uri.tryParse(path);
-    if (uri != null && uri.hasScheme && uri.hasAuthority) {
-      final baseUri = Uri.tryParse(ApiConfig.baseUrl);
-      if (baseUri != null && uri.host.isNotEmpty && uri.host != baseUri.host) {
-        return true;
-      }
-    }
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) return false;
+    final baseUri = Uri.tryParse(ApiConfig.baseUrl);
+    return baseUri != null && uri.host.isNotEmpty && uri.host != baseUri.host;
+  }
+
+  static bool _isAuthExcludedPath(String path) {
+    if (_isForeignHost(path)) return true;
+    final uri = Uri.tryParse(path);
     final pathOnly = uri?.path ?? path.split('?').first;
     return pathOnly == ApiConfig.refreshToken ||
-        pathOnly == ApiConfig.login ||
-        pathOnly == ApiConfig.register ||
         pathOnly == ApiConfig.loginGoogle ||
         pathOnly == ApiConfig.loginApple ||
         pathOnly == ApiConfig.currencyRates;
@@ -196,19 +203,6 @@ class ApiService {
   }
 
   Future<void> clearEtags() => _syncService.clearEtags();
-
-  Future<RegisterModel> register({
-    required String email,
-    required String password,
-    required String name,
-  }) =>
-      _authService.register(email: email, password: password, name: name);
-
-  Future<LoginResponseModel> login({
-    required String email,
-    required String password,
-  }) =>
-      _authService.login(email: email, password: password);
 
   Future<LoginResponseModel> loginWithGoogle(
     String idToken, {
