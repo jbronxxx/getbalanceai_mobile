@@ -179,75 +179,6 @@ class AuthApiService {
     _authStream.add(false);
   }
 
-  Future<RegisterModel> register({
-    required String email,
-    required String password,
-    required String name,
-  }) async {
-    final RegisterModel registerResponse;
-    try {
-      final response = await _dio.post(
-        ApiConfig.register,
-        data: {
-          'email': email,
-          'password': password,
-          'name': name,
-        },
-      );
-
-      registerResponse = RegisterModel.fromJson(response.data);
-      await setUserName(registerResponse.name);
-      await setUserEmail(registerResponse.email);
-    } on DioException catch (e) {
-      AppLogger.e(
-          '[AuthApiService] Register error: ${e.response?.data ?? e.message}',
-          e);
-      rethrow;
-    }
-
-    try {
-      await login(email: registerResponse.email, password: password);
-      return registerResponse;
-    } catch (e) {
-      AppLogger.w('[AuthApiService] Login after register error: $e');
-      rethrow;
-    }
-  }
-
-  Future<LoginResponseModel> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.login,
-        data: {
-          'email': email,
-          'password': password,
-        },
-      );
-
-      final data = response.data['data'];
-      final token = data?['access_token'] as String?;
-      final refreshToken = data?['refresh_token'] as String?;
-
-      if (token == null || refreshToken == null) {
-        throw Exception('Сервер не вернул токены');
-      }
-
-      await setTokens(token, refreshToken);
-      await setUserEmail(email);
-      await fetchAndSaveUserProfile();
-
-      _authStream.add(true);
-      return LoginResponseModel.fromJson(response.data);
-    } on DioException catch (e) {
-      AppLogger.e(
-          '[AuthApiService] Login error: ${e.response?.data ?? e.message}', e);
-      rethrow;
-    }
-  }
-
   Future<LoginResponseModel> loginWithGoogle(
     String idToken, {
     String? avatarUrl,
@@ -509,15 +440,10 @@ class AuthApiService {
       AppLogger.e('[AuthApiService] Token refresh failed', e);
       completer.complete(null);
 
-      bool isNetworkError = false;
-      if (e is DioException) {
-        isNetworkError = e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.sendTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.connectionError ||
-            e.type == DioExceptionType.unknown;
-      }
-      if (!isNetworkError) {
+      // Сессию завершает только 401: сервер отклонил refresh-токен. Сеть, 429
+      // и 5xx (например, 503 при сбое Redis) — временные сбои: токены
+      // сохраняются, запрос можно повторить, пользователь остаётся в аккаунте.
+      if (e is DioException && e.response?.statusCode == 401) {
         await handleSessionExpired();
       }
       return null;
