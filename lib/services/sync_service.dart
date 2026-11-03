@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
 import '../config/environment.dart';
 import '../models/models.dart';
@@ -69,6 +70,8 @@ class SyncService {
   final TransactionApiService _transactionApiService;
   final BudgetApiService _budgetApiService;
 
+  static const _uuid = Uuid();
+
   String? _transactionsEtag;
   String? _budgetsEtag;
 
@@ -126,6 +129,7 @@ class SyncService {
     try {
       final localTransactions =
           LocalDbService.instance.getUnsyncedTransactions();
+      _assignClientTransactionIds(localTransactions);
       final localBudgets = LocalDbService.instance.getUnsyncedBudgets();
       final pendingBudgets = PendingDeletionsStore.instance.budgetIds.toList();
       final pendingTransactions =
@@ -166,7 +170,8 @@ class SyncService {
       final data = response.data['data'];
 
       if (data is Map) {
-        _assignTransactionIds(localTransactions, data['synced_transactions']);
+        _assignTransactionIds(localTransactions, data['synced_transactions'],
+            rejectedIds: _rejectedIds(data['rejected']));
         _assignBudgetIds(localBudgets, data['synced_budgets']);
       }
 
@@ -487,7 +492,35 @@ class SyncService {
         .toList();
   }
 
-  void _assignTransactionIds(List<Transaction> sent, dynamic remote) {
+  /// Присваивает UUID новым транзакциям до отправки и сохраняет его локально.
+  ///
+  /// Сервер делает upsert по клиентскому `id`: если ответ на `/sync/` потерян
+  /// уже после записи на сервере, повтор того же батча обновит те же строки,
+  /// а не создаст дубли. `isModified = true` держит запись в очереди
+  /// невыгруженных, пока сервер её не подтвердит.
+  void _assignClientTransactionIds(List<Transaction> transactions) {
+    final fresh = transactions.where((t) => t.serverId == null).toList();
+    if (fresh.isEmpty) return;
+    for (final t in fresh) {
+      t.serverId = _uuid.v4();
+      t.isModified = true;
+    }
+    LocalDbService.instance.putTransactions(fresh);
+  }
+
+  /// ID записей из `rejected` ответа `/sync/`: сервер их не сохранил.
+  Set<String> _rejectedIds(dynamic rejected) {
+    return _asJsonList(rejected)
+        .map((json) => json['id'])
+        .whereType<String>()
+        .toSet();
+  }
+
+  void _assignTransactionIds(List<Transaction> sent, dynamic remote,
+      {Set<String> rejectedIds = const {}}) {
+    // Отклонённые сервером записи остаются невыгруженными, а не помечаются
+    // синхронизированными: иначе сверка с сервером удалила бы их локально.
+    sent = sent.where((t) => !rejectedIds.contains(t.serverId)).toList();
     final remoteItems = _asJsonList(remote);
     if (remoteItems.isEmpty) {
       final synced = <Transaction>[];

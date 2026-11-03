@@ -5,6 +5,7 @@ import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Модальная форма создания/редактирования транзакции.
 ///
@@ -327,6 +328,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         TextField(
                           controller: _descriptionController,
                           textCapitalization: TextCapitalization.sentences,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(
+                                Transaction.descriptionMaxLength),
+                          ],
                           decoration: InputDecoration(
                             labelText: context.l10n.description_label,
                             border: OutlineInputBorder(
