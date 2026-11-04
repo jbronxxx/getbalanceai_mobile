@@ -93,7 +93,10 @@ class BudgetApiService {
 
   /// Удаляет бюджет локально и на сервере (или добавляет в отложенные).
   Future<void> deleteBudgetEverywhere(Budget budget) async {
-    final serverId = budget.serverId;
+    // Актуальный serverId — из базы, см. deleteTransactionEverywhere.
+    final serverId =
+        LocalDbService.instance.getBudget(budget.localId)?.serverId ??
+            budget.serverId;
     LocalDbService.instance.deleteBudget(budget.localId);
 
     if (serverId == null) return;
