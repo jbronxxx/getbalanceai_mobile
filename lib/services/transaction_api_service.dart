@@ -102,7 +102,12 @@ class TransactionApiService {
 
   /// Удаляет транзакцию локально и на сервере (или добавляет в отложенные).
   Future<void> deleteTransactionEverywhere(Transaction transaction) async {
-    final serverId = transaction.serverId;
+    // Объект из списка мог устареть: serverId присваивается фоновой
+    // выгрузкой уже после того, как экран прочитал строку. Без актуального
+    // serverId удаление осталось бы локальным, и запись вернулась бы с сервера.
+    final serverId =
+        LocalDbService.instance.getTransaction(transaction.localId)?.serverId ??
+            transaction.serverId;
     LocalDbService.instance.deleteTransaction(transaction.localId);
 
     if (serverId == null) return;

@@ -287,10 +287,28 @@ class LocalDbService {
   /// иначе создаёт новую (поведение ObjectBox `Box.put`).
   void saveTransaction(Transaction transaction) {
     _ensureBaseAmount(transaction);
+    _restoreStoredTransactionServerId(transaction);
     _linkToExistingTransaction(transaction);
     final id = _transactionBox.put(transaction);
     AppLogger.d('[LocalDbService] Saved transaction localId: $id');
     transactionsChanged.value++;
+  }
+
+  /// Транзакция по локальному ID или `null`, если строки нет.
+  Transaction? getTransaction(int localId) =>
+      localId > 0 ? _transactionBox.get(localId) : null;
+
+  /// Правка с экрана может прийти с устаревшим объектом: список прочитан до
+  /// того, как фоновая выгрузка присвоила строке `serverId` (это изменение
+  /// экраны не перечитывают). Без этого шага `put` затёр бы `serverId`
+  /// null-ом, следующая выгрузка выдала бы новый UUID — и на сервере
+  /// оказались бы две копии операции.
+  void _restoreStoredTransactionServerId(Transaction transaction) {
+    if (transaction.serverId != null) return;
+    final storedServerId = getTransaction(transaction.localId)?.serverId;
+    if (storedServerId == null) return;
+    transaction.serverId = storedServerId;
+    transaction.isModified = true;
   }
 
   /// Переносит на приехавшую с сервера транзакцию `localId` уже существующей
@@ -491,10 +509,25 @@ class LocalDbService {
   /// Сохраняет лимит бюджета. Если лимит на эту категорию за этот месяц/год
   /// уже существует — обновляет его вместо создания дубликата.
   void saveBudget(Budget budget) {
+    _restoreStoredBudgetServerId(budget);
     _linkToExistingBudget(budget);
     final id = _budgetBox.put(budget);
     AppLogger.d('[LocalDbService] Saved budget localId: $id');
     budgetsChanged.value++;
+  }
+
+  /// Лимит по локальному ID или `null`, если строки нет.
+  Budget? getBudget(int localId) =>
+      localId > 0 ? _budgetBox.get(localId) : null;
+
+  /// То же, что [_restoreStoredTransactionServerId], для лимитов: правка
+  /// устаревшего объекта не должна обнулять присвоенный сервером `serverId`.
+  void _restoreStoredBudgetServerId(Budget budget) {
+    if (budget.serverId != null) return;
+    final storedServerId = getBudget(budget.localId)?.serverId;
+    if (storedServerId == null) return;
+    budget.serverId = storedServerId;
+    budget.isModified = true;
   }
 
   /// Ищет локальную строку, которую должен обновить этот лимит.
