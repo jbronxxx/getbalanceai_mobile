@@ -448,11 +448,10 @@ void main() {
       await tester.tap(find.text(Currency.uzs.localizedName));
       await tester.pumpAndSettle();
 
-      final expected = CurrencyFormatter.format(
+      final expected = CurrencyFormatter.formatForInput(
         CurrencyExchangeService.instance
             .convert(1000, from: Currency.kzt, to: Currency.uzs),
-        showSymbol: false,
-        currency: Currency.uzs,
+        Currency.uzs,
       );
       final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller!.text, expected);
