@@ -42,17 +42,18 @@ class BudgetApiService {
 
     if (serverId == null) return;
 
-    if (!_isAuthenticated()) {
-      await PendingDeletionsStore.instance.addBudget(serverId);
-      return;
-    }
+    // «Надгробие» — до запроса: если процесс убьют посреди удаления (оно
+    // выполняется и при сворачивании приложения), запись не вернётся с
+    // сервера при следующей загрузке. Повтор DELETE безопасен: 404 — успех.
+    await PendingDeletionsStore.instance.addBudget(serverId);
+    if (!_isAuthenticated()) return;
 
     try {
       await deleteBudget(serverId);
+      await PendingDeletionsStore.instance.removeBudgets([serverId]);
     } catch (e) {
       AppLogger.w(
           '[BudgetApiService] Server budget delete failed, deferring: $e');
-      await PendingDeletionsStore.instance.addBudget(serverId);
     }
   }
 }

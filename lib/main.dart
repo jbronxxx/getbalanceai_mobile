@@ -47,12 +47,11 @@ void main() async {
 
   try {
     await _setPreferredOrientations();
-    final started = await _initServices();
-    runApp(
-      started
-          ? const FinanceApp()
-          : const StartupErrorApp(onRetry: _retryStartup),
-    );
+    if (await _initServices()) {
+      _runFinanceApp();
+    } else {
+      runApp(const StartupErrorApp(onRetry: _retryStartup));
+    }
   } finally {
     // Скрытие нативного сплеш-экрана после передачи управления корневому
     // виджету. В finally — чтобы сплэш не завис при любом сбое старта.
@@ -91,8 +90,13 @@ Future<bool> _initServices() async {
 /// Повтор с экрана ошибки запуска: при успехе подменяет корневой виджет.
 Future<bool> _retryStartup() async {
   final started = await _initServices();
-  if (started) runApp(const FinanceApp());
+  if (started) _runFinanceApp();
   return started;
+}
+
+void _runFinanceApp() {
+  runApp(const FinanceApp());
+  AutoSyncService.instance.start();
 }
 
 Future<void> _setPreferredOrientations() async {
