@@ -10,11 +10,16 @@ class ProfileSyncCard extends StatelessWidget {
   final SyncStatus status;
   final VoidCallback onSyncPressed;
 
+  /// Изменения, ещё не отправленные на сервер: пока они есть, карточка не
+  /// пишет «синхронизировано».
+  final int pendingCount;
+
   const ProfileSyncCard({
     super.key,
     required this.isAuthenticated,
     required this.status,
     required this.onSyncPressed,
+    this.pendingCount = 0,
   });
 
   @override
@@ -28,8 +33,14 @@ class ProfileSyncCard extends StatelessWidget {
     IconData syncIcon = Icons.cloud_done_rounded;
     Color syncColor = AppColors.of(context).accentText;
     final bool isSyncing = status == SyncStatus.syncing;
+    final bool hasPending = pendingCount > 0 &&
+        (status == SyncStatus.idle || status == SyncStatus.success);
 
-    if (status == SyncStatus.noInternet) {
+    if (hasPending) {
+      syncStatusText = l10n.sync_pending(pendingCount);
+      syncIcon = Icons.cloud_upload_rounded;
+      syncColor = AppTheme.warningOrange;
+    } else if (status == SyncStatus.noInternet) {
       syncStatusText = l10n.sync_no_internet;
       syncIcon = Icons.cloud_off_rounded;
       syncColor = colorScheme.outline;

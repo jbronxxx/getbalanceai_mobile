@@ -198,6 +198,14 @@
   "budget_deleted": "Лимит жойылды",
   "sync_network_required": "Синхрондау үшін желіге қосылым жоқ",
   "sync_synced": "Деректер синхрондалды",
+  "sync_pending": "Жіберілмеген: {count}. Жіберу үшін басыңыз",
+  "@sync_pending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Соманы енгізіңіз",
   "invalid_amount": "Қате сома",
   "max_amount_prefix": "Ең көп сома",

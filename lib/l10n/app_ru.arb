@@ -198,6 +198,14 @@
   "budget_deleted": "Лимит удален",
   "sync_network_required": "Нет подключения к сети для синхронизации",
   "sync_synced": "Данные синхронизированы",
+  "sync_pending": "Не отправлено: {count}. Нажмите, чтобы отправить",
+  "@sync_pending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Введите сумму",
   "invalid_amount": "Некорректная сумма",
   "max_amount_prefix": "Макс. сумма",

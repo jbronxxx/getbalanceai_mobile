@@ -43,6 +43,11 @@ class LocalDbService {
   /// с сервера при синхронизации сообщает [transactionsChanged]).
   static final ValueNotifier<int> budgetsChanged = ValueNotifier(0);
 
+  /// Растёт, когда синхронизация меняет отметки выгрузки записей
+  /// ([putTransactions], [putBudgets]). Списки на него не подписаны — только
+  /// счётчик неотправленных изменений в Профиле.
+  static final ValueNotifier<int> syncStateChanged = ValueNotifier(0);
+
   late final Store _store;
   late final Box<Transaction> _transactionBox;
   late final Box<Budget> _budgetBox;
@@ -298,6 +303,12 @@ class LocalDbService {
   Transaction? getTransaction(int localId) =>
       localId > 0 ? _transactionBox.get(localId) : null;
 
+  /// Свежие строки по локальным ID в том же порядке; `null` — строки уже
+  /// нет (удалена). Нужен синхронизации, чтобы применить ответ сервера к
+  /// текущему состоянию базы, а не к объектам, прочитанным до запроса.
+  List<Transaction?> getTransactionsByLocalIds(List<int> localIds) =>
+      _transactionBox.getMany(localIds);
+
   /// Правка с экрана может прийти с устаревшим объектом: список прочитан до
   /// того, как фоновая выгрузка присвоила строке `serverId` (это изменение
   /// экраны не перечитывают). Без этого шага `put` затёр бы `serverId`
@@ -402,6 +413,7 @@ class LocalDbService {
   void putTransactions(List<Transaction> transactions) {
     if (transactions.isEmpty) return;
     _transactionBox.putMany(transactions);
+    syncStateChanged.value++;
   }
 
   /// Возвращает транзакции, ещё не отправленные на сервер (`serverId == null`
@@ -520,6 +532,10 @@ class LocalDbService {
   Budget? getBudget(int localId) =>
       localId > 0 ? _budgetBox.get(localId) : null;
 
+  /// То же, что [getTransactionsByLocalIds], для лимитов.
+  List<Budget?> getBudgetsByLocalIds(List<int> localIds) =>
+      _budgetBox.getMany(localIds);
+
   /// То же, что [_restoreStoredTransactionServerId], для лимитов: правка
   /// устаревшего объекта не должна обнулять присвоенный сервером `serverId`.
   void _restoreStoredBudgetServerId(Budget budget) {
@@ -581,11 +597,29 @@ class LocalDbService {
   void putBudgets(List<Budget> budgets) {
     if (budgets.isEmpty) return;
     _budgetBox.putMany(budgets);
+    syncStateChanged.value++;
   }
 
   /// Возвращает лимиты бюджета, ещё не отправленные на сервер (`serverId == null`
   /// или `isModified == true`).
   /// Используется при синхронизации гостевых/локальных данных после входа/редактирования.
+  /// Число операций и лимитов, ещё не отправленных на сервер (см.
+  /// [getUnsyncedTransactions], [getUnsyncedBudgets]) — без загрузки строк.
+  int get unsyncedCount {
+    final transactions = _transactionBox
+        .query(Transaction_.serverId
+            .isNull()
+            .or(Transaction_.isModified.equals(true)))
+        .build();
+    final budgets = _budgetBox
+        .query(Budget_.serverId.isNull().or(Budget_.isModified.equals(true)))
+        .build();
+    final count = transactions.count() + budgets.count();
+    transactions.close();
+    budgets.close();
+    return count;
+  }
+
   List<Budget> getUnsyncedBudgets() {
     final query = _budgetBox
         .query(Budget_.serverId.isNull().or(Budget_.isModified.equals(true)))

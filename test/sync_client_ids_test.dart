@@ -31,7 +31,12 @@ class _MockDioAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-Transaction _newTransaction() => Transaction(
+/// Строки «базы» по localId: синхронизация перечитывает их после ответа.
+final _rows = <int, Transaction>{};
+var _nextLocalId = 1;
+
+Transaction _newTransaction() => _rows[_nextLocalId] = Transaction(
+      localId: _nextLocalId++,
       amount: 42,
       description: 'Кофе',
       dbCategory: 'food',
@@ -79,6 +84,11 @@ void main() {
     LocalDbService.instance = db;
     when(() => db.getUnsyncedBudgets()).thenReturn([]);
     when(() => db.putTransactions(any())).thenReturn(null);
+    when(() => db.putBudgets(any())).thenReturn(null);
+    _rows.clear();
+    when(() => db.getTransactionsByLocalIds(any())).thenAnswer((inv) => [
+          for (final id in inv.positionalArguments.first as List<int>) _rows[id]
+        ]);
     api = ApiService.instance;
     await api.init();
     await api.setTokens('access', 'refresh');

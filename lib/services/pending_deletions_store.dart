@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../utils/app_logger.dart';
@@ -76,6 +77,13 @@ class PendingDeletionsStore {
 
   bool get isEmpty => _transactionIds.isEmpty && _budgetIds.isEmpty;
 
+  /// Сколько удалений ждёт отправки на сервер.
+  int get count => _transactionIds.length + _budgetIds.length;
+
+  /// Растёт при каждом изменении очереди — по нему Профиль пересчитывает
+  /// число неотправленных изменений.
+  static final ValueNotifier<int> changed = ValueNotifier(0);
+
   Future<void> addTransaction(String serverId) async {
     if (_transactionIds.add(serverId)) await _flush();
   }
@@ -101,6 +109,7 @@ class PendingDeletionsStore {
   }
 
   Future<void> _flush() async {
+    changed.value++;
     final file = _file;
     if (file == null) return;
     try {
