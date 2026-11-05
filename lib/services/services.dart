@@ -1,6 +1,7 @@
 export 'api_service.dart';
 export 'app_info_service.dart';
 export 'auth_api_service.dart';
+export 'auto_sync_service.dart';
 export 'budget_api_service.dart';
 export 'crash_reporter.dart';
 export 'currency_exchange_service.dart';

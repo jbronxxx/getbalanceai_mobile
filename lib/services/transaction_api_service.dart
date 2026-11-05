@@ -44,17 +44,18 @@ class TransactionApiService {
 
     if (serverId == null) return;
 
-    if (!_isAuthenticated()) {
-      await PendingDeletionsStore.instance.addTransaction(serverId);
-      return;
-    }
+    // «Надгробие» — до запроса: если процесс убьют посреди удаления (оно
+    // выполняется и при сворачивании приложения), запись не вернётся с
+    // сервера при следующей загрузке. Повтор DELETE безопасен: 404 — успех.
+    await PendingDeletionsStore.instance.addTransaction(serverId);
+    if (!_isAuthenticated()) return;
 
     try {
       await deleteTransaction(serverId);
+      await PendingDeletionsStore.instance.removeTransactions([serverId]);
     } catch (e) {
       AppLogger.w(
           '[TransactionApiService] Server delete failed, deferring: $e');
-      await PendingDeletionsStore.instance.addTransaction(serverId);
     }
   }
 }
