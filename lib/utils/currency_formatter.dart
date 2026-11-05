@@ -98,7 +98,7 @@ class CurrencyFormatter {
   /// Удаляет разделители тысяч и нормализует десятичный разделитель.
   static double? parseInput(String input) {
     if (input.isEmpty) return null;
-    var cleaned = input.replaceAll(' ', '').trim();
+    var cleaned = input.replaceAll(RegExp(r'\s'), '');
     if (cleaned.contains(',') && cleaned.contains('.')) {
       if (cleaned.lastIndexOf('.') > cleaned.lastIndexOf(',')) {
         cleaned = cleaned.replaceAll(',', '');
@@ -124,6 +124,22 @@ class CurrencyFormatter {
       return '${LanguageManager.l10n.max_amount_prefix}: ${format(_currentCurrency.maxAmount)}';
     }
     return null;
+  }
+
+  /// Сумма для подстановки в поле ввода: формат [CurrencyInputFormatter]
+  /// (пробел между тысячами, запятая перед копейками) независимо от языка,
+  /// число знаков — по валюте [currency], а не по базовой.
+  ///
+  /// [format] для этого не годится: в EN он даёт «1,500», и `parseInput`
+  /// читает запятую как десятичную — сумма делится на 1000.
+  static String formatForInput(double amount, Currency currency) {
+    final fixed = amount.abs().toStringAsFixed(currency.defaultDecimalDigits);
+    final parts = fixed.split('.');
+    final intPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
+    return parts.length > 1 ? '$intPart,${parts[1]}' : intPart;
   }
 
   /// Основной метод форматирования суммы в строку.
@@ -225,98 +241,210 @@ class CurrencyFormatter {
   }
 }
 
+/// Форматирует ввод суммы на лету: пробел между тысячами, запятая перед
+/// копейками, число знаков — по валюте поля.
+///
+/// Вставку из буфера нормализует: убирает пробелы любой ширины (в том числе
+/// неразрывные из отформатированных сумм) и символы/коды валют, распознаёт
+/// разделители тысяч «1,500,000» и «1.500,00». Неоднозначный ввод
+/// отклоняется, а не угадывается.
 class CurrencyInputFormatter extends TextInputFormatter {
   final Currency? currency;
 
   CurrencyInputFormatter({this.currency});
+
+  static final RegExp _whitespace = RegExp(r'\s');
+  static final RegExp _thousands = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+
+  static List<String>? _currencyMarks;
+
+  /// Символы и коды валют, которые могут прийти вместе с суммой при
+  /// вставке; длинные — первыми, чтобы «so'm» не разбирался по частям.
+  static List<String> get _marks => _currencyMarks ??= () {
+        final marks = <String>{
+          for (final c in Currency.values) ...[c.code, c.symbol],
+          for (final language in AppLanguage.values)
+            lookupAppLocalizations(Locale(language.code)).uzs_symbol,
+        };
+        return marks.map((m) => m.toLowerCase()).toSet().toList()
+          ..sort((a, b) => b.length.compareTo(a.length));
+      }();
+
+  /// Длина символа или кода валюты, начинающегося в [input] с [index];
+  /// 0 — валюты здесь нет.
+  static int _markLengthAt(String input, int index) {
+    for (final mark in _marks) {
+      final end = index + mark.length;
+      if (end <= input.length &&
+          input.substring(index, end).toLowerCase() == mark) {
+        return mark.length;
+      }
+    }
+    return 0;
+  }
 
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
 
-    // Оставляем только цифры, точку и запятую
-    final text = newValue.text.replaceAll(' ', '').replaceAll(',', '.');
+    final targetCurrency = currency ?? CurrencyFormatter.currentCurrency;
+    final parsed = _parse(newValue.text, targetCurrency.defaultDecimalDigits);
+    if (parsed == null) return oldValue;
 
-    // Разрешаем только цифры и максимум одну точку. Никаких e, E, +, -, NaN, Infinity.
-    final validRegex = RegExp(r'^\d*\.?\d*$');
-    if (!validRegex.hasMatch(text)) {
-      return oldValue;
-    }
+    var intPart = parsed.intPart;
+    final fraction = parsed.fraction;
+    if (intPart.isEmpty && fraction == null) return TextEditingValue.empty;
 
-    if (text == '.') {
-      return const TextEditingValue(
-        text: '0,',
-        selection: TextSelection.collapsed(offset: 2),
+    // Ведущие нули убираются на строке, без int.parse: длинная вставка
+    // не переполняет int
+    final withoutZeros = intPart.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    final removedZeros = intPart.length - withoutZeros.length;
+    intPart = withoutZeros;
+    final addedZero = intPart.isEmpty;
+    if (addedZero) intPart = '0';
+
+    final maxIntDigits = targetCurrency.maxAmount.toStringAsFixed(0).length;
+    if (intPart.length > maxIntDigits) return oldValue;
+
+    var text = intPart.replaceAllMapped(_thousands, (m) => '${m[1]} ');
+    if (fraction != null) text += ',$fraction';
+
+    final cursor = newValue.selection.baseOffset;
+    if (cursor < 0 || cursor >= newValue.text.length) {
+      return TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
       );
     }
 
-    final parts = text.split('.');
-    String intPart = parts[0];
-
-    // Убираем ведущие нули безопасно без переполнения int.parse
-    if (intPart.length > 1 && intPart.startsWith('0')) {
-      intPart = intPart.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    // Курсор встаёт после того же числа цифр (и десятичной запятой),
+    // что стояли перед ним во введённом тексте
+    final decimalBefore =
+        parsed.decimalIndex != null && parsed.decimalIndex! < cursor;
+    var digitsBefore = 0;
+    for (var i = 0; i < cursor; i++) {
+      if (_isDigit(newValue.text, i)) digitsBefore++;
     }
+    digitsBefore = (digitsBefore - removedZeros).clamp(0, digitsBefore);
+    if (addedZero && decimalBefore) digitsBefore++;
 
-    final targetCurrency = currency ?? CurrencyFormatter.currentCurrency;
-    final maxIntDigits = targetCurrency.maxAmount.toStringAsFixed(0).length;
-
-    // Ограничиваем длину целой части максимальной допустимой суммой
-    if (intPart.length > maxIntDigits) {
-      return oldValue;
-    }
-
-    final digitsLimit = targetCurrency.defaultDecimalDigits;
-
-    // Если валюта не поддерживает копейки (UZS, KZT), запрещаем точку
-    if (digitsLimit == 0 && parts.length > 1) {
-      return oldValue;
-    }
-
-    // Ограничиваем количество знаков после запятой
-    if (parts.length > 1 && parts[1].length > digitsLimit) {
-      return oldValue;
-    }
-
-    // Форматируем целую часть с пробелами
-    final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    String formattedInt =
-        intPart.replaceAllMapped(reg, (Match m) => '${m[1]} ');
-
-    String finalString = formattedInt;
-    if (parts.length > 1 || text.endsWith('.')) {
-      finalString += ',${parts.length > 1 ? parts[1] : ''}';
-    }
-
-    // Сохраняем позицию курсора, ориентируясь на количество введенных "не-пробелов"
-    int nonSpaceCharsBeforeCursor = 0;
-    for (int i = 0; i < newValue.selection.baseOffset; i++) {
-      if (i < newValue.text.length && newValue.text[i] != ' ') {
-        nonSpaceCharsBeforeCursor++;
-      }
-    }
-
-    int newCursorOffset = 0;
-    int nonSpaceCount = 0;
-    for (int i = 0; i < finalString.length; i++) {
-      if (nonSpaceCount == nonSpaceCharsBeforeCursor) {
+    var offset = 0;
+    var seenDigits = 0;
+    var passedDecimal = false;
+    while (offset < text.length) {
+      if (seenDigits >= digitsBefore && (!decimalBefore || passedDecimal)) {
         break;
       }
-      if (finalString[i] != ' ') {
-        nonSpaceCount++;
+      if (text[offset] == ',') {
+        passedDecimal = true;
+      } else if (_isDigit(text, offset)) {
+        seenDigits++;
       }
-      newCursorOffset++;
-    }
-
-    // Если курсор был в самом конце исходной строки, переносим его в конец новой
-    if (newValue.selection.baseOffset >= newValue.text.length) {
-      newCursorOffset = finalString.length;
+      offset++;
     }
 
     return TextEditingValue(
-      text: finalString,
-      selection: TextSelection.collapsed(offset: newCursorOffset),
+      text: text,
+      selection: TextSelection.collapsed(offset: offset),
     );
   }
+
+  static bool _isDigit(String text, int index) {
+    final unit = text.codeUnitAt(index);
+    return unit >= 0x30 && unit <= 0x39;
+  }
+
+  /// Разбирает ввод на целую часть и копейки; `null` — ввод недопустим.
+  static _ParsedAmount? _parse(String input, int digitsLimit) {
+    // Значимые символы и их позиции в исходном тексте
+    final chars = <String>[];
+    final positions = <int>[];
+    var i = 0;
+    while (i < input.length) {
+      if (_whitespace.hasMatch(input[i])) {
+        i++;
+        continue;
+      }
+      final markLength = _markLengthAt(input, i);
+      if (markLength > 0) {
+        i += markLength;
+        continue;
+      }
+      final ch = input[i];
+      if (!_isDigit(input, i) && ch != ',' && ch != '.') return null;
+      chars.add(ch);
+      positions.add(i);
+      i++;
+    }
+
+    final separators = [
+      for (var k = 0; k < chars.length; k++)
+        if (chars[k] == ',' || chars[k] == '.') k,
+    ];
+
+    int? decimalAt;
+    if (separators.isNotEmpty) {
+      final last = separators.last;
+      final kinds = separators.map((k) => chars[k]).toSet();
+      if (kinds.length > 1) {
+        // «1,500.00» / «1.500,00»: последний разделитель — десятичный,
+        // второй вид — только тысячи
+        if (separators.where((k) => chars[k] == chars[last]).length > 1) {
+          return null;
+        }
+        decimalAt = last;
+      } else if (separators.length == 1) {
+        if (digitsLimit > 0) {
+          decimalAt = last;
+        } else if (last == chars.length - 1) {
+          // У валют без копеек запятая в конце просто не ставится
+          chars.removeLast();
+          positions.removeLast();
+        }
+      }
+    }
+
+    final intEnd = decimalAt ?? chars.length;
+    final intRaw = chars.sublist(0, intEnd).join();
+    final fraction =
+        decimalAt == null ? null : chars.sublist(decimalAt + 1).join();
+
+    // Разделители в целой части допустимы только как тысячи: «1,500,000»
+    String intPart = intRaw;
+    if (intRaw.contains(RegExp(r'[.,]'))) {
+      final groupChar = intRaw.contains(',') ? ',' : '.';
+      final grouped = RegExp('^\\d{1,3}(\\$groupChar\\d{3})+\$');
+      if (intRaw.contains(groupChar == ',' ? '.' : ',') ||
+          !grouped.hasMatch(intRaw)) {
+        return null;
+      }
+      intPart = intRaw.replaceAll(groupChar, '');
+    }
+
+    if (fraction != null &&
+        (fraction.contains(RegExp(r'[.,]')) || fraction.length > digitsLimit)) {
+      return null;
+    }
+
+    return _ParsedAmount(
+      intPart: intPart,
+      fraction: fraction,
+      decimalIndex: decimalAt == null ? null : positions[decimalAt],
+    );
+  }
+}
+
+/// Разобранный ввод суммы: цифры целой части, копейки (`null` — без
+/// десятичного разделителя) и позиция разделителя во введённом тексте.
+class _ParsedAmount {
+  final String intPart;
+  final String? fraction;
+  final int? decimalIndex;
+
+  const _ParsedAmount({
+    required this.intPart,
+    required this.fraction,
+    required this.decimalIndex,
+  });
 }

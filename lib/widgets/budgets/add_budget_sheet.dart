@@ -91,10 +91,9 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     _selectedCurrency = budget?.currency ?? CurrencyFormatter.currentCurrency;
     _amountController = TextEditingController(
       text: budget != null
-          ? CurrencyFormatter.format(
+          ? CurrencyFormatter.formatForInput(
               budget.limitAmount,
-              showSymbol: false,
-              currency: _selectedCurrency,
+              _selectedCurrency,
             )
           : '',
     );
@@ -144,11 +143,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       if (currentAmount != null && currentAmount > 0) {
         final converted = CurrencyExchangeService.instance
             .convert(currentAmount, from: previous, to: picked);
-        _amountController.text = CurrencyFormatter.format(
-          converted,
-          showSymbol: false,
-          currency: picked,
-        );
+        _amountController.text =
+            CurrencyFormatter.formatForInput(converted, picked);
       }
     });
   }

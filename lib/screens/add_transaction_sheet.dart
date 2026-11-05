@@ -47,7 +47,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _selectedCurrency = t?.currency ?? CurrencyFormatter.currentCurrency;
     _amountController = TextEditingController(
       text: t != null
-          ? CurrencyFormatter.format(t.amount, showSymbol: false)
+          ? CurrencyFormatter.formatForInput(t.amount, _selectedCurrency)
           : '',
     );
     _amountController.addListener(_onAmountChanged);
@@ -151,11 +151,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         final currentAmount =
             CurrencyFormatter.parseInput(_amountController.text);
         if (currentAmount != null && currentAmount > 0) {
-          _amountController.text = CurrencyFormatter.format(
-            currentAmount,
-            showSymbol: false,
-            currency: picked,
-          );
+          _amountController.text =
+              CurrencyFormatter.formatForInput(currentAmount, picked);
         }
       });
     }
@@ -184,8 +181,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (amount > _selectedCurrency.maxAmount) {
       setState(() {
         _amountError = context.l10n.amount_requirement_max(
-          CurrencyFormatter.format(_selectedCurrency.maxAmount,
-              showSymbol: false),
+          CurrencyFormatter.format(
+            _selectedCurrency.maxAmount,
+            showSymbol: false,
+            currency: _selectedCurrency,
+          ),
           _selectedCurrency.code,
         );
       });

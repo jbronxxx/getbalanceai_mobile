@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
-import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -119,6 +119,137 @@ void main() {
       expect(CurrencyFormatter.parseInput('1 234,56'), 1234.56);
       expect(CurrencyFormatter.parseInput('1234.56'), 1234.56);
       expect(CurrencyFormatter.parseInput('1234,56'), 1234.56);
+    });
+  });
+
+  group('CurrencyFormatter.formatForInput', () {
+    tearDown(() => LanguageManager.setLanguage(AppLanguage.ru, save: false));
+
+    test('знаки — по валюте суммы, а не по базовой', () {
+      expect(CurrencyFormatter.formatForInput(19.99, Currency.usd), '19,99');
+      expect(CurrencyFormatter.formatForInput(0.45, Currency.eur), '0,45');
+      expect(CurrencyFormatter.formatForInput(50000, Currency.uzs), '50 000');
+      expect(
+          CurrencyFormatter.formatForInput(1500000, Currency.kzt), '1 500 000');
+    });
+
+    test('не зависит от языка и читается обратно без потерь', () {
+      LanguageManager.setLanguage(AppLanguage.en, save: false);
+
+      for (final (amount, currency) in [
+        (1500.0, Currency.uzs),
+        (1500000.0, Currency.kzt),
+        (1500.0, Currency.usd),
+        (1234567.89, Currency.eur),
+      ]) {
+        final text = CurrencyFormatter.formatForInput(amount, currency);
+        expect(CurrencyFormatter.parseInput(text), amount, reason: text);
+      }
+      expect(CurrencyFormatter.formatForInput(1500, Currency.usd), '1 500,00');
+    });
+
+    test('совпадает с тем, что оставляет поле ввода', () {
+      final formatter = CurrencyInputFormatter(currency: Currency.usd);
+      const text = '1 234 567,80';
+      expect(CurrencyFormatter.formatForInput(1234567.8, Currency.usd), text);
+      expect(
+        formatter
+            .formatEditUpdate(
+                TextEditingValue.empty, const TextEditingValue(text: text))
+            .text,
+        text,
+      );
+    });
+
+    test('parseInput понимает неразрывные пробелы', () {
+      expect(CurrencyFormatter.parseInput('15\u00A0000'), 15000);
+      expect(CurrencyFormatter.parseInput('15\u202F000,5'), 15000.5);
+    });
+  });
+
+  group('CurrencyInputFormatter: вставка из буфера', () {
+    TextEditingValue paste(Currency currency, String text, {String old = ''}) {
+      return CurrencyInputFormatter(currency: currency).formatEditUpdate(
+        TextEditingValue(text: old),
+        TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        ),
+      );
+    }
+
+    test('неразрывный и узкий пробел, символ валюты', () {
+      expect(paste(Currency.uzs, '15\u00A0000 сум').text, '15 000');
+      expect(paste(Currency.uzs, '15\u202F000\u00A0сум').text, '15 000');
+      expect(paste(Currency.uzs, "15 000 so'm").text, '15 000');
+      expect(paste(Currency.uzs, '15 000 UZS').text, '15 000');
+      expect(paste(Currency.kzt, '2 500 ₸').text, '2 500');
+      expect(paste(Currency.usd, r'$19.99').text, '19,99');
+      expect(paste(Currency.eur, '€12,5').text, '12,5');
+    });
+
+    test('разделители тысяч EN и европейский формат', () {
+      expect(paste(Currency.uzs, '1,500,000').text, '1 500 000');
+      expect(paste(Currency.uzs, '1,500').text, '1 500');
+      expect(paste(Currency.uzs, '1.500').text, '1 500');
+      expect(paste(Currency.usd, r'$1,500.00').text, '1 500,00');
+      expect(paste(Currency.usd, '1.500,50').text, '1 500,50');
+      expect(paste(Currency.usd, '12,345,678.9').text, '12 345 678,9');
+    });
+
+    test('неоднозначный ввод отклоняется, а не угадывается', () {
+      // У доллара «1,500» — это 1,5 с лишним знаком, а не 1500
+      expect(paste(Currency.usd, '1,500', old: '7').text, '7');
+      expect(paste(Currency.uzs, '1,5', old: '7').text, '7');
+      expect(paste(Currency.uzs, '15 000,00', old: '7').text, '7');
+      expect(paste(Currency.uzs, '1,500.00', old: '7').text, '7');
+      expect(paste(Currency.usd, '1,50,0', old: '7').text, '7');
+      expect(paste(Currency.usd, '15 abc', old: '7').text, '7');
+    });
+
+    test('запятая в пустом поле валюты без копеек ничего не ставит', () {
+      expect(paste(Currency.uzs, ',').text, '');
+      expect(paste(Currency.uzs, '.').text, '');
+      expect(paste(Currency.kzt, '10,', old: '10').text, '10');
+    });
+
+    test('копейки без целой части получают ведущий ноль', () {
+      expect(paste(Currency.usd, ',5').text, '0,5');
+      expect(paste(Currency.usd, '.').text, '0,');
+    });
+
+    test('точка после копеек не превращает их в тысячи', () {
+      expect(paste(Currency.usd, '1 500,5.', old: '1 500,5').text, '1 500,5');
+    });
+  });
+
+  group('CurrencyInputFormatter: курсор', () {
+    TextEditingValue edit(String oldText, String newText, int cursor) {
+      return CurrencyInputFormatter(currency: Currency.usd).formatEditUpdate(
+        TextEditingValue(text: oldText),
+        TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: cursor),
+        ),
+      );
+    }
+
+    test('цифра в середине: курсор остаётся после неё', () {
+      final result = edit('1 000', '1 0500', 4);
+      expect(result.text, '10 500');
+      expect(result.selection.baseOffset, 4);
+    });
+
+    test('запятая в середине: курсор после запятой', () {
+      final result = edit('1 500', '1 5,00', 4);
+      expect(result.text, '15,00');
+      expect(result.selection.baseOffset, 3);
+    });
+
+    test('ввод в конце — курсор в конце', () {
+      final result = edit('100', '1000', 4);
+      expect(result.text, '1 000');
+      expect(result.selection.baseOffset, 5);
     });
   });
 }
