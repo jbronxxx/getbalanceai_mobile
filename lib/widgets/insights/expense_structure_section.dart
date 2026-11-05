@@ -29,6 +29,7 @@ class _ExpenseStructureSectionState extends State<ExpenseStructureSection> {
     SelectedPeriodService.instance.periodNotifier.addListener(_reload);
     CurrencyFormatter.currencyNotifier.addListener(_reload);
     LocalDbService.transactionsChanged.addListener(_reload);
+    UndoableDeletions.transactions.addListener(_reload);
   }
 
   @override
@@ -36,6 +37,7 @@ class _ExpenseStructureSectionState extends State<ExpenseStructureSection> {
     SelectedPeriodService.instance.periodNotifier.removeListener(_reload);
     CurrencyFormatter.currencyNotifier.removeListener(_reload);
     LocalDbService.transactionsChanged.removeListener(_reload);
+    UndoableDeletions.transactions.removeListener(_reload);
     super.dispose();
   }
 
@@ -47,10 +49,16 @@ class _ExpenseStructureSectionState extends State<ExpenseStructureSection> {
     if (!LocalDbService.isInitialized) return;
     final period = SelectedPeriodService.instance.period;
     final db = LocalDbService.instance;
-    final totals = db.getMonthTotals(period.month, period.year);
+    // Операции, скрытые в ожидании удаления, уже не учитываются
+    final deletions = UndoableDeletions.transactions;
+    final transactions = db
+        .getTransactionsForPeriod(period.month, period.year)
+        .where((t) => !deletions.isPending(t))
+        .toList(growable: false);
+    final totals = db.totalsFor(transactions);
     _income = totals['income'] ?? 0;
     _expense = totals['expense'] ?? 0;
-    _byCategory = db.getCategoryExpensesForPeriod(period.month, period.year);
+    _byCategory = db.categoryExpensesFor(transactions);
   }
 
   @override

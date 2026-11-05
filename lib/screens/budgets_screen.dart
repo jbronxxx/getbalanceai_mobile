@@ -31,7 +31,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   bool _shouldShowSwipeHint = false;
 
   /// Удалённые свайпом лимиты ждут здесь отмены.
-  final _deletions = UndoableDeletions.budgets();
+  final _deletions = UndoableDeletions.budgets;
+
+  /// Операции, скрытые в ожидании удаления на главной: в расходах по
+  /// лимитам они уже не учитываются.
+  final _transactionDeletions = UndoableDeletions.transactions;
 
   @override
   void initState() {
@@ -42,6 +46,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
     _deletions.addListener(_onDataChanged);
+    _transactionDeletions.addListener(_onDataChanged);
   }
 
   /// Перечитывает лимиты и расходы при смене валюты, периода или операций
@@ -58,9 +63,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onDataChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    _transactionDeletions.removeListener(_onDataChanged);
+    // Очередь общая: при уходе с экрана скрытые лимиты удаляются сразу
     _deletions
       ..removeListener(_onDataChanged)
-      ..dispose();
+      ..flush();
     super.dispose();
   }
 
@@ -76,11 +83,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   /// Загружает лимиты и расходы по категориям за выбранный месяц: один
   /// проход по операциям в базовой валюте и по одному на каждую другую
-  /// валюту лимитов.
+  /// валюту лимитов. Операции, скрытые в ожидании удаления, не учитываются.
   void _loadBudgets() {
     final db = LocalDbService.instance;
-    final catExpenses =
-        db.getCategoryExpensesForPeriod(_selectedMonth, _selectedYear);
+    final transactions = db
+        .getTransactionsForPeriod(_selectedMonth, _selectedYear)
+        .where((t) => !_transactionDeletions.isPending(t))
+        .toList(growable: false);
+    final catExpenses = db.categoryExpensesFor(transactions);
     final budgets = db
         .getBudgetsForPeriod(_selectedMonth, _selectedYear)
         .where((b) => !_deletions.isPending(b))
@@ -89,11 +99,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final foreign = <Currency, Map<Category, double>>{};
     for (final currency in budgets.map((b) => b.currency).toSet()) {
       if (currency == base) continue;
-      foreign[currency] = db.getCategoryExpensesForPeriod(
-        _selectedMonth,
-        _selectedYear,
-        currency,
-      );
+      foreign[currency] = db.categoryExpensesFor(transactions, currency);
     }
     setState(() {
       _budgets = budgets;

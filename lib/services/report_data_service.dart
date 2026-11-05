@@ -2,19 +2,29 @@ import '../models/models.dart';
 import '../utils/currency_formatter.dart';
 import 'currency_exchange_service.dart';
 import 'local_db_service.dart';
+import 'undoable_deletions.dart';
 
 /// Собирает данные отчёта из локальной базы (без обращения к бэкенду).
 class ReportDataService {
   final LocalDbService? _db;
   final CurrencyExchangeService? _exchange;
+  final bool Function(Transaction t)? _isPendingDeletion;
 
-  ReportDataService({LocalDbService? db, CurrencyExchangeService? exchange})
-      : _db = db,
-        _exchange = exchange;
+  /// [isPendingDeletion] — операция скрыта в ожидании удаления и в отчёт не
+  /// попадает; по умолчанию — общая очередь [UndoableDeletions.transactions].
+  ReportDataService({
+    LocalDbService? db,
+    CurrencyExchangeService? exchange,
+    bool Function(Transaction t)? isPendingDeletion,
+  })  : _db = db,
+        _exchange = exchange,
+        _isPendingDeletion = isPendingDeletion;
 
   /// Читает операции и лимиты за [period] и приводит суммы к базовой валюте.
   ReportData build(ReportPeriod period, {Currency? currency, DateTime? now}) {
     final db = _db ?? LocalDbService.instance;
+    final isPendingDeletion =
+        _isPendingDeletion ?? UndoableDeletions.transactions.isPending;
     final budgets = <Budget>[
       for (final m in period.fullMonths)
         ...db.getBudgetsForPeriod(m.month, m.year),
@@ -22,7 +32,10 @@ class ReportDataService {
     return assemble(
       period: period,
       currency: currency ?? CurrencyFormatter.currentCurrency,
-      transactions: db.getTransactionsInRange(period),
+      transactions: db
+          .getTransactionsInRange(period)
+          .where((t) => !isPendingDeletion(t))
+          .toList(),
       budgets: budgets,
       exchange: _exchange ?? CurrencyExchangeService.instance,
       now: now ?? DateTime.now(),
