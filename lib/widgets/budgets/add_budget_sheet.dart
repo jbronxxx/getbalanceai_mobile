@@ -201,6 +201,14 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       isModified: widget.budgetToEdit?.serverId != null,
     );
 
+    // Лимит той же категории и месяца, удалённый свайпом, ещё ждёт отмены.
+    // Новый лимит ляжет в ту же строку, поэтому удаление отменяется — иначе
+    // через несколько секунд оно стёрло бы новый лимит вместе с серверной
+    // записью.
+    UndoableDeletions.budgets.undoWhere((b) =>
+        b.dbCategory == newBudget.dbCategory &&
+        b.month == newBudget.month &&
+        b.year == newBudget.year);
     LocalDbService.instance.saveBudget(newBudget);
     if (ApiService.instance.isAuthenticated == true) {
       unawaited(

@@ -13,6 +13,10 @@ import 'api_service.dart';
 /// случайном удалении это безопасный исход.
 ///
 /// Слушатели уведомляются, когда запись скрыта, возвращена или удалена.
+///
+/// Очереди операций и лимитов общие на всё приложение ([transactions],
+/// [budgets]): скрытую операцию не должны учитывать и другие экраны —
+/// «Бюджет», структура расходов, экспорт отчёта.
 class UndoableDeletions<T> extends ChangeNotifier {
   UndoableDeletions({
     required int Function(T item) idOf,
@@ -22,17 +26,17 @@ class UndoableDeletions<T> extends ChangeNotifier {
         _commit = commit;
 
   /// Операции: удаление локально и на сервере.
-  static UndoableDeletions<Transaction> transactions() =>
+  static final UndoableDeletions<Transaction> transactions =
       UndoableDeletions<Transaction>(
-        idOf: (t) => t.localId,
-        commit: (t) => ApiService.instance.deleteTransactionEverywhere(t),
-      );
+    idOf: (t) => t.localId,
+    commit: (t) => ApiService.instance.deleteTransactionEverywhere(t),
+  );
 
   /// Лимиты бюджета: удаление локально и на сервере.
-  static UndoableDeletions<Budget> budgets() => UndoableDeletions<Budget>(
-        idOf: (b) => b.localId,
-        commit: (b) => ApiService.instance.deleteBudgetEverywhere(b),
-      );
+  static final UndoableDeletions<Budget> budgets = UndoableDeletions<Budget>(
+    idOf: (b) => b.localId,
+    commit: (b) => ApiService.instance.deleteBudgetEverywhere(b),
+  );
 
   final Duration delay;
   final int Function(T item) _idOf;
@@ -58,6 +62,20 @@ class UndoableDeletions<T> extends ChangeNotifier {
     entry.timer.cancel();
     notifyListeners();
     return true;
+  }
+
+  /// Возвращает все скрытые записи, подходящие под [test]; `true`, если
+  /// вернули хотя бы одну.
+  bool undoWhere(bool Function(T item) test) {
+    final ids = [
+      for (final MapEntry(:key, :value) in _pending.entries)
+        if (test(value.item)) key,
+    ];
+    for (final id in ids) {
+      _pending.remove(id)!.timer.cancel();
+    }
+    if (ids.isNotEmpty) notifyListeners();
+    return ids.isNotEmpty;
   }
 
   /// Удаляет все скрытые записи сразу, не дожидаясь [delay].

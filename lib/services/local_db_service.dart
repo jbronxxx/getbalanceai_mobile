@@ -242,8 +242,14 @@ class LocalDbService {
   /// Считает расходы по всем категориям за выбранный месяц с динамической
   /// конвертацией в текущую валюту аккаунта.
   Map<Category, double> getCategoryExpensesForPeriod(int month, int year,
+          [Currency? targetCurrency]) =>
+      categoryExpensesFor(
+          getTransactionsForPeriod(month, year), targetCurrency);
+
+  /// Расходы по категориям по готовому списку операций — например, без
+  /// скрытых в ожидании удаления.
+  Map<Category, double> categoryExpensesFor(Iterable<Transaction> transactions,
       [Currency? targetCurrency]) {
-    final transactions = getTransactionsForPeriod(month, year);
     final currency = targetCurrency ?? CurrencyFormatter.currentCurrency;
     final exchange = CurrencyExchangeService.instance;
 
@@ -523,6 +529,10 @@ class LocalDbService {
   void saveBudget(Budget budget) {
     _restoreStoredBudgetServerId(budget);
     _linkToExistingBudget(budget);
+    // Новый лимит мог лечь поверх существующей строки той же категории и
+    // месяца (например, только что удалённой с отменой): её `serverId`
+    // сохраняется, и сервер обновит ту же запись.
+    _restoreStoredBudgetServerId(budget);
     final id = _budgetBox.put(budget);
     AppLogger.d('[LocalDbService] Saved budget localId: $id');
     budgetsChanged.value++;

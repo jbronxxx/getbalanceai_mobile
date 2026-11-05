@@ -36,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _totalBalance = 0;
 
   /// Удалённые свайпом или из карточки операции ждут здесь отмены.
-  final _deletions = UndoableDeletions.transactions();
+  final _deletions = UndoableDeletions.transactions;
 
   bool _shouldShowSwipeHint = false;
   Timer? _swipeHintDismissTimer;
@@ -73,9 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onDataChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    // Очередь общая: при уходе с экрана скрытые операции удаляются сразу
     _deletions
       ..removeListener(_onDataChanged)
-      ..dispose();
+      ..flush();
     _swipeHintDismissTimer?.cancel();
     _scrollController.dispose();
     super.dispose();

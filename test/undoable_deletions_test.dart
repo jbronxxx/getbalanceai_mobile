@@ -81,5 +81,43 @@ void main() {
       expect(failing.isPending(1), isFalse);
       failing.dispose();
     });
+
+    testWidgets('undoWhere возвращает только подходящие записи',
+        (tester) async {
+      deletions
+        ..schedule(1)
+        ..schedule(2)
+        ..schedule(3);
+      notifications = 0;
+
+      expect(deletions.undoWhere((id) => id.isOdd), isTrue);
+      expect(notifications, 1);
+      expect(deletions.isPending(1), isFalse);
+      expect(deletions.isPending(2), isTrue);
+      expect(deletions.isPending(3), isFalse);
+
+      await tester.pump(const Duration(seconds: 5));
+      expect(committed, [2]);
+      deletions.dispose();
+    });
+
+    testWidgets('undoWhere без совпадений ничего не меняет', (tester) async {
+      deletions.schedule(1);
+      notifications = 0;
+
+      expect(deletions.undoWhere((id) => id > 1), isFalse);
+      expect(notifications, 0);
+      expect(deletions.isPending(1), isTrue);
+      deletions.dispose();
+    });
+
+    testWidgets('flush после отмены через undoWhere ничего не удаляет',
+        (tester) async {
+      deletions.schedule(1);
+      deletions.undoWhere((_) => true);
+      deletions.flush();
+      expect(committed, isEmpty);
+      deletions.dispose();
+    });
   });
 }
