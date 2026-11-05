@@ -198,6 +198,15 @@
   "budget_deleted": "Budget limit deleted",
   "sync_network_required": "Network connection is required for sync",
   "sync_synced": "Data synced",
+  "sync_pending": "Not uploaded: {count}. Tap to upload",
+  "@sync_pending": {
+    "description": "Profile sync card: changes not yet uploaded to the server",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Enter amount",
   "invalid_amount": "Invalid amount",
   "max_amount_prefix": "Max amount",

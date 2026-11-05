@@ -198,6 +198,14 @@
   "budget_deleted": "Limit o'chirildi",
   "sync_network_required": "Sinxronizatsiya uchun tarmoqqa ulanish zarur",
   "sync_synced": "Ma'lumotlar sinxronlangan",
+  "sync_pending": "Yuborilmagan: {count}. Yuborish uchun bosing",
+  "@sync_pending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Summani kiriting",
   "invalid_amount": "Noto'g'ri summa",
   "max_amount_prefix": "Maksimal summa",

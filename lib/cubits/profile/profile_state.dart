@@ -3,25 +3,32 @@ part of 'profile_cubit.dart';
 /// Статус облачной синхронизации на экране профиля.
 enum SyncStatus { idle, syncing, success, error, noInternet }
 
-/// Состояние экрана профиля: авторизация, статус синхронизации и последняя ошибка синхронизации.
+/// Состояние экрана профиля: статус синхронизации, последняя ошибка
+/// синхронизации и число изменений, ещё не отправленных на сервер.
 @immutable
 class ProfileState {
   final SyncStatus syncStatus;
   final Object? syncError;
 
+  /// Операции, лимиты и удаления, которые ещё не дошли до сервера.
+  final int pendingSyncCount;
+
   const ProfileState({
     this.syncStatus = SyncStatus.idle,
     this.syncError,
+    this.pendingSyncCount = 0,
   });
 
   /// Возвращает копию состояния. `syncError` сбрасывается, если не передан явно.
   ProfileState copyWith({
     SyncStatus? syncStatus,
     Object? syncError,
+    int? pendingSyncCount,
   }) {
     return ProfileState(
       syncStatus: syncStatus ?? this.syncStatus,
       syncError: syncError,
+      pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
     );
   }
 }

@@ -12,10 +12,41 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ApiService _api;
   final Connectivity _connectivity;
 
+  /// Всё, что меняет число неотправленных изменений: правки пользователя,
+  /// подтверждения сервера и очередь удалений.
+  final Listenable _pendingSources = Listenable.merge([
+    LocalDbService.transactionsChanged,
+    LocalDbService.budgetsChanged,
+    LocalDbService.syncStateChanged,
+    PendingDeletionsStore.changed,
+  ]);
+
   ProfileCubit({ApiService? api, Connectivity? connectivity})
       : _api = api ?? ApiService.instance,
         _connectivity = connectivity ?? Connectivity(),
-        super(const ProfileState());
+        super(ProfileState(pendingSyncCount: _countPendingSync())) {
+    _pendingSources.addListener(_refreshPendingSyncCount);
+  }
+
+  static int _countPendingSync() {
+    final local = LocalDbService.isInitialized
+        ? LocalDbService.instance.unsyncedCount
+        : 0;
+    return local + PendingDeletionsStore.instance.count;
+  }
+
+  void _refreshPendingSyncCount() {
+    if (isClosed) return;
+    final count = _countPendingSync();
+    if (count == state.pendingSyncCount) return;
+    emit(state.copyWith(pendingSyncCount: count, syncError: state.syncError));
+  }
+
+  @override
+  Future<void> close() {
+    _pendingSources.removeListener(_refreshPendingSyncCount);
+    return super.close();
+  }
 
   /// Запускает полную синхронизацию. Ошибка сохраняется в `state.syncError`.
   Future<void> startSync() async {

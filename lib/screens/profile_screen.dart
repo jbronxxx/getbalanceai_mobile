@@ -278,6 +278,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                     ProfileSyncCard(
                       isAuthenticated: isAuthenticated,
                       status: state.syncStatus,
+                      pendingCount: state.pendingSyncCount,
                       onSyncPressed: context.read<ProfileCubit>().startSync,
                     ),
                     const SizedBox(height: 24),
