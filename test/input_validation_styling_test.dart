@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -33,11 +32,11 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
     EnvironmentConfig.clearListenersForTesting();
-    dotenv.testLoad(fileInput: '''
-PROD_API_BASE_URL=https://prod.example.com/api/v1
-DEV_API_BASE_URL=https://dev.example.com/api/v1
-API_BASE_URL=http://localhost:8000/api/v1
-''');
+    EnvironmentConfig.setDefinesForTesting({
+      'PROD_API_BASE_URL': 'https://prod.example.com/api/v1',
+      'DEV_API_BASE_URL': 'https://dev.example.com/api/v1',
+      'API_BASE_URL': 'http://localhost:8000/api/v1',
+    });
     await EnvironmentConfig.init();
     AppInfoService.instance.reset();
     PackageInfo.setMockInitialValues(

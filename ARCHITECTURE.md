@@ -13,8 +13,8 @@
 | Управление состоянием  | [flutter_bloc](https://pub.dev/packages/flutter_bloc) (Cubit)      |
 | Локальное хранилище    | [ObjectBox](https://objectbox.io/) (NoSQL, встроенная БД)          |
 | Сетевой клиент         | [Dio](https://pub.dev/packages/dio)                                |
-| Конфигурация           | `--dart-define` / [flutter_dotenv](https://pub.dev/packages/flutter_dotenv) |
-| Управление версией SDK | [FVM](https://fvm.app/) (см. `.fvmrc`, Flutter 3.29.3)             |
+| Конфигурация           | `--dart-define` / `--dart-define-from-file`                       |
+| Управление версией SDK | [FVM](https://fvm.app/) (см. `.fvmrc`, Flutter 3.41.9)             |
 | Минимальные платформы  | iOS 15.0 (требование Xcode 27), Android — `minSdk` из Flutter      |
 
 Бэкенд (FastAPI) в этот репозиторий не входит — приложение общается с ним
@@ -27,7 +27,7 @@ lib/
 ├── main.dart                    # Точка входа: config -> локальная БД -> ApiService.init -> runApp (адаптивная ориентация, AppTheme, GetBalance AI)
 ├── config/
 │   ├── api_config.dart          # Пути эндпоинтов; ApiConfig.baseUrl делегирует в EnvironmentConfig
-│   └── environment.dart         # Окружения prod/dev/local (.env в debug, --dart-define в release), в release всегда prod
+│   └── environment.dart         # Окружения prod/dev/local (только --dart-define), в release всегда prod
 ├── theme/
 │   ├── app_theme.dart           # Конфигурация светлой и тёмной тем (Material 3, ColorScheme, палитра)
 │   └── theme.dart               # Barrel-файл экспорта темы
@@ -311,8 +311,8 @@ main.dart`. Это было исправлено переносом состоя
   - **Клиентская синхронизация аватара и имени**: При авторизации через Google (`AuthScreen`) клиент извлекает актуальный `photoUrl` и `displayName` из возвращенного `GoogleSignInAccount`. Если аватар отсутствует в ответе бэкенда (например, из-за часового кэширования OIDC ID-токена Google на устройстве или задержки распространения клейма `picture`), клиент автоматически отправляет актуальные данные на сервер через `updateUserProfile(avatarUrl: googlePhoto)`.
   - **Реактивное обновление состояния (`AuthCubit`)**: Состояние `Authenticated` хранит актуальный `avatarUrl`. При обновлении аватара или имени `AuthApiService` уведомляет стрим авторизации, инициируя реактивное обновление интерфейса (в `MainShell`, `ProfileHeader`, `DashboardScreen`).
 - **Безопасность релизного бандла и конфигурация сборки (Release Bundle & Environment Security)**:
-  - **Исключение `.env` из ресурсов сборки**: Строка `- .env` исключена из секции `flutter -> assets` в `pubspec.yaml`, предотвращая попадание файла конфигурации в открытом виде в `flutter_assets/.env` внутри релизных `.aab`/`.apk`.
-  - **Приоритет `--dart-define`**: В `EnvironmentConfig` параметры API и дефолтное окружение считываются через `--dart-define` / `--dart-define-from-file` с наивысшим приоритетом. Попытка загрузки `.env` в debug/profile изолирована блоком `try-catch` в `lib/main.dart` и не приводит к сбою приложения при отсутствии ассета.
+  - **Конфигурация только через `--dart-define`**: `.env` не входит в assets и не читается приложением; в debug его передают целиком флагом `--dart-define-from-file=.env`. `EnvironmentConfig` берёт значения из `String.fromEnvironment`. Пустой или не-https `PROD_API_BASE_URL` — `StateError` и в release, и в debug; в debug-меню на ненастроенный prod переключиться нельзя, а сохранённый prod без URL при старте сбрасывается на окружение по умолчанию.
+  - **Резервное копирование**: `allowBackup="false"` и `dataExtractionRules` (`res/xml/data_extraction_rules.xml`) исключают все данные из облачного бэкапа и переноса на новое устройство (Android 12+): токены зашифрованы непереносимым ключом Keystore.
   - **Выравнивание Android namespace и пакетов**: В `android/app/build.gradle.kts` параметр `namespace` приведен в соответствие с `applicationId`: `com.getbalanceai.mobile`. Файл `MainActivity.kt` перемещен в пакет `com.getbalanceai.mobile`, устаревший пакет `com.example.finance_app_mobile` полностью удален.
   - **Унификация названия приложения**: Заголовок `MaterialApp` в `lib/main.dart` приведен к единому значению `'GetBalance AI'`, синхронизированному с `AndroidManifest.xml` (`android:label`) и `Info.plist` (`CFBundleDisplayName`, `CFBundleName`).
 

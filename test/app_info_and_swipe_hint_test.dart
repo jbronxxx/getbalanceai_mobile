@@ -72,7 +72,7 @@ void main() {
       );
 
       expect(find.text('Test Item'), findsOneWidget);
-      expect(find.byType(SlideTransition), findsNothing);
+      expect(_hintSlide(), findsNothing);
     });
 
     testWidgets('triggers onHintShown and animates when showHint is true',
@@ -94,7 +94,7 @@ void main() {
       );
 
       expect(hintShownCalled, isTrue);
-      expect(find.byType(SlideTransition), findsOneWidget);
+      expect(_hintSlide(), findsOneWidget);
 
       // Fast-forward past the 800ms start delay and 1200ms animation
       await tester.pump(const Duration(milliseconds: 800));
@@ -134,3 +134,9 @@ void main() {
     });
   });
 }
+
+/// Сдвиг подсказки внутри обёртки (у перехода маршрута свои SlideTransition).
+Finder _hintSlide() => find.descendant(
+      of: find.byType(SwipeHintWrapper),
+      matching: find.byType(SlideTransition),
+    );

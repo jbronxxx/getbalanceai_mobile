@@ -5,7 +5,6 @@
 
 # FVM (Flutter Version Management) — версия SDK кэшируется локально
 .fvm/
-.fvmrc
 
 # Miscellaneous
 *.class

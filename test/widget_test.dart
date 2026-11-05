@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 
@@ -15,6 +14,7 @@ import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:getbalanceai_mobile/services/preferences_service.dart';
 
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 void main() {
   setUpAll(() async {
@@ -38,8 +38,8 @@ void main() {
       },
     );
 
-    // dotenv.testLoad не требует физического .env-файла — подходит для тестов.
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     await LocalDbService.init();
     LanguageManager.initFallback();
   });

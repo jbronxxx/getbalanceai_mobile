@@ -291,6 +291,14 @@
       }
     }
   },
+  "debug_environment_not_configured": "Для {env} не задан URL. Запустите приложение с --dart-define-from-file=.env",
+  "@debug_environment_not_configured": {
+    "placeholders": {
+      "env": {
+        "type": "String"
+      }
+    }
+  },
   "debug_app_info": "Информация о приложении",
   "debug_version": "Версия: {version}",
   "@debug_version": {

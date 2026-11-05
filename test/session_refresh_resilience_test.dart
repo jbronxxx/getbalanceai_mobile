@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/api_config.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 class _MockDioAdapter implements HttpClientAdapter {
   final ResponseBody Function(RequestOptions options) handler;
@@ -40,7 +40,8 @@ void main() {
   setUpAll(() {
     LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),

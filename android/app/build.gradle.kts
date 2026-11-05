@@ -20,7 +20,7 @@ plugins {
 android {
     namespace = "com.getbalanceai.mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -62,8 +62,10 @@ android {
                 null
             }
             
-            // 4. Включаем R8 (минификация и обфускация)
+            // 4. Включаем R8 (минификация и обфускация) и удаление
+            // неиспользуемых ресурсов
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

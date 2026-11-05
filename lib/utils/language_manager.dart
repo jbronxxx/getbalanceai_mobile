@@ -1,5 +1,5 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-export 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:getbalanceai_mobile/l10n/app_localizations.dart';
+export 'package:getbalanceai_mobile/l10n/app_localizations.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 

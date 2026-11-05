@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
@@ -10,6 +9,7 @@ import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/services/sync_service.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 class _MockLocalDbService extends Mock implements LocalDbService {}
 
@@ -62,7 +62,8 @@ void main() {
   setUpAll(() {
     LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),

@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/api_config.dart';
@@ -14,6 +13,7 @@ import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 class _MockApiService extends Mock implements ApiService {}
 
@@ -86,7 +86,8 @@ void main() {
       },
     );
 
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     LanguageManager.initFallback();
     await LocalDbService.init();
   });

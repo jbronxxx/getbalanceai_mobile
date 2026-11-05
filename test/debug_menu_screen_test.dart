@@ -3,7 +3,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
@@ -32,11 +31,11 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
     EnvironmentConfig.clearListenersForTesting();
-    dotenv.testLoad(fileInput: '''
-PROD_API_BASE_URL=https://prod.example.com/api/v1
-DEV_API_BASE_URL=https://dev.example.com/api/v1
-API_BASE_URL=http://localhost:8000/api/v1
-''');
+    EnvironmentConfig.setDefinesForTesting({
+      'PROD_API_BASE_URL': 'https://prod.example.com/api/v1',
+      'DEV_API_BASE_URL': 'https://dev.example.com/api/v1',
+      'API_BASE_URL': 'http://localhost:8000/api/v1',
+    });
     await EnvironmentConfig.init();
 
     AppInfoService.instance.reset();
@@ -114,7 +113,7 @@ API_BASE_URL=http://localhost:8000/api/v1
   });
 
   testWidgets(
-      'DebugMenuScreen displays updated base URL from dotenv when switching environments',
+      'DebugMenuScreen displays updated base URL from defines when switching environments',
       (tester) async {
     await tester.pumpWidget(_buildTestApp());
     await tester.pumpAndSettle();
@@ -138,5 +137,24 @@ API_BASE_URL=http://localhost:8000/api/v1
     await tester.pumpAndSettle();
 
     expect(find.text('Base URL: http://localhost:8000/api/v1'), findsOneWidget);
+  });
+
+  testWidgets('DebugMenuScreen не переключает на PROD без PROD_API_BASE_URL',
+      (tester) async {
+    EnvironmentConfig.setDefinesForTesting({
+      'DEV_API_BASE_URL': 'https://dev.example.com/api/v1',
+    });
+    await tester.pumpWidget(_buildTestApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButton<Environment>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PROD').last);
+    await tester.pumpAndSettle();
+
+    expect(EnvironmentConfig.current, Environment.dev);
+    expect(find.textContaining('No URL is set for PROD'), findsOneWidget);
+    expect(
+        find.text('Base URL: https://dev.example.com/api/v1'), findsOneWidget);
   });
 }

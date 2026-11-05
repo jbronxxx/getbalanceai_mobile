@@ -1,7 +1,6 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:getbalanceai_mobile/config/api_config.dart';
@@ -9,6 +8,7 @@ import 'package:getbalanceai_mobile/models/auth_model.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/models/sync_model.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 void main() {
   final Map<String, String> mockSecureStorage = {};
@@ -16,7 +16,8 @@ void main() {
   setUpAll(() {
     LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

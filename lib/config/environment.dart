@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum Environment {
   prod,
@@ -10,28 +9,36 @@ enum Environment {
 
 /// Выбор окружения и базового URL бэкенда.
 ///
-/// В release-сборке всегда используется prod, URL берется только из
-/// `--dart-define=PROD_API_BASE_URL=...`; `.env` не читается и не упаковывается в бандл.
-/// В debug/profile значение ищется в `--dart-define` (приоритетно), затем в `.env`.
+/// Все значения задаются только через `--dart-define`: в release —
+/// `PROD_API_BASE_URL`, в debug/profile удобнее передать весь локальный
+/// файл: `--dart-define-from-file=.env`. Сам `.env` в бандл не попадает.
+/// В release всегда используется prod.
 class EnvironmentConfig {
   static const String _envKey = 'selected_environment';
-  static const String _definedProdUrl =
-      String.fromEnvironment('PROD_API_BASE_URL');
-  static const String _definedDevUrl =
-      String.fromEnvironment('DEV_API_BASE_URL');
-  static const String _definedLocalUrl = String.fromEnvironment('API_BASE_URL');
+  static const String _prodUrlKey = 'PROD_API_BASE_URL';
+  static const String _devUrlKey = 'DEV_API_BASE_URL';
+  static const String _localUrlKey = 'API_BASE_URL';
+  static const String _defaultEnvKey = 'DEFAULT_ENVIRONMENT';
+  static const Map<String, String> _compiledDefines = {
+    _prodUrlKey: String.fromEnvironment(_prodUrlKey),
+    _devUrlKey: String.fromEnvironment(_devUrlKey),
+    _localUrlKey: String.fromEnvironment(_localUrlKey),
+    _defaultEnvKey: String.fromEnvironment(_defaultEnvKey),
+  };
   static const bool _debugMenuFlag = bool.fromEnvironment('ENABLE_DEBUG_MENU');
   static const String _defaultLocalUrl = 'http://10.0.2.2:8000/api/v1';
-  static const String _definedDefaultEnv =
-      String.fromEnvironment('DEFAULT_ENVIRONMENT');
 
-  static Environment _current = Environment.prod;
+  static Map<String, String> _defines = _compiledDefines;
+
+  // До init() в debug — dev: prod без URL дал бы ошибку на первом запросе.
+  static Environment _current =
+      kReleaseMode ? Environment.prod : Environment.dev;
   static final List<Future<void> Function(Environment)> _listeners = [];
 
   static Environment get current => _current;
 
   static Environment get _defaultNonReleaseEnvironment {
-    final raw = _resolve(_definedDefaultEnv, 'DEFAULT_ENVIRONMENT');
+    final raw = _define(_defaultEnvKey);
     final envName = raw.isNotEmpty ? raw : 'dev';
     return Environment.values.firstWhere(
       (e) => e.name.toLowerCase() == envName.toLowerCase(),
@@ -52,15 +59,17 @@ class EnvironmentConfig {
 
     final prefs = await SharedPreferences.getInstance();
     final envStr = prefs.getString(_envKey);
-    if (envStr != null) {
-      _current = Environment.values.firstWhere(
-        (e) => e.name == envStr,
-        orElse: () => _defaultNonReleaseEnvironment,
-      );
-    } else {
-      _current = _defaultNonReleaseEnvironment;
-    }
+    final saved = Environment.values.where((e) => e.name == envStr);
+    // Сохранённое окружение могло остаться от запуска с другими define —
+    // без URL на нём приложение не стартует.
+    _current = saved.isNotEmpty && isConfigured(saved.first)
+        ? saved.first
+        : _defaultNonReleaseEnvironment;
   }
+
+  /// Для окружения задан URL. Dev и local без URL уходят на локальный бэкенд.
+  static bool isConfigured(Environment env) =>
+      env != Environment.prod || _define(_prodUrlKey).isNotEmpty;
 
   static void addEnvironmentListener(
       Future<void> Function(Environment) listener) {
@@ -82,6 +91,12 @@ class EnvironmentConfig {
     _current = env;
   }
 
+  /// Подменяет значения `--dart-define`; `null` — вернуть скомпилированные.
+  @visibleForTesting
+  static void setDefinesForTesting(Map<String, String>? defines) {
+    _defines = defines ?? _compiledDefines;
+  }
+
   static Future<void> setEnvironment(Environment env) async {
     if (kReleaseMode) return;
     _current = env;
@@ -93,44 +108,33 @@ class EnvironmentConfig {
   }
 
   static String get baseUrl {
-    if (kReleaseMode) return _validateReleaseUrl(_definedProdUrl);
+    if (kReleaseMode) return _validateProdUrl(_define(_prodUrlKey));
 
     switch (_current) {
       case Environment.prod:
-        final prodUrl = _resolve(_definedProdUrl, 'PROD_API_BASE_URL');
-        return prodUrl.isNotEmpty ? prodUrl : _definedProdUrl;
+        return _validateProdUrl(_define(_prodUrlKey));
       case Environment.dev:
-        final devUrl = _resolve(_definedDevUrl, 'DEV_API_BASE_URL');
+        final devUrl = _define(_devUrlKey);
         if (devUrl.isNotEmpty) return devUrl;
-        final localUrl = _resolve(_definedLocalUrl, 'API_BASE_URL');
+        final localUrl = _define(_localUrlKey);
         return localUrl.isEmpty ? _defaultLocalUrl : localUrl;
       case Environment.local:
-        final url = _resolve(_definedLocalUrl, 'API_BASE_URL');
+        final url = _define(_localUrlKey);
         return url.isEmpty ? _defaultLocalUrl : url;
     }
   }
 
-  static String _resolve(String defined, String envKey) {
-    if (!kReleaseMode && dotenv.isInitialized) {
-      final envVal = dotenv.maybeGet(envKey);
-      if (envVal != null && envVal.isNotEmpty) {
-        return envVal;
-      }
-    }
-    if (defined.isNotEmpty) return defined;
-    if (dotenv.isInitialized) return dotenv.maybeGet(envKey) ?? '';
-    return '';
-  }
+  static String _define(String key) => _defines[key] ?? '';
 
-  /// Проверяет release-URL на корректность и протокол https.
-  static String _validateReleaseUrl(String url) {
+  /// Проверяет prod-URL на корректность и протокол https.
+  static String _validateProdUrl(String url) {
     final uri = Uri.tryParse(url);
     if (url.isEmpty || uri == null || uri.host.isEmpty) {
       throw StateError(
           'PROD_API_BASE_URL is not configured. Pass it via --dart-define.');
     }
     if (uri.scheme != 'https') {
-      throw StateError('Release build requires an https API base URL.');
+      throw StateError('Prod API base URL must use https.');
     }
     return url;
   }
