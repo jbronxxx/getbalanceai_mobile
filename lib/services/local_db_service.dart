@@ -729,8 +729,14 @@ class LocalDbService {
     }
   }
 
+  /// Удаляет все операции и лимиты (выход и удаление аккаунта). Вкладки и
+  /// счётчик неотправленных изменений узнают об этом сразу, иначе на экране
+  /// остались бы данные прошлого пользователя.
   Future<void> clearAllData() async {
     _transactionBox.removeAll();
     _budgetBox.removeAll();
+    transactionsChanged.value++;
+    budgetsChanged.value++;
+    syncStateChanged.value++;
   }
 }

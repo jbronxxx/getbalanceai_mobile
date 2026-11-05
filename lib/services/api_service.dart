@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../utils/app_logger.dart';
 import 'auth_api_service.dart';
 import 'budget_api_service.dart';
+import 'report_export_service.dart';
 import 'sync_service.dart';
 import 'tracing_interceptor.dart';
 import 'transaction_api_service.dart';
@@ -35,7 +36,10 @@ class ApiService {
             'Content-Type': 'application/json',
           },
         )) {
-    _authService = AuthApiService(dio: _dio);
+    _authService = AuthApiService(
+      dio: _dio,
+      onSignIn: (userId) => _syncService.claimLocalData(userId),
+    );
     _transactionApiService = TransactionApiService(
       dio: _dio,
       authOptions: _authService.authOptions,
@@ -184,27 +188,32 @@ class ApiService {
   Future<void> init() async {
     await _authService.init();
     await _syncService.init();
+    // Установки, где владелец данных ещё не записан: данные на устройстве
+    // принадлежат вошедшему пользователю.
+    final userId = _authService.userId;
+    if (_authService.isAuthenticated && userId != null) {
+      await _syncService.claimLocalData(userId);
+    }
   }
 
-  Future<void> setTokens(String? token, String? refresh) =>
-      _authService.setTokens(token, refresh);
-
-  Future<void> setUserName(String? userName) =>
-      _authService.setUserName(userName);
-
-  Future<void> setAvatarUrl(String? avatarUrl) =>
-      _authService.setAvatarUrl(avatarUrl);
-
-  Future<void> setUserEmail(String? email) => _authService.setUserEmail(email);
-
+  /// Очищает сессию и ETag. ETag сбрасываются первыми: их ключи привязаны
+  /// к userId, который очистка сессии обнуляет.
   Future<void> clearAllUserData() async {
-    await _authService.clearAllUserData();
     await _syncService.clearEtags();
+    await _authService.clearAllUserData();
+  }
+
+  /// Стирает с устройства данные пользователя [userId]: операции, лимиты,
+  /// очередь удалений, ETag и выгруженные отчёты. Вызывается после очистки
+  /// сессии, чтобы синк, поставленный в очередь позже, уже не запустился.
+  Future<void> _clearAccountData(String? userId) async {
+    await _syncService.clearLocalData(userId: userId);
+    await ReportExportService.deleteCachedReports();
   }
 
   Future<void> clearEtags() => _syncService.clearEtags();
 
-  Future<LoginResponseModel> loginWithGoogle(
+  Future<void> loginWithGoogle(
     String idToken, {
     String? avatarUrl,
     String? name,
@@ -215,11 +224,8 @@ class ApiService {
         name: name,
       );
 
-  Future<LoginResponseModel> loginWithApple(String identityToken) =>
+  Future<void> loginWithApple(String identityToken) =>
       _authService.loginWithApple(identityToken);
-
-  Future<void> fetchAndSaveUserProfile() =>
-      _authService.fetchAndSaveUserProfile();
 
   Future<void> updateUserProfile({
     String? name,
@@ -232,67 +238,40 @@ class ApiService {
         baseCurrency: baseCurrency,
       );
 
-  Future<void> deleteAccount() => _authService.deleteAccount();
+  /// Удаляет аккаунт на сервере и все его данные на устройстве. При ошибке
+  /// сервера ничего не стирается и сессия сохраняется.
+  Future<void> deleteAccount() async {
+    final userId = _authService.userId;
+    await _authService.deleteAccount();
+    await _clearAccountData(userId);
+    _authService.notifyLoggedOut();
+  }
 
-  Future<LogoutResponseModel> logout() => _authService.logout();
-
-  Future<void> performLogout() => _authService.performLogout();
-
-  Future<bool> refreshAuthTokens() => _authService.refreshAuthTokens();
+  /// Выход из аккаунта: отзывает сессию на сервере и стирает данные
+  /// пользователя с устройства, чтобы их не увидел гость и они не ушли в
+  /// следующий аккаунт. Ошибка сервера пробрасывается, но локальный выход
+  /// выполняется в любом случае.
+  Future<void> logout() async {
+    final userId = _authService.userId;
+    try {
+      await _authService.logout();
+    } finally {
+      await _clearAccountData(userId);
+      _authService.notifyLoggedOut();
+    }
+  }
 
   // Transactions
-  Future<PaginatedResponse<TransactionModel>> getTransactions({
-    int limit = 50,
-    String? cursor,
-    DateTime? since,
-  }) =>
-      _transactionApiService.getTransactions(
-          limit: limit, cursor: cursor, since: since);
-
-  Future<TransactionModel> createTransaction(Map<String, dynamic> data) =>
-      _transactionApiService.createTransaction(data);
-
-  Future<void> deleteTransaction(String id, [String? token]) =>
-      _transactionApiService.deleteTransaction(id, token);
-
   Future<void> deleteTransactionEverywhere(Transaction transaction) =>
       _transactionApiService.deleteTransactionEverywhere(transaction);
 
   // Budgets
-  Future<List<BudgetModel>> getBudgets({int? month, int? year}) =>
-      _budgetApiService.getBudgets(month: month, year: year);
-
-  Future<BudgetModel> createBudget(Map<String, dynamic> data) =>
-      _budgetApiService.createBudget(data);
-
-  Future<BudgetModel> updateBudget(Map<String, dynamic> data) =>
-      _budgetApiService.updateBudget(data);
-
-  Future<void> deleteBudget(String id, [String? token]) =>
-      _budgetApiService.deleteBudget(id, token);
-
-  Future<void> deleteBudgetByPeriod(
-    String category,
-    int month,
-    int year, [
-    String? token,
-  ]) =>
-      _budgetApiService.deleteBudgetByPeriod(category, month, year, token);
-
   Future<void> deleteBudgetEverywhere(Budget budget) =>
       _budgetApiService.deleteBudgetEverywhere(budget);
 
   // Sync
   Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) =>
       _syncService.syncLocalDataToBackend(token);
-
-  Future<Map<String, dynamic>> syncBackendDataToLocal([
-    String? token,
-    void Function(int count, int page)? onTransactionProgress,
-    int maxPages = 100,
-  ]) =>
-      _syncService.syncBackendDataToLocal(
-          token, onTransactionProgress, maxPages);
 
   Future<Map<String, dynamic>> syncAll([
     String? token,
@@ -301,7 +280,7 @@ class ApiService {
   ]) =>
       _syncService.syncAll(token, onTransactionProgress, maxPages);
 
-  // Insights & Health
+  // Insights
   Future<Map<String, dynamic>> getInsights({
     String? currency,
     String? locale,
@@ -331,18 +310,6 @@ class ApiService {
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
       AppLogger.e('[ApiService] Get insights error', e);
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> checkHealth() async {
-    try {
-      final response = await _dio.get(ApiConfig.health);
-      return response.data is Map
-          ? (response.data as Map).cast<String, dynamic>()
-          : {'status': 'ok'};
-    } catch (e) {
-      AppLogger.e('[ApiService] Health check error', e);
       rethrow;
     }
   }

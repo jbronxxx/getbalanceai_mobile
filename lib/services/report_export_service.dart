@@ -86,6 +86,16 @@ class ReportExportService {
     return File(p.join(dir.path, fileName)).writeAsBytes(bytes, flush: true);
   }
 
+  /// Удаляет из кэша последние выгрузки (выход и удаление аккаунта):
+  /// в них финансовые данные пользователя.
+  static Future<void> deleteCachedReports() async {
+    try {
+      await _deleteStaleReports(await getTemporaryDirectory());
+    } catch (e, stack) {
+      AppLogger.w('[ReportExport] Не удалось очистить кэш отчётов', e, stack);
+    }
+  }
+
   static String _fileName(ReportPeriod period, ReportFormat format) =>
       '$_filePrefix${_isoDate(period.start)}'
       '_${_isoDate(period.end)}.${format.extension}';
@@ -93,7 +103,7 @@ class ReportExportService {
   /// Файлы содержат финансовые данные, поэтому прошлые выгрузки не копим.
   /// Удалять файл сразу после «Поделиться» нельзя: целевое приложение
   /// (например, мессенджер) может читать его уже после закрытия меню.
-  Future<void> _deleteStaleReports(Directory dir) async {
+  static Future<void> _deleteStaleReports(Directory dir) async {
     try {
       await for (final entity in dir.list()) {
         if (entity is File && p.basename(entity.path).startsWith(_filePrefix)) {

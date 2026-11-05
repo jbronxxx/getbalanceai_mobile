@@ -37,7 +37,7 @@ void main() {
 
     setUp(() async {
       api = ApiService.instance;
-      await api.setTokens('test_token', 'test_refresh');
+      await api.auth.setTokens('test_token', 'test_refresh');
     });
 
     test('syncBackendDataToLocal reports progress and pages correctly',
@@ -118,7 +118,7 @@ void main() {
 
       final changesBefore = LocalDbService.transactionsChanged.value;
       try {
-        final result = await api.syncBackendDataToLocal(
+        final result = await api.sync.syncBackendDataToLocal(
           null,
           (count, page) {
             progressUpdates.add({'count': count, 'page': page});
@@ -179,7 +179,7 @@ void main() {
       api.dio.interceptors.insert(0, interceptor);
 
       try {
-        final result = await api.syncBackendDataToLocal(
+        final result = await api.sync.syncBackendDataToLocal(
           null,
           null,
           1, // Cap at 1 page
@@ -328,7 +328,7 @@ void main() {
 
     setUp(() async {
       api = ApiService.instance;
-      await api.setTokens('test_token', 'test_refresh');
+      await api.auth.setTokens('test_token', 'test_refresh');
       await api.sync.clearEtags();
       final all = LocalDbService.instance.getAllTransactions();
       for (final t in all) {

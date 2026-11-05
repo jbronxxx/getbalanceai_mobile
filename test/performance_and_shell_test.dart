@@ -64,7 +64,7 @@ void main() {
     await LocalDbService.init();
 
     ApiService.instance.dio.httpClientAdapter = _MockHttpClientAdapter();
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
   });
 
   tearDown(() {

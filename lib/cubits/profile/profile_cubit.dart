@@ -71,8 +71,38 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  /// Отзывает сессию на сервере. Ошибки сервера не прерывают локальный выход:
-  /// токены очищаются в [ApiService.logout] в любом случае.
+  /// Есть ли что выгрузить перед выходом: неотправленные изменения или
+  /// записи, ожидающие удаления после «Отменить».
+  bool get hasChangesToUpload =>
+      _countPendingSync() > 0 ||
+      UndoableDeletions.transactions.hasPending ||
+      UndoableDeletions.budgets.hasPending;
+
+  /// Готовит выход: выполняет отложенные удаления и пробует выгрузить
+  /// неотправленные изменения. Ошибки синхронизации не показываются —
+  /// возвращается число изменений, которые останутся только на устройстве
+  /// и будут удалены при выходе.
+  Future<int> prepareLogout() async {
+    await Future.wait([
+      UndoableDeletions.transactions.flush(),
+      UndoableDeletions.budgets.flush(),
+    ]);
+    if (_countPendingSync() == 0) return 0;
+
+    try {
+      final connectivityResult = await _connectivity.checkConnectivity();
+      if (!connectivityResult.contains(ConnectivityResult.none)) {
+        await _api.syncAll();
+      }
+    } catch (e) {
+      AppLogger.w('[ProfileCubit] Sync before logout failed: $e');
+    }
+    return _countPendingSync();
+  }
+
+  /// Выходит из аккаунта и стирает его данные с устройства. Ошибки сервера
+  /// не прерывают локальный выход: [ApiService.logout] очищает всё в любом
+  /// случае.
   Future<void> logout() async {
     try {
       await _api.logout();

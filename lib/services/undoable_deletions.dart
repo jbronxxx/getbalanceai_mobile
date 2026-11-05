@@ -78,24 +78,25 @@ class UndoableDeletions<T> extends ChangeNotifier {
     return ids.isNotEmpty;
   }
 
-  /// Удаляет все скрытые записи сразу, не дожидаясь [delay].
-  void flush() {
-    for (final id in _pending.keys.toList()) {
-      _run(id);
-    }
-  }
+  /// Есть ли записи, ожидающие удаления.
+  bool get hasPending => _pending.isNotEmpty;
 
-  void _run(int id) {
+  /// Удаляет все скрытые записи сразу, не дожидаясь [delay]. Future
+  /// завершается, когда удаления дошли до сервера или легли в очередь
+  /// [PendingDeletionsStore] (ошибки только логируются).
+  Future<void> flush() =>
+      Future.wait([for (final id in _pending.keys.toList()) _run(id)]);
+
+  Future<void> _run(int id) {
     final entry = _pending.remove(id);
-    if (entry == null) return;
+    if (entry == null) return Future.value();
     entry.timer.cancel();
-    unawaited(
-      _commit(entry.item).catchError((Object e, StackTrace s) {
-        AppLogger.w('[UndoableDeletions] Delete failed', e, s);
-      }),
-    );
+    final done = _commit(entry.item).catchError((Object e, StackTrace s) {
+      AppLogger.w('[UndoableDeletions] Delete failed', e, s);
+    });
     // Локальное удаление выполняется синхронно в начале _commit
     if (!_disposed) notifyListeners();
+    return done;
   }
 
   @override

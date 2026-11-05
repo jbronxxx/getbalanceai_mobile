@@ -88,7 +88,7 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
     dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
-    await ApiService.instance.setTokens(null, null);
+    await ApiService.instance.auth.setTokens(null, null);
     await LocalDbService.instance.clearAllData();
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
     await CurrencyFormatter.loadSavedCurrency();

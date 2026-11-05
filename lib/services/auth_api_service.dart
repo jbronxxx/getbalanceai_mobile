@@ -9,8 +9,6 @@ import '../models/models.dart';
 import '../utils/app_logger.dart';
 import '../utils/currency_formatter.dart';
 import 'api_service.dart';
-import 'local_db_service.dart';
-import 'pending_deletions_store.dart';
 
 /// Сервис аутентификации, сессий и управления токенами доступа.
 class AuthApiService {
@@ -21,6 +19,15 @@ class AuthApiService {
   String? _token;
   String? _refreshToken;
   Completer<String?>? _refreshCompleter;
+
+  /// Растёт при каждой очистке сессии. Refresh, начатый до выхода, сверяет
+  /// эпоху и не записывает новые токены обратно (иначе выход «откатился» бы).
+  int _sessionEpoch = 0;
+
+  /// Вызывается при входе, как только известен userId, и до того, как
+  /// подписчики [authStream] узнают о входе.
+  final Future<void> Function(String userId)? _onSignIn;
+
   String? _userId;
   String? _userName;
   String? _email;
@@ -31,8 +38,10 @@ class AuthApiService {
     FlutterSecureStorage storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true),
     ),
+    Future<void> Function(String userId)? onSignIn,
   })  : _dio = dio,
-        _storage = storage;
+        _storage = storage,
+        _onSignIn = onSignIn;
 
   Stream<bool> get authStream => _authStream.stream;
   String? get token => _token;
@@ -139,6 +148,16 @@ class AuthApiService {
   }
 
   Future<void> clearAllUserData() async {
+    _sessionEpoch++;
+    // Сначала память: запросы, начатые во время очистки хранилища, уже не
+    // должны получить токен вышедшего пользователя.
+    _token = null;
+    _refreshToken = null;
+    _userId = null;
+    _userName = null;
+    _email = null;
+    _avatarUrl = null;
+
     try {
       await _storage.delete(key: 'auth_token');
       await _storage.delete(key: 'refresh_token');
@@ -146,8 +165,6 @@ class AuthApiService {
       await _storage.delete(key: 'auth_user');
       await _storage.delete(key: 'auth_email');
       await _storage.delete(key: 'auth_avatar_url');
-      await _storage.delete(key: 'transactions_etag');
-      await _storage.delete(key: 'budgets_etag');
     } catch (e) {
       AppLogger.w('[AuthApiService] Secure storage clear error: $e');
     }
@@ -165,13 +182,6 @@ class AuthApiService {
     } catch (e) {
       AppLogger.w('[AuthApiService] Google signOut error: $e');
     }
-
-    _token = null;
-    _refreshToken = null;
-    _userId = null;
-    _userName = null;
-    _email = null;
-    _avatarUrl = null;
   }
 
   Future<void> handleSessionExpired() async {
@@ -179,7 +189,7 @@ class AuthApiService {
     _authStream.add(false);
   }
 
-  Future<LoginResponseModel> loginWithGoogle(
+  Future<void> loginWithGoogle(
     String idToken, {
     String? avatarUrl,
     String? name,
@@ -200,7 +210,7 @@ class AuthApiService {
         data: payload,
       );
 
-      return _handleLoginResponse(response.data);
+      await _handleLoginResponse(response.data);
     } on DioException catch (e) {
       AppLogger.e(
           '[AuthApiService] Google login error: ${e.response?.data ?? e.message}',
@@ -209,14 +219,14 @@ class AuthApiService {
     }
   }
 
-  Future<LoginResponseModel> loginWithApple(String identityToken) async {
+  Future<void> loginWithApple(String identityToken) async {
     try {
       final response = await _dio.post(
         ApiConfig.loginApple,
         data: {'identity_token': identityToken},
       );
 
-      return _handleLoginResponse(response.data);
+      await _handleLoginResponse(response.data);
     } on DioException catch (e) {
       AppLogger.e(
           '[AuthApiService] Apple login error: ${e.response?.data ?? e.message}',
@@ -225,7 +235,7 @@ class AuthApiService {
     }
   }
 
-  Future<LoginResponseModel> _handleLoginResponse(dynamic responseData) async {
+  Future<void> _handleLoginResponse(dynamic responseData) async {
     final data = responseData['data'];
     final token = data?['access_token'] as String?;
     final refreshToken = data?['refresh_token'] as String?;
@@ -236,58 +246,60 @@ class AuthApiService {
 
     await setTokens(token, refreshToken);
 
-    if (data?['user'] != null && data['user'] is Map<String, dynamic>) {
+    AuthMeResponseModel? profile;
+    final user = data['user'];
+    if (user is Map<String, dynamic>) {
       try {
-        final userProfile =
-            AuthMeResponseModel.fromJson({'data': data['user']});
-        await setUserId(userProfile.id);
-        await setUserName(userProfile.userName);
-        await setUserEmail(userProfile.userEmail);
-        await setAvatarUrl(userProfile.avatarUrl);
-        if (userProfile.baseCurrency != null) {
-          final currency = Currency.values.firstWhere(
-            (c) =>
-                c.code.toUpperCase() == userProfile.baseCurrency!.toUpperCase(),
-            orElse: () => CurrencyFormatter.currentCurrency,
-          );
-          await CurrencyFormatter.setCurrency(currency);
-        }
-        AppLogger.i(
-            '[AuthApiService] Profile populated from login tokens for: ${userProfile.userName}');
+        profile = AuthMeResponseModel.fromJson({'data': user});
+        await setUserId(profile.id);
       } catch (e) {
         AppLogger.w('[AuthApiService] Token profile parse error: $e');
-        await fetchAndSaveUserProfile();
+        profile = null;
       }
-    } else {
-      await fetchAndSaveUserProfile();
     }
 
+    // userId есть уже после setTokens (из JWT): данные на устройстве
+    // проверяются до того, как экраны узнают о входе.
+    final userId = _userId;
+    if (userId != null) await _onSignIn?.call(userId);
+
+    var profileApplied = false;
+    if (profile != null) {
+      try {
+        await _applyProfile(profile);
+        profileApplied = true;
+      } catch (e) {
+        AppLogger.w('[AuthApiService] Token profile apply error: $e');
+      }
+    }
+    if (!profileApplied) await _fetchAndSaveUserProfile();
+
     _authStream.add(true);
-    return LoginResponseModel.fromJson(responseData);
   }
 
-  Future<void> fetchAndSaveUserProfile() async {
+  Future<void> _applyProfile(AuthMeResponseModel profile) async {
+    await setUserId(profile.id);
+    await setUserName(profile.userName);
+    await setUserEmail(profile.userEmail);
+    await setAvatarUrl(profile.avatarUrl);
+    final baseCurrency = profile.baseCurrency;
+    if (baseCurrency != null) {
+      final currency = Currency.values.firstWhere(
+        (c) => c.code.toUpperCase() == baseCurrency.toUpperCase(),
+        orElse: () => CurrencyFormatter.currentCurrency,
+      );
+      await CurrencyFormatter.setCurrency(currency);
+    }
+    AppLogger.i('[AuthApiService] Profile updated for: ${profile.userName}');
+  }
+
+  Future<void> _fetchAndSaveUserProfile() async {
     try {
       final response = await _dio.get(
         ApiConfig.me,
         options: authOptions(),
       );
-
-      final userProfile = AuthMeResponseModel.fromJson(response.data);
-      await setUserId(userProfile.id);
-      await setUserName(userProfile.userName);
-      await setUserEmail(userProfile.userEmail);
-      await setAvatarUrl(userProfile.avatarUrl);
-      if (userProfile.baseCurrency != null) {
-        final currency = Currency.values.firstWhere(
-          (c) =>
-              c.code.toUpperCase() == userProfile.baseCurrency!.toUpperCase(),
-          orElse: () => CurrencyFormatter.currentCurrency,
-        );
-        await CurrencyFormatter.setCurrency(currency);
-      }
-      AppLogger.i(
-          '[AuthApiService] Profile updated for: ${userProfile.userName}');
+      await _applyProfile(AuthMeResponseModel.fromJson(response.data));
     } on DioException catch (e) {
       AppLogger.w(
           '[AuthApiService] Fetch profile error: ${e.response?.data ?? e.message}');
@@ -320,8 +332,6 @@ class AuthApiService {
       if (avatarUrl != null) await setAvatarUrl(avatarUrl);
 
       if (baseCurrency != null) {
-        await _storage.delete(key: 'transactions_etag');
-        await _storage.delete(key: 'budgets_etag');
         try {
           await ApiService.instance.clearEtags();
           unawaited(() async {
@@ -347,6 +357,8 @@ class AuthApiService {
     }
   }
 
+  /// Удаляет аккаунт на сервере и очищает сессию. Локальные данные стирает
+  /// и о выходе сообщает [ApiService.deleteAccount].
   Future<void> deleteAccount() async {
     try {
       await _dio.delete(
@@ -354,31 +366,28 @@ class AuthApiService {
         options: authOptions(),
       );
 
-      await LocalDbService.instance.clearAllData();
-      await PendingDeletionsStore.instance.clear();
-      await handleSessionExpired();
+      await clearAllUserData();
     } catch (e) {
       AppLogger.e('[AuthApiService] Delete account error', e);
       rethrow;
     }
   }
 
-  Future<LogoutResponseModel> logout() async {
+  /// Отзывает сессию на сервере и очищает её на устройстве. Ошибка сервера
+  /// пробрасывается, но сессия очищается в любом случае.
+  Future<void> logout() async {
     final token = _token;
     if (token == null) {
       AppLogger.w('[AuthApiService] Logout attempted without token');
-      return LogoutResponseModel(status: 'error', message: 'Не авторизован');
+      return;
     }
 
     try {
-      final response = await _dio.post(
+      await _dio.post(
         ApiConfig.logout,
         options: authOptions(token),
       );
-
-      final logoutResponse = LogoutResponseModel.fromJson(response.data);
-      AppLogger.i('[AuthApiService] Logout success: ${logoutResponse.message}');
-      return logoutResponse;
+      AppLogger.i('[AuthApiService] Logout success');
     } on DioException catch (e) {
       AppLogger.w(
           '[AuthApiService] Logout error: ${e.response?.data ?? e.message}');
@@ -388,10 +397,8 @@ class AuthApiService {
     }
   }
 
-  Future<void> performLogout() async {
-    await clearAllUserData();
-    _authStream.add(false);
-  }
+  /// Сообщает подписчикам [authStream], что сессия завершена.
+  void notifyLoggedOut() => _authStream.add(false);
 
   Future<String?> performTokenRefresh() async {
     if (_refreshCompleter != null) {
@@ -400,6 +407,7 @@ class AuthApiService {
 
     final completer = Completer<String?>();
     _refreshCompleter = completer;
+    final epoch = _sessionEpoch;
 
     try {
       final currentRefresh =
@@ -418,6 +426,13 @@ class AuthApiService {
         ApiConfig.refreshToken,
         data: {'refresh_token': currentRefresh},
       );
+
+      if (epoch != _sessionEpoch) {
+        AppLogger.i(
+            '[AuthApiService] Session ended during refresh, tokens discarded');
+        completer.complete(null);
+        return null;
+      }
 
       final resData = response.data is Map
           ? (response.data['data'] is Map
@@ -443,18 +458,15 @@ class AuthApiService {
       // Сессию завершает только 401: сервер отклонил refresh-токен. Сеть, 429
       // и 5xx (например, 503 при сбое Redis) — временные сбои: токены
       // сохраняются, запрос можно повторить, пользователь остаётся в аккаунте.
-      if (e is DioException && e.response?.statusCode == 401) {
+      if (epoch == _sessionEpoch &&
+          e is DioException &&
+          e.response?.statusCode == 401) {
         await handleSessionExpired();
       }
       return null;
     } finally {
       _refreshCompleter = null;
     }
-  }
-
-  Future<bool> refreshAuthTokens() async {
-    final newAccess = await performTokenRefresh();
-    return newAccess != null && newAccess.isNotEmpty;
   }
 
   void dispose() {

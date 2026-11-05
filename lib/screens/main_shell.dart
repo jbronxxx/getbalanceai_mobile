@@ -39,10 +39,6 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  void _logout() {
-    context.read<AuthCubit>().logout();
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
@@ -99,7 +95,6 @@ class _MainShellState extends State<MainShell> {
                             userEmail: email,
                             userName: name,
                             avatarUrl: avatarUrl,
-                            onLogout: _logout,
                           ),
                         ],
                       );

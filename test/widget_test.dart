@@ -46,7 +46,7 @@ void main() {
 
   testWidgets('Приложение запускается и показывает нижнюю навигацию',
       (tester) async {
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
     await PreferencesService.instance
         .saveLanguage('ru'); // Prevent welcome sheet
     ApiService.instance.dio.httpClientAdapter =

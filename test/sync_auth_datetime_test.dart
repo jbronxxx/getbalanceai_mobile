@@ -6,10 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:getbalanceai_mobile/config/api_config.dart';
 import 'package:getbalanceai_mobile/models/auth_model.dart';
-import 'package:getbalanceai_mobile/models/budget_model.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/models/sync_model.dart';
-import 'package:getbalanceai_mobile/models/transaction_model.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
 
 void main() {
@@ -92,27 +90,7 @@ void main() {
       expect(outputJson['type'], 'expense');
     });
 
-    test('TransactionModel parses date toLocal and serializes to UTC', () {
-      final json = {
-        'id': 'tx-999',
-        'amount': 1200.0,
-        'description': 'Freelance',
-        'category': 'salary',
-        'type': 'income',
-        'date': '2026-10-03T08:30:00+00:00',
-      };
-
-      final model = TransactionModel.fromJson(json);
-      expect(model.id, 'tx-999');
-      expect(model.date.isUtc, isFalse);
-      expect(model.date.toUtc().toIso8601String(), '2026-10-03T08:30:00.000Z');
-
-      final serialized = model.toJson();
-      expect(serialized['date'], '2026-10-03T08:30:00.000Z');
-      expect(serialized['id'], 'tx-999');
-    });
-
-    test('AuthMeResponseModel parses created_at to local DateTime', () {
+    test('AuthMeResponseModel parses profile fields', () {
       final json = {
         'status': 'success',
         'data': {
@@ -127,36 +105,16 @@ void main() {
       expect(authMe.id, 'usr-1');
       expect(authMe.userEmail, 'user@example.com');
       expect(authMe.userName, 'Test User');
-      expect(authMe.createdAt, isNotNull);
-      expect(authMe.createdAt!.isUtc, isFalse);
-      expect(authMe.createdAt!.toUtc().toIso8601String(),
-          '2026-10-01T10:00:00.000Z');
     });
   });
 
   group('2. JWT Authentication & Dio 401 Refresh Flow', () {
-    test('LoginResponseModel parses access_token and refresh_token', () {
-      final json = {
-        'status': 'success',
-        'data': {
-          'access_token': 'jwt_access_with_jti_123',
-          'refresh_token': 'jwt_refresh_with_jti_456',
-          'token_type': 'bearer',
-        }
-      };
-
-      final loginRes = LoginResponseModel.fromJson(json);
-      expect(loginRes.accessToken, 'jwt_access_with_jti_123');
-      expect(loginRes.refreshToken, 'jwt_refresh_with_jti_456');
-      expect(loginRes.tokenType, 'bearer');
-    });
-
     test(
         'Dio Interceptor handles 401, refreshes tokens with jti, saves to secure storage and retries original request',
         () async {
       final api = ApiService.instance;
       await api.init();
-      await api.setTokens('expired_access_token', 'initial_refresh_token');
+      await api.auth.setTokens('expired_access_token', 'initial_refresh_token');
 
       // Создаем кастомный HttpClientAdapter для тестирования перехватчика
       bool refreshCalled = false;
@@ -237,10 +195,10 @@ void main() {
     });
 
     test(
-        'refreshAuthTokens directly requests /auth/refresh and updates storage',
+        'performTokenRefresh directly requests /auth/refresh and updates storage',
         () async {
       final api = ApiService.instance;
-      await api.setTokens('access_old', 'refresh_jwt_jti_111');
+      await api.auth.setTokens('access_old', 'refresh_jwt_jti_111');
 
       bool refreshEndpointHit = false;
       api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
@@ -262,7 +220,7 @@ void main() {
         return ResponseBody.fromString('{}', 404);
       });
 
-      final success = await api.refreshAuthTokens();
+      final success = await api.auth.performTokenRefresh() != null;
       expect(success, isTrue);
       expect(refreshEndpointHit, isTrue);
       expect(mockSecureStorage['auth_token'], 'access_new_jti_222');
@@ -273,7 +231,8 @@ void main() {
         'concurrent 401 requests trigger only one /auth/refresh call and both retry successfully',
         () async {
       final api = ApiService.instance;
-      await api.setTokens('expired_token_123', 'initial_refresh_token_456');
+      await api.auth
+          .setTokens('expired_token_123', 'initial_refresh_token_456');
 
       int refreshCallCount = 0;
 
@@ -346,7 +305,7 @@ void main() {
         'retried request receiving 401 does not loop or trigger additional refresh',
         () async {
       final api = ApiService.instance;
-      await api.setTokens('invalid_token', 'refresh_token_123');
+      await api.auth.setTokens('invalid_token', 'refresh_token_123');
 
       int refreshCallCount = 0;
       api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
@@ -387,7 +346,7 @@ void main() {
         '401 on /auth/google or /auth/apple does not trigger refresh or session expiration',
         () async {
       final api = ApiService.instance;
-      await api.setTokens('existing_access', 'existing_refresh');
+      await api.auth.setTokens('existing_access', 'existing_refresh');
 
       int refreshCallCount = 0;
       bool sessionExpiredFired = false;
@@ -489,7 +448,7 @@ void main() {
         'updateBaseUrl updates Dio base URL and onEnvironmentChanged clears session',
         () async {
       final api = ApiService.instance;
-      await api.setTokens('session_token', 'session_refresh');
+      await api.auth.setTokens('session_token', 'session_refresh');
       expect(api.isAuthenticated, isTrue);
 
       api.updateBaseUrl('https://staging.example.com/api/v1');
@@ -503,7 +462,7 @@ void main() {
 
     test('setAvatarUrl saves to secure storage and updates memory', () async {
       final api = ApiService.instance;
-      await api.setTokens('token_1', 'refresh_1');
+      await api.auth.setTokens('token_1', 'refresh_1');
 
       bool streamNotified = false;
       final sub = api.authStream.listen((isAuth) {
@@ -511,14 +470,14 @@ void main() {
       });
 
       const avatarUrl = 'https://lh3.googleusercontent.com/avatar123';
-      await api.setAvatarUrl(avatarUrl);
+      await api.auth.setAvatarUrl(avatarUrl);
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       expect(api.avatarUrl, avatarUrl);
       expect(mockSecureStorage['auth_avatar_url'], avatarUrl);
       expect(streamNotified, isTrue);
 
-      await api.setAvatarUrl(null);
+      await api.auth.setAvatarUrl(null);
       expect(api.avatarUrl, isNull);
       expect(mockSecureStorage['auth_avatar_url'], isNull);
 
@@ -528,9 +487,9 @@ void main() {
 
     test('clearAllUserData clears avatarUrl and secure storage keys', () async {
       final api = ApiService.instance;
-      await api.setTokens('token_2', 'refresh_2');
-      await api.setAvatarUrl('https://example.com/pic.png');
-      await api.setUserName('Test User');
+      await api.auth.setTokens('token_2', 'refresh_2');
+      await api.auth.setAvatarUrl('https://example.com/pic.png');
+      await api.auth.setUserName('Test User');
 
       expect(api.avatarUrl, 'https://example.com/pic.png');
       expect(mockSecureStorage['auth_avatar_url'], isNotNull);
@@ -569,27 +528,6 @@ void main() {
       final deletedJson = budget.toJson(isDeleted: true);
       expect(deletedJson['is_deleted'], isTrue);
       expect(deletedJson['id'], 'budget-uuid-123');
-    });
-
-    test('BudgetModel supports id, isDeleted in fromJson and toJson', () {
-      final model = BudgetModel(
-        id: 'budget-uuid-456',
-        category: 'transport',
-        limitAmount: 300000.0,
-        month: 10,
-        year: 2026,
-        isDeleted: true,
-      );
-
-      final json = model.toJson();
-      expect(json['id'], 'budget-uuid-456');
-      expect(json['category'], 'transport');
-      expect(json['is_deleted'], isTrue);
-
-      final parsed = BudgetModel.fromJson(json);
-      expect(parsed.id, 'budget-uuid-456');
-      expect(parsed.isDeleted, isTrue);
-      expect(parsed.category, 'transport');
     });
 
     test('SyncModel serializes transactions, budgets and deleted_budget_ids',

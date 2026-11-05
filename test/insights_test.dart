@@ -278,7 +278,7 @@ void main() {
   testWidgets(
       'InsightsScreen shows AiSparklesLoader during loading and not CircularProgressIndicator',
       (tester) async {
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
     ApiService.instance.dio.httpClientAdapter =
@@ -321,7 +321,7 @@ void main() {
   testWidgets(
       'InsightsScreen displays busy assistants stub on endpoint error and allows pull-to-refresh',
       (tester) async {
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
     int requestCount = 0;
@@ -366,7 +366,7 @@ void main() {
   testWidgets(
       'InsightsScreen does not display updated date, personal recs title, or cache hint',
       (tester) async {
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
     const testGeneratedAt = '2026-10-02T13:45:00Z';
@@ -429,7 +429,7 @@ void main() {
   testWidgets(
       'InsightsScreen does not call getInsights when isActive is false and loads lazily when isActive becomes true',
       (tester) async {
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
     int requestCount = 0;
@@ -485,7 +485,7 @@ void main() {
   testWidgets(
       'InsightsScreen renders PeriodSwitcher and requests insights with selected month and year',
       (tester) async {
-    await ApiService.instance.setTokens('test_token', 'test_refresh');
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
     int requestedMonth = 0;
@@ -615,7 +615,7 @@ Future<void> _pumpInsights(
   Map<String, dynamic> Function(int request) data,
   Future<void> Function(int Function() requests) body,
 ) async {
-  await ApiService.instance.setTokens('test_token', 'test_refresh');
+  await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
   final originalAdapter = ApiService.instance.dio.httpClientAdapter;
   var requestCount = 0;
   ApiService.instance.dio.httpClientAdapter =
