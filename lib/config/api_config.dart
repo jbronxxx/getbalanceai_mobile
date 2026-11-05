@@ -18,5 +18,4 @@ class ApiConfig {
   static const String sync = '/sync/';
   static const String insights = '/insights/';
   static const String currencyRates = '/currencies/rates';
-  static const String health = '/health';
 }

@@ -34,15 +34,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// Обновить текущее состояние из сервиса авторизации
-  void refresh() {
-    _updateState(_apiService.isAuthenticated);
-  }
-
-  void logout() {
-    _apiService.performLogout();
-  }
-
   @override
   Future<void> close() {
     _authSubscription?.cancel();

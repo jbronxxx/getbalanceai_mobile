@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
-import 'package:getbalanceai_mobile/models/transaction_model.dart';
-import 'package:getbalanceai_mobile/models/budget_model.dart';
 
 void main() {
   group('Decimal / Numeric(12, 2) Safe Parsing & Compatibility Tests', () {
@@ -165,43 +163,6 @@ void main() {
         expect(budget.month, 0);
         expect(budget.year, 0);
         expect(budget.isValidPeriod, isFalse);
-      });
-    });
-
-    group('TransactionModel and BudgetModel REST DTO Decimal compatibility',
-        () {
-      test('TransactionModel parses Decimal string amount', () {
-        final json = {
-          'id': 'dto-tx-1',
-          'amount': '890.99',
-          'description': 'Restaurant dinner',
-          'category': 'food',
-          'type': 'expense',
-          'date': '2026-10-03T18:00:00Z',
-        };
-
-        final model = TransactionModel.fromJson(json);
-        expect(model.id, 'dto-tx-1');
-        expect(model.amount, 890.99);
-      });
-
-      test('BudgetModel parses Decimal string limit_amount, month, year', () {
-        final json = {
-          'id': 'dto-b-1',
-          'category': 'entertainment',
-          'limit_amount': '1200.50',
-          'month': '10',
-          'year': '2026',
-          'is_deleted': false,
-        };
-
-        final model = BudgetModel.fromJson(json);
-        expect(model.id, 'dto-b-1');
-        expect(model.category, 'entertainment');
-        expect(model.limitAmount, 1200.50);
-        expect(model.month, 10);
-        expect(model.year, 2026);
-        expect(model.isDeleted, isFalse);
       });
     });
   });

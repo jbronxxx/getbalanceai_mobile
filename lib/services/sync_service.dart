@@ -120,29 +120,75 @@ class SyncService {
   String get _transactionsEtagKey => _etagKey('transactions');
   String get _budgetsEtagKey => _etagKey('budgets');
 
-  String _etagKey(String entity) {
-    final userId = _userIdProvider?.call() ?? 'anon';
+  String _etagKey(String entity, [String? userId]) {
+    final owner = userId ?? _userIdProvider?.call() ?? 'anon';
     final env = EnvironmentConfig.current.name;
-    return '${entity}_etag_${userId}_$env';
+    return '${entity}_etag_${owner}_$env';
   }
 
   String? get transactionsEtag => _transactionsEtag;
-  String? get budgetsEtag => _budgetsEtag;
+
+  /// userId аккаунта, которому принадлежат операции и лимиты на устройстве.
+  /// `null` — владельца нет: гостевые данные или база очищена при выходе.
+  static const _localDataOwnerKey = 'local_data_owner';
+  String? _localDataOwner;
 
   Future<void> init() async {
     _transactionsEtag = await _storage.read(key: _transactionsEtagKey);
     _budgetsEtag = await _storage.read(key: _budgetsEtagKey);
+    _localDataOwner = await _storage.read(key: _localDataOwnerKey);
   }
 
-  Future<void> clearEtags() async {
+  /// Сбрасывает ETag пользователя [userId] (по умолчанию — текущего).
+  /// Ключи привязаны к userId, поэтому при выходе его нужно передать явно
+  /// или вызвать до очистки сессии.
+  Future<void> clearEtags({String? userId}) async {
     _transactionsEtag = null;
     _budgetsEtag = null;
     try {
-      await _storage.delete(key: _transactionsEtagKey);
-      await _storage.delete(key: _budgetsEtagKey);
+      await _storage.delete(key: _etagKey('transactions', userId));
+      await _storage.delete(key: _etagKey('budgets', userId));
       await _storage.delete(key: 'transactions_etag');
       await _storage.delete(key: 'budgets_etag');
     } catch (_) {}
+  }
+
+  /// Стирает локальные данные вышедшего пользователя [userId]: операции,
+  /// лимиты, очередь удалений, ETag и отметку владельца.
+  ///
+  /// Выполняется в очереди синхронизации: синк, начатый до выхода, сначала
+  /// завершится, и его ответ не вернёт записи в уже очищенную базу. Сессию
+  /// нужно очистить до вызова — тогда задачи, поставленные позже, упадут
+  /// с [SyncErrorCode.unauthorized], а не загрузят данные заново.
+  Future<void> clearLocalData({String? userId}) =>
+      _enqueue(() => _clearLocalData(userId));
+
+  /// Закрепляет данные на устройстве за [userId] (вход или старт приложения).
+  ///
+  /// Если они принадлежат другому аккаунту — сессия того истекла без выхода,
+  /// и база не очищалась, — они стираются: иначе невыгруженные записи
+  /// прошлого пользователя ушли бы в аккаунт [userId]. Данные без владельца
+  /// (гостевые) переносятся в аккаунт.
+  Future<void> claimLocalData(String userId) => _enqueue(() async {
+        final owner = _localDataOwner;
+        if (owner == userId) return;
+        if (owner != null) {
+          AppLogger.i('[SyncService] Local data belongs to another account, '
+              'clearing');
+          await _clearLocalData(owner);
+        }
+        _localDataOwner = userId;
+        await _storage.write(key: _localDataOwnerKey, value: userId);
+      });
+
+  Future<void> _clearLocalData(String? userId) async {
+    await clearEtags(userId: userId);
+    if (LocalDbService.isInitialized) {
+      await LocalDbService.instance.clearAllData();
+    }
+    await PendingDeletionsStore.instance.clear();
+    _localDataOwner = null;
+    await _storage.delete(key: _localDataOwnerKey);
   }
 
   /// Ставит [task] в очередь синхронизации: он начнётся только после

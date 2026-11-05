@@ -91,7 +91,7 @@ void main() {
         ]);
     api = ApiService.instance;
     await api.init();
-    await api.setTokens('access', 'refresh');
+    await api.auth.setTokens('access', 'refresh');
   });
 
   group('Идемпотентная выгрузка новых транзакций', () {

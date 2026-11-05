@@ -735,8 +735,7 @@ void main() {
 
     blocTest<ProfileCubit, ProfileState>(
       'logout delegates to ApiService',
-      setUp: () => when(() => api.logout()).thenAnswer(
-          (_) async => LogoutResponseModel(status: 'success', message: 'ok')),
+      setUp: () => when(() => api.logout()).thenAnswer((_) async {}),
       build: build,
       act: (cubit) => cubit.logout(),
       expect: () => <ProfileState>[],
@@ -751,22 +750,6 @@ void main() {
       final cubit = build();
       await expectLater(cubit.logout(), completes);
       await cubit.close();
-    });
-
-    test('LogoutResponseModel parses plain, wrapped and empty payloads', () {
-      final plain =
-          LogoutResponseModel.fromJson({'status': 'success', 'message': 'Bye'});
-      expect(plain.status, 'success');
-      expect(plain.message, 'Bye');
-
-      final wrapped = LogoutResponseModel.fromJson({
-        'data': {'message': 'Wrapped'}
-      });
-      expect(wrapped.message, 'Wrapped');
-
-      final empty = LogoutResponseModel.fromJson(null);
-      expect(empty.status, 'success');
-      expect(empty.message, '');
     });
 
     test('copyWith clears syncError unless provided', () {
@@ -841,18 +824,5 @@ void main() {
             'https://lh3.googleusercontent.com/new_avatar'),
       ],
     );
-
-    test('logout delegates to performLogout', () {
-      when(() => api.isAuthenticated).thenReturn(true);
-      when(() => api.email).thenReturn('u@example.com');
-      when(() => api.userName).thenReturn('User');
-      when(() => api.avatarUrl).thenReturn(null);
-      when(() => api.performLogout()).thenAnswer((_) async {});
-
-      final cubit = AuthCubit(apiService: api);
-      cubit.logout();
-      verify(() => api.performLogout()).called(1);
-      cubit.close();
-    });
   });
 }

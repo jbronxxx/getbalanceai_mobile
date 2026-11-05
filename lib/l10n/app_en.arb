@@ -44,7 +44,6 @@
   "sync_no_internet_alert": "Network connection is required for sync",
   "sync_error": "Sync Error",
   "logout_info": "Logged out successfully",
-  "logout_error_title": "Error logging out",
   "transaction_deleted": "Transaction deleted",
   "undo_action": "Undo",
   "welcome_lang_title": "Choose language",
@@ -402,5 +401,14 @@
   "report_btn_short": "Report",
   "insights_outdated_note": "Your data changed after this report — amounts in the tips may differ from the current ones.",
   "insights_outdated_refresh": "Update report",
-  "insights_outdated_tomorrow": "A new report will be available tomorrow: the daily update limit is reached."
+  "insights_outdated_tomorrow": "A new report will be available tomorrow: the daily update limit is reached.",
+  "logout_unsynced_warning": "Not uploaded to the server: {count}. These changes will be removed from this device when you log out. Log out anyway?",
+  "@logout_unsynced_warning": {
+    "description": "Logout confirmation when some changes could not be uploaded",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -34,7 +34,7 @@ void main() {
   setUp(() async {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
-    await ApiService.instance.setTokens(null, null);
+    await ApiService.instance.auth.setTokens(null, null);
     LanguageManager.initFallback();
     await CurrencyFormatter.loadSavedCurrency();
     await CurrencyExchangeService.instance.init();
@@ -328,7 +328,7 @@ void main() {
       final service = CurrencyExchangeService.instance;
       service.resetForTesting();
 
-      await ApiService.instance
+      await ApiService.instance.auth
           .setTokens('secret_jwt_access_token', 'refresh_token');
       expect(ApiService.instance.isAuthenticated, isTrue);
 
@@ -373,7 +373,7 @@ void main() {
       final service = CurrencyExchangeService.instance;
       service.resetForTesting();
 
-      await ApiService.instance.setTokens('valid_token', 'valid_refresh');
+      await ApiService.instance.auth.setTokens('valid_token', 'valid_refresh');
       var refreshAttempted = false;
 
       service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
@@ -408,7 +408,7 @@ void main() {
     });
   });
 
-  group('Transaction & TransactionModel Multi-Currency Serialization', () {
+  group('Transaction Multi-Currency Serialization', () {
     test('Transaction корректно парсит данные с полями валюты', () {
       final json = {
         'id': 'tx-123',
@@ -453,31 +453,6 @@ void main() {
       expect(tx.exchangeRate, equals(1.0));
       expect(tx.baseAmount, equals(2500.50));
       expect(tx.effectiveBaseAmount, equals(2500.50));
-    });
-
-    test(
-        'TransactionModel DTO сериализация и десериализация мультивалютных полей',
-        () {
-      final json = {
-        'id': 'tx-dto',
-        'amount': 50.0,
-        'currency': 'EUR',
-        'exchange_rate': 1.09,
-        'base_amount': 54.5,
-        'description': 'Книга',
-        'category': 'shopping',
-        'type': 'expense',
-        'date': '2026-10-11T10:00:00Z',
-      };
-
-      final model = TransactionModel.fromJson(json);
-      expect(model.currency, equals('EUR'));
-      expect(model.exchangeRate, equals(1.09));
-      expect(model.baseAmount, equals(54.5));
-
-      final serialized = model.toJson();
-      expect(serialized['currency'], equals('EUR'));
-      expect(serialized['base_amount'], equals(54.5));
     });
   });
 
@@ -578,12 +553,12 @@ void main() {
     testWidgets(
         'При завершении онбординга авторизованный пользователь отправляет валюту на бэкенд',
         (WidgetTester tester) async {
-      await ApiService.instance.setTokens('test_token', 'test_refresh');
+      await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
       expect(ApiService.instance.isAuthenticated, isTrue);
 
       final originalAdapter = ApiService.instance.dio.httpClientAdapter;
       addTearDown(() async {
-        await ApiService.instance.setTokens(null, null);
+        await ApiService.instance.auth.setTokens(null, null);
         ApiService.instance.dio.httpClientAdapter = originalAdapter;
       });
 

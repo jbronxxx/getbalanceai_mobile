@@ -13,14 +13,12 @@ class ProfileScreen extends StatelessWidget {
   final String userEmail;
   final String userName;
   final String? avatarUrl;
-  final VoidCallback onLogout;
 
   const ProfileScreen({
     super.key,
     required this.userEmail,
     required this.userName,
     this.avatarUrl,
-    required this.onLogout,
   });
 
   @override
@@ -31,7 +29,6 @@ class ProfileScreen extends StatelessWidget {
         userEmail: userEmail,
         userName: userName,
         avatarUrl: avatarUrl,
-        onLogout: onLogout,
       ),
     );
   }
@@ -41,13 +38,11 @@ class _ProfileScreenView extends StatefulWidget {
   final String userEmail;
   final String userName;
   final String? avatarUrl;
-  final VoidCallback onLogout;
 
   const _ProfileScreenView({
     required this.userEmail,
     required this.userName,
     this.avatarUrl,
-    required this.onLogout,
   });
 
   @override
@@ -149,26 +144,42 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     );
   }
 
+  /// Выход стирает данные аккаунта с устройства, поэтому сначала пробуем
+  /// выгрузить неотправленные изменения; если не вышло — предупреждаем,
+  /// сколько изменений пропадёт.
   Future<void> _handleLogout() async {
     final cubit = context.read<ProfileCubit>();
+    final navigator = Navigator.of(context);
+
+    var unsynced = 0;
+    if (cubit.hasChangesToUpload) {
+      _showLoadingDialog(context.l10n.syncing);
+      unsynced = await cubit.prepareLogout();
+      navigator.pop();
+      if (!mounted) return;
+    }
+
     final confirm = await AppAlerts.showConfirmDialog(
       context,
       title: context.l10n.logout_confirm_title,
-      message: context.l10n.logout_confirm_desc,
+      message: unsynced > 0
+          ? context.l10n.logout_unsynced_warning(unsynced)
+          : context.l10n.logout_confirm_desc,
       confirmText: context.l10n.logout,
       cancelText: context.l10n.cancel,
-      isDestructive: false,
+      isDestructive: unsynced > 0,
       icon: Icons.logout_rounded,
     );
 
     if (confirm != true || !mounted) return;
 
     _showLoadingDialog(context.l10n.logging_out);
+    // О выходе AuthCubit узнаёт из authStream внутри logout(), поэтому
+    // вкладка может успеть размонтироваться — диалог закрываем через
+    // заранее полученный navigator.
     await cubit.logout();
+    navigator.pop();
     if (!mounted) return;
-    Navigator.pop(context);
-
-    widget.onLogout();
     AppAlerts.info(context, context.l10n.logout_info);
   }
 
@@ -184,16 +195,15 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     );
 
     if (confirm == true && mounted) {
+      final navigator = Navigator.of(context);
       _showLoadingDialog(context.l10n.deleting);
       try {
+        // Выход и очистку данных выполняет сам deleteAccount().
         await ApiService.instance.deleteAccount();
-        if (mounted) {
-          Navigator.pop(context);
-          widget.onLogout();
-        }
+        navigator.pop();
       } catch (e) {
+        navigator.pop();
         if (mounted) {
-          Navigator.pop(context);
           AppErrorHandler.show(context, e,
               title: context.l10n.delete_account_error);
         }

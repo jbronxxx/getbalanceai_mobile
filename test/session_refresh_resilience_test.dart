@@ -60,7 +60,7 @@ void main() {
   setUp(() async {
     secureStorage.clear();
     await ApiService.instance.init();
-    await ApiService.instance.setTokens('expired_access', 'refresh');
+    await ApiService.instance.auth.setTokens('expired_access', 'refresh');
   });
 
   group('Сессия при сбое обновления токена', () {
