@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/secure_storage_config.dart';
 import '../utils/app_logger.dart';
 
 /// Сервис для управления UX-подсказками.
@@ -11,11 +12,7 @@ class PreferencesService {
   PreferencesService._internal();
   static final PreferencesService instance = PreferencesService._internal();
 
-  final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-  );
+  final FlutterSecureStorage _storage = appSecureStorage;
   ValueNotifier<ThemeMode>? _themeModeNotifier;
   ValueNotifier<ThemeMode> get themeModeNotifier =>
       _themeModeNotifier ??= ValueNotifier(ThemeMode.system);
