@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
+import '../config/secure_storage_config.dart';
 import '../config/environment.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
@@ -106,9 +107,7 @@ class SyncService {
     String? Function()? userIdProvider,
     required TransactionApiService transactionApiService,
     required BudgetApiService budgetApiService,
-    FlutterSecureStorage storage = const FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    ),
+    FlutterSecureStorage storage = appSecureStorage,
   })  : _dio = dio,
         _authOptions = authOptions,
         _tokenProvider = tokenProvider,

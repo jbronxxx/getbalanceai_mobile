@@ -5,6 +5,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../config/api_config.dart';
+import '../config/secure_storage_config.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
 import '../utils/currency_formatter.dart';
@@ -35,9 +36,7 @@ class AuthApiService {
 
   AuthApiService({
     required Dio dio,
-    FlutterSecureStorage storage = const FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    ),
+    FlutterSecureStorage storage = appSecureStorage,
     Future<void> Function(String userId)? onSignIn,
   })  : _dio = dio,
         _storage = storage,

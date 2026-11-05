@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "343591289048",
+    "project_id": "getbalance-ai",
+    "storage_bucket": "getbalance-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343591289048:android:8c9bf4d1fab8bb058157ad",
+        "android_client_info": {
+          "package_name": "com.getbalanceai.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA-vynA0hgncH8sSRrmAmnOXDOIResTvE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

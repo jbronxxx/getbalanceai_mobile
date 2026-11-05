@@ -13,6 +13,8 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -31,7 +33,8 @@ android {
 
     defaultConfig {
         applicationId = "com.getbalanceai.mobile"
-        minSdk = flutter.minSdkVersion
+        // Firebase (firebase_core 5.x) требует Android 7.0+.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

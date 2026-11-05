@@ -51,6 +51,9 @@ class AppErrorHandler {
   }
 
   /// Возвращает текстовое сообщение на основе типа ошибки.
+  ///
+  /// Для неизвестных исключений — общий локализованный текст: сырой
+  /// `toString()` пользователю не показывается, детали уходят в лог.
   static String getMessage(dynamic error) {
     if (error is SyncException) {
       return error.getLocalizedMessage();
@@ -58,7 +61,9 @@ class AppErrorHandler {
     if (error is DioException) {
       return _handleDioError(error);
     }
-    return error.toString();
+    AppLogger.e('[AppErrorHandler] Необработанная ошибка', error);
+    CrashReporter.recordError(error, null, reason: 'shown to user');
+    return LanguageManager.l10n.err_unexpected;
   }
 
   /// Показывает уведомление об ошибке пользователю.

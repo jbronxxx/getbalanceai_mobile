@@ -12,6 +12,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
+import 'screens/startup_error_screen.dart';
 import 'screens/welcome_setup_screen.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,14 +28,19 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   GoogleFonts.config.allowRuntimeFetching = false;
 
+  // Первым шагом: должен поймать и сбои инициализации ниже. Сам не падает.
+  await CrashReporter.init();
+
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
+    CrashReporter.recordFlutterError(details);
     if (!kReleaseMode) {
       talker.handle(details.exception, details.stack, 'UI Error');
     }
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    CrashReporter.recordError(error, stack, fatal: true);
     if (!kReleaseMode) {
       talker.handle(error, stack, 'Async Error');
     }
@@ -56,19 +62,57 @@ void main() async {
     }
   }
 
-  await EnvironmentConfig.init();
+  try {
+    await _setPreferredOrientations();
+    final started = await _initServices();
+    runApp(
+      started
+          ? const FinanceApp()
+          : const StartupErrorApp(onRetry: _retryStartup),
+    );
+  } finally {
+    // Скрытие нативного сплеш-экрана после передачи управления корневому
+    // виджету. В finally — чтобы сплэш не завис при любом сбое старта.
+    FlutterNativeSplash.remove();
+  }
+}
 
-  await LocalDbService.init();
-  await PendingDeletionsStore.init();
-  await ApiService.instance.init();
-  await CurrencyFormatter.loadSavedCurrency();
-  await CurrencyExchangeService.instance.init();
-  unawaited(CurrencyExchangeService.instance.fetchLatestRates());
-  await LanguageManager.loadSavedLanguage();
-  LanguageManager.initFallback();
-  await PreferencesService.instance.loadSavedOnboardingStatus();
-  await PreferencesService.instance.loadSavedThemeMode();
+/// Инициализирует сервисы до `runApp`. Возвращает `false`, если что-то
+/// упало (повреждённая БД, сбой Keystore, не задан URL API) — тогда вместо
+/// приложения показывается [StartupErrorApp].
+///
+/// Можно вызывать повторно: уже открытая БД не открывается заново, остальные
+/// шаги просто перечитывают сохранённые значения.
+Future<bool> _initServices() async {
+  try {
+    await EnvironmentConfig.init();
 
+    if (!LocalDbService.isInitialized) await LocalDbService.init();
+    await PendingDeletionsStore.init();
+    await ApiService.instance.init();
+    await CurrencyFormatter.loadSavedCurrency();
+    await CurrencyExchangeService.instance.init();
+    unawaited(CurrencyExchangeService.instance.fetchLatestRates());
+    await LanguageManager.loadSavedLanguage();
+    LanguageManager.initFallback();
+    await PreferencesService.instance.loadSavedOnboardingStatus();
+    await PreferencesService.instance.loadSavedThemeMode();
+    return true;
+  } catch (e, stack) {
+    AppLogger.e('[Startup] Инициализация не удалась', e, stack);
+    CrashReporter.recordError(e, stack, reason: 'startup init');
+    return false;
+  }
+}
+
+/// Повтор с экрана ошибки запуска: при успехе подменяет корневой виджет.
+Future<bool> _retryStartup() async {
+  final started = await _initServices();
+  if (started) runApp(const FinanceApp());
+  return started;
+}
+
+Future<void> _setPreferredOrientations() async {
   // На планшетах и iPad поддерживаем все ориентации согласно требованиям App Store,
   // на смартфонах фиксируем портретную ориентацию для предотвращения скачков интерфейса.
   final view = PlatformDispatcher.instance.views.firstOrNull;
@@ -86,10 +130,6 @@ void main() async {
       DeviceOrientation.landscapeRight,
     ]);
   }
-
-  runApp(const FinanceApp());
-  // Скрытие нативного сплеш-экрана после передачи управления корневому виджету
-  FlutterNativeSplash.remove();
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
