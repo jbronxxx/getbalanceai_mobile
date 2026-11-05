@@ -292,6 +292,14 @@
       }
     }
   },
+  "debug_environment_not_configured": "No URL is set for {env}. Run the app with --dart-define-from-file=.env",
+  "@debug_environment_not_configured": {
+    "placeholders": {
+      "env": {
+        "type": "String"
+      }
+    }
+  },
   "debug_app_info": "App Info",
   "debug_version": "Version: {version}",
   "@debug_version": {

@@ -1,4 +1,3 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,15 +8,16 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     EnvironmentConfig.clearListenersForTesting();
-    dotenv.testLoad(fileInput: '''
-PROD_API_BASE_URL=https://prod.example.com/api/v1
-DEV_API_BASE_URL=https://dev.example.com/api/v1
-API_BASE_URL=http://localhost:8000/api/v1
-''');
+    EnvironmentConfig.setDefinesForTesting({
+      'PROD_API_BASE_URL': 'https://prod.example.com/api/v1',
+      'DEV_API_BASE_URL': 'https://dev.example.com/api/v1',
+      'API_BASE_URL': 'http://localhost:8000/api/v1',
+    });
   });
 
   tearDown(() {
     EnvironmentConfig.clearListenersForTesting();
+    EnvironmentConfig.setDefinesForTesting(null);
   });
 
   group('EnvironmentConfig', () {
@@ -76,15 +76,16 @@ API_BASE_URL=http://localhost:8000/api/v1
     test(
         'baseUrl falls back to API_BASE_URL for dev when DEV_API_BASE_URL is empty',
         () async {
-      dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+      EnvironmentConfig.setDefinesForTesting(
+          {'API_BASE_URL': 'http://localhost:8000/api/v1'});
       await EnvironmentConfig.setEnvironment(Environment.dev);
 
       expect(EnvironmentConfig.baseUrl, 'http://localhost:8000/api/v1');
     });
 
-    test('baseUrl falls back to defaultLocalUrl when dotenv is uninitialized',
+    test('baseUrl falls back to defaultLocalUrl when nothing is defined',
         () async {
-      dotenv = DotEnv();
+      EnvironmentConfig.setDefinesForTesting({});
       await EnvironmentConfig.setEnvironment(Environment.dev);
       expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
 
@@ -92,48 +93,31 @@ API_BASE_URL=http://localhost:8000/api/v1
       expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
     });
 
-    test(
-        'baseUrl falls back to defaultLocalUrl when dotenv has empty configuration',
-        () async {
-      dotenv.testLoad(fileInput: '');
-      await EnvironmentConfig.setEnvironment(Environment.dev);
-      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
-
-      await EnvironmentConfig.setEnvironment(Environment.local);
-      expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
-    });
-
-    test('init safely defaults to Environment.dev when dotenv is uninitialized',
-        () async {
-      dotenv = DotEnv();
-      SharedPreferences.setMockInitialValues({});
+    test('init defaults to Environment.dev when nothing is defined', () async {
+      EnvironmentConfig.setDefinesForTesting({});
 
       await EnvironmentConfig.init();
       expect(EnvironmentConfig.current, Environment.dev);
       expect(EnvironmentConfig.baseUrl, 'http://10.0.2.2:8000/api/v1');
     });
 
-    test('init respects DEFAULT_ENVIRONMENT from dotenv when available',
-        () async {
-      dotenv.testLoad(fileInput: '''
-DEFAULT_ENVIRONMENT=local
-API_BASE_URL=http://localhost:8000/api/v1
-''');
-      SharedPreferences.setMockInitialValues({});
+    test('init respects DEFAULT_ENVIRONMENT define', () async {
+      EnvironmentConfig.setDefinesForTesting({
+        'DEFAULT_ENVIRONMENT': 'local',
+        'API_BASE_URL': 'http://localhost:8000/api/v1',
+      });
 
       await EnvironmentConfig.init();
       expect(EnvironmentConfig.current, Environment.local);
       expect(EnvironmentConfig.baseUrl, 'http://localhost:8000/api/v1');
     });
 
-    test(
-        'switching between environments in debug build resolves URLs from dotenv',
-        () async {
-      dotenv.testLoad(fileInput: '''
-PROD_API_BASE_URL=https://api.getbalanceai.app/api/v1
-DEV_API_BASE_URL=http://192.168.203.61:8000/api/v1
-API_BASE_URL=http://192.168.1.93:8000/api/v1
-''');
+    test('switching between environments resolves URLs from defines', () async {
+      EnvironmentConfig.setDefinesForTesting({
+        'PROD_API_BASE_URL': 'https://api.getbalanceai.app/api/v1',
+        'DEV_API_BASE_URL': 'http://192.168.203.61:8000/api/v1',
+        'API_BASE_URL': 'http://192.168.1.93:8000/api/v1',
+      });
       await EnvironmentConfig.setEnvironment(Environment.prod);
       expect(EnvironmentConfig.baseUrl, 'https://api.getbalanceai.app/api/v1');
 
@@ -142,6 +126,42 @@ API_BASE_URL=http://192.168.1.93:8000/api/v1
 
       await EnvironmentConfig.setEnvironment(Environment.local);
       expect(EnvironmentConfig.baseUrl, 'http://192.168.1.93:8000/api/v1');
+    });
+  });
+
+  group('EnvironmentConfig без PROD_API_BASE_URL', () {
+    setUp(() {
+      EnvironmentConfig.setDefinesForTesting({
+        'DEV_API_BASE_URL': 'https://dev.example.com/api/v1',
+      });
+    });
+
+    test('prod считается ненастроенным, dev и local — настроенными', () {
+      expect(EnvironmentConfig.isConfigured(Environment.prod), isFalse);
+      expect(EnvironmentConfig.isConfigured(Environment.dev), isTrue);
+      expect(EnvironmentConfig.isConfigured(Environment.local), isTrue);
+    });
+
+    test('baseUrl для prod — ошибка, а не пустая строка', () {
+      EnvironmentConfig.setCurrentForTesting(Environment.prod);
+      expect(() => EnvironmentConfig.baseUrl, throwsStateError);
+    });
+
+    test('prod без https — ошибка', () {
+      EnvironmentConfig.setDefinesForTesting(
+          {'PROD_API_BASE_URL': 'http://api.example.com/api/v1'});
+      EnvironmentConfig.setCurrentForTesting(Environment.prod);
+      expect(() => EnvironmentConfig.baseUrl, throwsStateError);
+    });
+
+    test('сохранённый prod при запуске без define → окружение по умолчанию',
+        () async {
+      SharedPreferences.setMockInitialValues({'selected_environment': 'prod'});
+
+      await EnvironmentConfig.init();
+
+      expect(EnvironmentConfig.current, Environment.dev);
+      expect(EnvironmentConfig.baseUrl, 'https://dev.example.com/api/v1');
     });
   });
 }

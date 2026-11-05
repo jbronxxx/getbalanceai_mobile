@@ -291,6 +291,14 @@
       }
     }
   },
+  "debug_environment_not_configured": "{env} үшін URL берілмеген. Қолданбаны --dart-define-from-file=.env арқылы іске қосыңыз",
+  "@debug_environment_not_configured": {
+    "placeholders": {
+      "env": {
+        "type": "String"
+      }
+    }
+  },
   "debug_app_info": "Қолданба туралы ақпарат",
   "debug_version": "Нұсқасы: {version}",
   "@debug_version": {

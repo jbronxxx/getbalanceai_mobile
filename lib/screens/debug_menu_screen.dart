@@ -62,6 +62,15 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
             }).toList(),
             onChanged: (val) async {
               if (val != null) {
+                if (!EnvironmentConfig.isConfigured(val)) {
+                  AppAlerts.error(
+                    context,
+                    l10n.debug_environment_not_configured(
+                      val.name.toUpperCase(),
+                    ),
+                  );
+                  return;
+                }
                 await EnvironmentConfig.setEnvironment(val);
                 setState(() {});
                 if (!context.mounted) return;

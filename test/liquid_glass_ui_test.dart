@@ -1,5 +1,6 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
@@ -68,15 +69,15 @@ void main() {
       final balanceSemantics =
           tester.getSemantics(find.bySemanticsLabel('Баланс'));
       expect(
-        balanceSemantics.getSemanticsData().hasFlag(SemanticsFlag.isSelected),
-        isTrue,
+        balanceSemantics.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isTrue,
       );
 
       final limitsSemantics =
           tester.getSemantics(find.bySemanticsLabel('Лимиты'));
       expect(
-        limitsSemantics.getSemanticsData().hasFlag(SemanticsFlag.isSelected),
-        isFalse,
+        limitsSemantics.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isFalse,
       );
 
       // Переключение вкладки по нажатию
@@ -87,10 +88,8 @@ void main() {
       final updatedLimitsSemantics =
           tester.getSemantics(find.bySemanticsLabel('Лимиты'));
       expect(
-        updatedLimitsSemantics
-            .getSemanticsData()
-            .hasFlag(SemanticsFlag.isSelected),
-        isTrue,
+        updatedLimitsSemantics.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isTrue,
       );
 
       semanticsHandle.dispose();

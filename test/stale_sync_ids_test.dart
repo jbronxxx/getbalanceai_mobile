@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
@@ -11,6 +10,7 @@ import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/services/pending_deletions_store.dart';
 import 'package:getbalanceai_mobile/services/transaction_api_service.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 /// Экран держит объект, прочитанный до фоновой выгрузки: у него ещё нет
 /// `serverId`, хотя в базе выгрузка его уже проставила. Правка и удаление
@@ -32,7 +32,8 @@ void main() {
       },
     );
 
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     LanguageManager.initFallback();
     await LocalDbService.init();
   });

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
@@ -12,6 +11,7 @@ import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
 import 'package:getbalanceai_mobile/widgets/insights/report_export_action.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 void main() {
   final storageData = <String, String>{};
@@ -19,7 +19,8 @@ void main() {
   setUpAll(() {
     LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

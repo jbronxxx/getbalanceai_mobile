@@ -11,7 +11,7 @@ Flutter-приложение для учёта личных/семейных ф�
 ## Требования
 
 - [FVM](https://fvm.app/) — используется для фиксации версии Flutter
-  (см. `.fvmrc` → Flutter `3.29.3`). Можно и без FVM (см. ниже), но версии
+  (см. `.fvmrc` → Flutter `3.41.9`). Можно и без FVM (см. ниже), но версии
   Flutter/Dart тогда нужно совместить самостоятельно.
 - Xcode (для iOS/macOS-сборок, только macOS) с установленными CocoaPods
   (`sudo gem install cocoapods`).
@@ -34,18 +34,19 @@ fvm flutter pub get
 ```
 
 Если не используете FVM — замените `fvm flutter` на `flutter` во всех
-командах ниже (нужен Flutter 3.29.3 или совместимый).
+командах ниже (нужен Flutter 3.41.9 или совместимый).
 
 ## Переменные окружения (`.env`)
 
 Приложение не хранит адреса бэкенда, ключи и прочие настройки окружения в
-коде — они конфигурируются через флаги `--dart-define` / `--dart-define-from-file`
-с чтением из локального `.env` в debug/profile-режимах
-(см. `lib/config/environment.dart` и `lib/config/api_config.dart`).
+коде — они передаются только флагами `--dart-define` / `--dart-define-from-file`
+при запуске или сборке (см. `lib/config/environment.dart`). Файл `.env` —
+просто удобный способ передать все значения разом:
+`--dart-define-from-file=.env`. В бандл он не упаковывается и приложением
+не читается.
 
-> **Безопасность релизного бандла**: В релизной сборке (`kReleaseMode`) чтение `.env` полностью отключено,
-> и значения передаются строго через `--dart-define` (`PROD_API_BASE_URL`).
 > Локальный `.env` не коммитится (в `.gitignore`), в репозитории лежит только шаблон `.env.example`.
+> Значения из `--dart-define` вшиваются в сборку, поэтому секретов там быть не должно — только адреса.
 
 ```bash
 cp .env.example .env
@@ -64,10 +65,11 @@ cp .env.example .env
 (5 тапов по версии приложения на экране профиля; смена требует перезапуска).
 В release-сборке всегда используется `prod`, Debug-меню недоступно.
 
-Если `.env` отсутствует или не передан, приложение не падает — используется дефолтный
-адрес для Android-эмулятора (см. `ApiConfig`). Для iOS-симулятора и
+Без `--dart-define-from-file=.env` окружения `dev` и `local` используют адрес
+бэкенда на хосте Android-эмулятора (`http://10.0.2.2:8000/api/v1`), а `prod`
+недоступен: Debug-меню не даст на него переключиться. Для iOS-симулятора и
 реальных устройств адрес почти наверняка нужно поменять (см. комментарии
-в `.env.example`).
+в `.env.example`). В VS Code флаг уже прописан в `.vscode/launch.json`.
 
 **Никогда не коммитьте реальный `.env`, ключи, токены доступа и т.п.** Если
 случайно закоммитили секрет — считайте его скомпрометированным: смените
@@ -111,10 +113,10 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 ```bash
 fvm flutter devices          # посмотреть доступные устройства/эмуляторы
 
-# Запуск с чтением конфигурации из локального .env через dart-define:
+# Запуск с адресами из локального .env:
 fvm flutter run --dart-define-from-file=.env
 
-# Стандартный запуск (fallback на значения по умолчанию):
+# Без .env: dev/local — бэкенд на хосте эмулятора, prod недоступен
 fvm flutter run
 ```
 
@@ -137,11 +139,29 @@ fvm flutter build appbundle --release --dart-define=PROD_API_BASE_URL=https://ap
 fvm flutter build appbundle --release --dart-define-from-file=.env.prod
 ```
 
+Обфускация Dart-кода (необязательно; Java/Kotlin-код R8 обфусцирует и так):
+
+```bash
+fvm flutter build appbundle --release --dart-define-from-file=.env.prod \
+  --obfuscate --split-debug-info=build/symbols/<версия>
+```
+
+Папку `build/symbols/<версия>` сохраняйте для каждого релиза: без неё стек-трейсы
+не расшифровать. Для Crashlytics символы нужно загрузить после сборки
+(нужны Firebase CLI и вход в аккаунт; App ID — в Firebase Console → Project settings):
+
+```bash
+firebase crashlytics:symbols:upload --app=<App ID> build/symbols/<версия>
+```
+
+Release-сборка включает R8 и удаление неиспользуемых ресурсов
+(`isMinifyEnabled`, `isShrinkResources` в `android/app/build.gradle.kts`).
+
 > `namespace` и `applicationId` в `android/app/build.gradle.kts` настроены на
-> `com.getbalanceai.mobile`. Перед публикацией в Google Play настройте боевой ключ
-> подписи вместо debug-ключа, которым сейчас подписывается release-сборка
-> (см. `signingConfig` там же). Ключ подписи и его пароли храните вне репозитория — например,
-> `android/key.properties` (уже в `.gitignore`) и переменные окружения CI.
+> `com.getbalanceai.mobile`. Release-сборка подписывается upload-ключом из
+> `android/key.properties` (в `.gitignore`); без этого файла release не собирается.
+> Ключ и `key.properties` храните с резервной копией вне компьютера — без них
+> обновление в Google Play не загрузить.
 
 ### iOS
 
@@ -224,8 +244,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/objectbox/objectbox-dart/v4.
 
 ## Безопасность / работа с репозиторием
 
-- Секреты для локальной разработки хранятся в `.env`, но в релизной сборке этот файл **игнорируется полностью и исключён из assets бандла**.
-- Секреты для релиза передаются только через аргументы командной строки сборки: `--dart-define=...` или `--dart-define-from-file=...`.
+- Настройки окружения (`.env`, `.env.prod`) передаются только аргументами сборки: `--dart-define=...` или `--dart-define-from-file=...`; в assets бандла `.env` не входит.
+- Всё, что передано через `--dart-define`, можно извлечь из APK — секретов (ключей, токенов) так не передавать.
 - Никогда не оставляйте секреты прямо в коде или в коммитах.
 - Если нужно поделиться доступом к бэкенду для локальной разработки,
   передавайте `.env` вне git (менеджер паролей, защищённый чат) — не

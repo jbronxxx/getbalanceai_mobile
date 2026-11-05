@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/main.dart';
@@ -20,6 +19,7 @@ import 'package:getbalanceai_mobile/widgets/period/period.dart';
 import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:getbalanceai_mobile/config/environment.dart';
 
 class _MockHttpClientAdapter implements HttpClientAdapter {
   @override
@@ -87,7 +87,8 @@ void main() {
   setUp(() async {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
-    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+    EnvironmentConfig.setDefinesForTesting(
+        {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     await ApiService.instance.auth.setTokens(null, null);
     await LocalDbService.instance.clearAllData();
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
