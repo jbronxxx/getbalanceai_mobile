@@ -429,8 +429,7 @@ void main() {
 
       expect(await refresh, isNull);
       expect(ApiService.instance.isAuthenticated, isFalse);
-      expect(await storage.read(key: 'auth_token'), isNull);
-      expect(await storage.read(key: 'refresh_token'), isNull);
+      expect(await storage.read(key: AuthApiService.sessionStorageKey), isNull);
     });
   });
 

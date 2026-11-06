@@ -8,7 +8,14 @@ import 'package:getbalanceai_mobile/models/auth_model.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/models/sync_model.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/services/auth_api_service.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
+
+/// Поле пары токенов, сохранённой [AuthApiService] одним ключом.
+String? _storedToken(Map<String, String> storage, String field) {
+  final raw = storage[AuthApiService.sessionStorageKey];
+  return raw == null ? null : (jsonDecode(raw) as Map)[field] as String?;
+}
 
 void main() {
   final Map<String, String> mockSecureStorage = {};
@@ -191,8 +198,10 @@ void main() {
       expect(result['insights'], ['Good spending habits']);
 
       // Проверяем сохранение новой пары токенов в FlutterSecureStorage
-      expect(mockSecureStorage['auth_token'], 'new_jwt_access_jti_789');
-      expect(mockSecureStorage['refresh_token'], 'new_jwt_refresh_jti_999');
+      expect(_storedToken(mockSecureStorage, 'access_token'),
+          'new_jwt_access_jti_789');
+      expect(_storedToken(mockSecureStorage, 'refresh_token'),
+          'new_jwt_refresh_jti_999');
     });
 
     test(
@@ -224,8 +233,10 @@ void main() {
       final success = await api.auth.performTokenRefresh() != null;
       expect(success, isTrue);
       expect(refreshEndpointHit, isTrue);
-      expect(mockSecureStorage['auth_token'], 'access_new_jti_222');
-      expect(mockSecureStorage['refresh_token'], 'refresh_new_jti_333');
+      expect(_storedToken(mockSecureStorage, 'access_token'),
+          'access_new_jti_222');
+      expect(_storedToken(mockSecureStorage, 'refresh_token'),
+          'refresh_new_jti_333');
     });
 
     test(
@@ -299,7 +310,8 @@ void main() {
       expect(refreshCallCount, 1);
       expect(results[0]['insights'], ['OK']);
       expect(results[1]['insights'], ['OK']);
-      expect(mockSecureStorage['auth_token'], 'new_valid_token_789');
+      expect(_storedToken(mockSecureStorage, 'access_token'),
+          'new_valid_token_789');
     });
 
     test(
@@ -457,8 +469,8 @@ void main() {
 
       await api.onEnvironmentChanged();
       expect(api.isAuthenticated, isFalse);
-      expect(mockSecureStorage['auth_token'], isNull);
-      expect(mockSecureStorage['refresh_token'], isNull);
+      expect(_storedToken(mockSecureStorage, 'access_token'), isNull);
+      expect(_storedToken(mockSecureStorage, 'refresh_token'), isNull);
     });
 
     test('setAvatarUrl saves to secure storage and updates memory', () async {
@@ -501,7 +513,7 @@ void main() {
       expect(api.userName, isNull);
       expect(api.isAuthenticated, isFalse);
       expect(mockSecureStorage['auth_avatar_url'], isNull);
-      expect(mockSecureStorage['auth_token'], isNull);
+      expect(_storedToken(mockSecureStorage, 'access_token'), isNull);
     });
   });
 

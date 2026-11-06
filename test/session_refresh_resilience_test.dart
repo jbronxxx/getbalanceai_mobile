@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/api_config.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/services/auth_api_service.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 
@@ -33,6 +34,12 @@ ResponseBody _json(Object body, int status) => ResponseBody.fromString(
         Headers.contentTypeHeader: [Headers.jsonContentType],
       },
     );
+
+/// Поле пары токенов, сохранённой [AuthApiService] одним ключом.
+String? _storedToken(Map<String, String> storage, String field) {
+  final raw = storage[AuthApiService.sessionStorageKey];
+  return raw == null ? null : (jsonDecode(raw) as Map)[field] as String?;
+}
 
 void main() {
   final Map<String, String> secureStorage = {};
@@ -91,7 +98,7 @@ void main() {
       test('ответ $status на refresh не завершает сессию', () async {
         expect(await sessionExpiredAfterRefresh(status), isFalse);
         expect(ApiService.instance.isAuthenticated, isTrue);
-        expect(secureStorage['refresh_token'], 'refresh');
+        expect(_storedToken(secureStorage, 'refresh_token'), 'refresh');
       });
     }
 

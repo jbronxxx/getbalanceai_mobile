@@ -202,51 +202,54 @@ class SyncService {
     return run;
   }
 
-  /// Токен для задачи из очереди: явно переданный или актуальный на момент
-  /// её запуска (пока задача ждала, токен мог обновиться).
-  String _requireToken(String? token) {
-    final jwtToken = token ?? _tokenProvider();
-    if (jwtToken == null) throw const SyncException(SyncErrorCode.unauthorized);
-    return jwtToken;
+  /// Синк только для вошедшего пользователя. Токен в запросы подставляет
+  /// интерцептор [ApiService] — актуальный на момент запроса: пока задача
+  /// ждала в очереди или листала страницы, токен мог обновиться.
+  void _requireSession() {
+    if (_tokenProvider() == null) {
+      throw const SyncException(SyncErrorCode.unauthorized);
+    }
   }
 
   /// Выгружает локальные транзакции и бюджеты на сервер.
-  Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) async {
-    _requireToken(token);
-    return _enqueue(() => _push(_requireToken(token)));
+  Future<Map<String, dynamic>> syncLocalDataToBackend() async {
+    _requireSession();
+    return _enqueue(() {
+      _requireSession();
+      return _push();
+    });
   }
 
   /// Загружает транзакции и бюджеты пользователя с сервера в локальную базу.
-  Future<Map<String, dynamic>> syncBackendDataToLocal([
-    String? token,
+  Future<Map<String, dynamic>> syncBackendDataToLocal({
     void Function(int count, int page)? onTransactionProgress,
     int maxPages = 100,
-  ]) async {
-    _requireToken(token);
-    return _enqueue(
-      () => _pull(_requireToken(token), onTransactionProgress, maxPages),
-    );
+  }) async {
+    _requireSession();
+    return _enqueue(() {
+      _requireSession();
+      return _pull(onTransactionProgress, maxPages);
+    });
   }
 
   /// Полная двусторонняя синхронизация — одна задача в очереди: между
   /// выгрузкой и загрузкой не вклинится другой запрос.
-  Future<Map<String, dynamic>> syncAll([
-    String? token,
+  Future<Map<String, dynamic>> syncAll({
     void Function(int count, int page)? onTransactionProgress,
     int maxPages = 100,
-  ]) async {
-    _requireToken(token);
+  }) async {
+    _requireSession();
     return _enqueue(() async {
-      final jwtToken = _requireToken(token);
-      final deleted = await _flushPendingDeletions(jwtToken);
-      final pushed = await _push(jwtToken);
-      final pulled = await _pull(jwtToken, onTransactionProgress, maxPages);
+      _requireSession();
+      final deleted = await _flushPendingDeletions();
+      final pushed = await _push();
+      final pulled = await _pull(onTransactionProgress, maxPages);
 
       return {'deleted': deleted, 'pushed': pushed, 'pulled': pulled};
     });
   }
 
-  Future<Map<String, dynamic>> _push(String jwtToken) async {
+  Future<Map<String, dynamic>> _push() async {
     try {
       final localTransactions =
           LocalDbService.instance.getUnsyncedTransactions();
@@ -299,7 +302,7 @@ class SyncService {
         final response = await _dio.post(
           ApiConfig.sync,
           data: payload.toJson(),
-          options: _authOptions(jwtToken),
+          options: _authOptions(),
         );
 
         final data = _syncResponseData(response.data);
@@ -364,17 +367,15 @@ class SyncService {
   }
 
   Future<Map<String, dynamic>> _pull(
-    String jwtToken,
     void Function(int count, int page)? onTransactionProgress,
     int maxPages,
   ) async {
     try {
       final remoteTransactionsResult = await _fetchRemoteTransactions(
-        jwtToken,
         onProgress: onTransactionProgress,
         maxPages: maxPages,
       );
-      final remoteBudgetsResult = await _fetchRemoteBudgets(jwtToken);
+      final remoteBudgetsResult = await _fetchRemoteBudgets();
       final remoteBudgets = remoteBudgetsResult.budgets;
 
       // ETag сохраняется только после того, как данные легли в базу: если
@@ -451,7 +452,7 @@ class SyncService {
     await _storage.write(key: _budgetsEtagKey, value: etag);
   }
 
-  Future<int> _flushPendingDeletions(String token) async {
+  Future<int> _flushPendingDeletions() async {
     final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
     final pendingBudgets = PendingDeletionsStore.instance.budgetIds;
 
@@ -463,7 +464,7 @@ class SyncService {
       final done = <String>[];
       for (final serverId in pendingTransactions) {
         try {
-          await _transactionApiService.deleteTransaction(serverId, token);
+          await _transactionApiService.deleteTransaction(serverId);
           done.add(serverId);
         } on DioException catch (e) {
           if (e.response?.statusCode == 404) {
@@ -485,7 +486,7 @@ class SyncService {
       final done = <String>[];
       for (final serverId in pendingBudgets) {
         try {
-          await _budgetApiService.deleteBudget(serverId, token);
+          await _budgetApiService.deleteBudget(serverId);
           done.add(serverId);
         } on DioException catch (e) {
           if (e.response?.statusCode == 404) {
@@ -509,13 +510,12 @@ class SyncService {
     return totalDone;
   }
 
-  Future<_RemoteTransactionsFetchResult> _fetchRemoteTransactions(
-    String token, {
+  Future<_RemoteTransactionsFetchResult> _fetchRemoteTransactions({
     DateTime? since,
     void Function(int count, int page)? onProgress,
     int maxPages = 100,
   }) async {
-    final options = _authOptions(token);
+    final options = _authOptions();
     options.validateStatus = (status) =>
         status != null && ((status >= 200 && status < 300) || status == 304);
 
@@ -573,7 +573,7 @@ class SyncService {
             'cursor': currentCursor,
             if (since != null) 'since': since.toUtc().toIso8601String(),
           },
-          options: _authOptions(token),
+          options: _authOptions(),
         );
 
         final nextData =
@@ -613,8 +613,8 @@ class SyncService {
     );
   }
 
-  Future<_RemoteBudgetsFetchResult> _fetchRemoteBudgets(String token) async {
-    final options = _authOptions(token);
+  Future<_RemoteBudgetsFetchResult> _fetchRemoteBudgets() async {
+    final options = _authOptions();
     options.validateStatus = (status) =>
         status != null && ((status >= 200 && status < 300) || status == 304);
 

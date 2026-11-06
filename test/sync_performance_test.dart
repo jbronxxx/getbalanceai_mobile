@@ -120,8 +120,7 @@ void main() {
       final changesBefore = LocalDbService.transactionsChanged.value;
       try {
         final result = await api.sync.syncBackendDataToLocal(
-          null,
-          (count, page) {
+          onTransactionProgress: (count, page) {
             progressUpdates.add({'count': count, 'page': page});
           },
         );
@@ -181,9 +180,7 @@ void main() {
 
       try {
         final result = await api.sync.syncBackendDataToLocal(
-          null,
-          null,
-          1, // Cap at 1 page
+          maxPages: 1,
         );
 
         expect(fetchCount, 1);
@@ -404,7 +401,7 @@ void main() {
 
       try {
         await expectLater(
-          api.sync.syncBackendDataToLocal('test_token'),
+          api.sync.syncBackendDataToLocal(),
           throwsA(isA<SyncException>()),
         );
 
@@ -483,8 +480,7 @@ void main() {
       api.dio.interceptors.insert(0, interceptor);
 
       try {
-        final result =
-            await api.sync.syncBackendDataToLocal('test_token', null, 1);
+        final result = await api.sync.syncBackendDataToLocal(maxPages: 1);
         expect(result['removed_transactions'], 0);
         expect(api.sync.transactionsEtag, isNull);
 
@@ -515,7 +511,7 @@ void main() {
 
       final changesBefore = LocalDbService.transactionsChanged.value;
       try {
-        await api.sync.syncBackendDataToLocal('test_token');
+        await api.sync.syncBackendDataToLocal();
         expect(LocalDbService.transactionsChanged.value, changesBefore);
       } finally {
         api.dio.interceptors.remove(interceptor);
@@ -562,7 +558,7 @@ void main() {
       api.dio.interceptors.insert(0, interceptor);
 
       try {
-        await api.sync.syncBackendDataToLocal('test_token');
+        await api.sync.syncBackendDataToLocal();
         expect(capturedHeaders, isNotNull);
         expect(capturedHeaders!.containsKey('If-None-Match'), isFalse);
       } finally {
@@ -575,7 +571,7 @@ void main() {
         () async {
       await api.auth.setTokens(null, null);
       await expectLater(
-        api.sync.syncLocalDataToBackend(null),
+        api.sync.syncLocalDataToBackend(),
         throwsA(
           predicate<SyncException>((e) {
             expect(e.code, SyncErrorCode.unauthorized);

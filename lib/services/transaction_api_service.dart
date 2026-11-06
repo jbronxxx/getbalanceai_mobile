@@ -20,11 +20,11 @@ class TransactionApiService {
         _isAuthenticated = isAuthenticated;
 
   /// Удалить транзакцию с сервера по ID.
-  Future<void> deleteTransaction(String id, [String? token]) async {
+  Future<void> deleteTransaction(String id) async {
     try {
       await _dio.delete(
         '${ApiConfig.transactions}$id',
-        options: _authOptions(token),
+        options: _authOptions(),
       );
     } catch (e) {
       AppLogger.e('[TransactionApiService] Delete transaction error', e);

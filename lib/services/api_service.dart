@@ -105,7 +105,20 @@ class ApiService {
             }
           }
 
-          final newAccessToken = await _authService.performTokenRefresh();
+          final String? newAccessToken;
+          try {
+            newAccessToken = await _authService.performTokenRefresh();
+          } on DioException catch (refreshError) {
+            // Сессия жива, обновить токен помешал временный сбой (сеть, 429,
+            // 5xx): вызывающий получает его, а не исходный 401 — иначе
+            // показал бы «Сессия истекла».
+            return handler.reject(
+              refreshError.copyWith(requestOptions: e.requestOptions),
+            );
+          } catch (refreshError) {
+            AppLogger.e('[ApiService] Token refresh crashed', refreshError);
+            return handler.reject(e);
+          }
           if (newAccessToken != null && newAccessToken.isNotEmpty) {
             final options = e.requestOptions;
             options.headers['Authorization'] = 'Bearer $newAccessToken';
@@ -270,15 +283,10 @@ class ApiService {
       _budgetApiService.deleteBudgetEverywhere(budget);
 
   // Sync
-  Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) =>
-      _syncService.syncLocalDataToBackend(token);
+  Future<Map<String, dynamic>> syncLocalDataToBackend() =>
+      _syncService.syncLocalDataToBackend();
 
-  Future<Map<String, dynamic>> syncAll([
-    String? token,
-    void Function(int count, int page)? onTransactionProgress,
-    int maxPages = 100,
-  ]) =>
-      _syncService.syncAll(token, onTransactionProgress, maxPages);
+  Future<Map<String, dynamic>> syncAll() => _syncService.syncAll();
 
   // Insights
   Future<Map<String, dynamic>> getInsights({
