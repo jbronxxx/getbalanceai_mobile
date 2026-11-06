@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -55,7 +55,6 @@ class LocalDbService {
   LocalDbService._create(this._store) {
     _transactionBox = Box<Transaction>(_store);
     _budgetBox = Box<Budget>(_store);
-    _migrateLegacyTransactions();
   }
 
   /// Проверяет наличие транзакций в локальной базе.
@@ -72,8 +71,13 @@ class LocalDbService {
 
   /// Мигрирует старые транзакции, созданные до внедрения мультивалютности или с устаревшей валютой RUB.
   /// Если baseAmount равен 0, заполняет его на основе amount и текущей валюты.
-  /// Если currencyCode равен RUB, переводит его в текущую базовую валюту.
-  void _migrateLegacyTransactions() {
+  /// Если currencyCode равен RUB, переводит его в текущую базовую валюту —
+  /// поэтому вызывается после загрузки сохранённой валюты.
+  ///
+  /// Оба запроса — полный проход по таблице, поэтому при старте миграция
+  /// выполняется один раз (флаг в `PreferencesService`). Возвращает `false`,
+  /// если миграция не удалась и её нужно повторить.
+  bool migrateLegacyTransactions() {
     try {
       final legacyQuery = _transactionBox
           .query(Transaction_.baseAmount
@@ -115,13 +119,12 @@ class LocalDbService {
           '[LocalDbService] Migrated ${rubTxs.length} legacy RUB transactions to $currentCode',
         );
       }
+      return true;
     } catch (e) {
       AppLogger.w('[LocalDbService] Legacy transactions migration skipped: $e');
+      return false;
     }
   }
-
-  @visibleForTesting
-  void migrateLegacyTransactionsForTesting() => _migrateLegacyTransactions();
 
   /// Открывает (или создаёт) файл базы данных в директории документов
   /// приложения и инициализирует [instance]. Должен быть вызван один раз

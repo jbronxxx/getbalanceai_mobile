@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:getbalanceai_mobile/services/preferences_service.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
@@ -25,9 +25,8 @@ void main() {
 
   group('PreferencesService ThemeMode Unit Tests', () {
     setUp(() {
-      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
       PreferencesService.instance.themeModeNotifier.value = ThemeMode.system;
-      PreferencesService.instance.darkModeNotifier.value = false;
       LanguageManager.initFallback();
     });
 
@@ -36,83 +35,30 @@ void main() {
       expect(mode, ThemeMode.system);
     });
 
-    test('saveThemeMode сохраняет ThemeMode.dark и обновляет нотификаторы',
-        () async {
-      await PreferencesService.instance.saveThemeMode(ThemeMode.dark);
-      expect(await PreferencesService.instance.getThemeMode(), ThemeMode.dark);
-      expect(
-          PreferencesService.instance.themeModeNotifier.value, ThemeMode.dark);
-      expect(PreferencesService.instance.darkModeNotifier.value, isTrue);
-      expect(await PreferencesService.instance.getDarkMode(), isTrue);
-    });
+    for (final mode in ThemeMode.values) {
+      test('saveThemeMode сохраняет ${mode.name} и обновляет нотификатор',
+          () async {
+        await PreferencesService.instance.saveThemeMode(ThemeMode.dark);
+        await PreferencesService.instance.saveThemeMode(mode);
 
-    test('saveThemeMode сохраняет ThemeMode.light и обновляет нотификаторы',
-        () async {
-      await PreferencesService.instance.saveThemeMode(ThemeMode.light);
-      expect(await PreferencesService.instance.getThemeMode(), ThemeMode.light);
-      expect(
-          PreferencesService.instance.themeModeNotifier.value, ThemeMode.light);
-      expect(PreferencesService.instance.darkModeNotifier.value, isFalse);
-      expect(await PreferencesService.instance.getDarkMode(), isFalse);
-    });
-
-    test('saveThemeMode сохраняет ThemeMode.system и обновляет нотификаторы',
-        () async {
-      await PreferencesService.instance.saveThemeMode(ThemeMode.dark);
-      await PreferencesService.instance.saveThemeMode(ThemeMode.system);
-      expect(
-          await PreferencesService.instance.getThemeMode(), ThemeMode.system);
-      expect(PreferencesService.instance.themeModeNotifier.value,
-          ThemeMode.system);
-      expect(PreferencesService.instance.darkModeNotifier.value, isFalse);
-    });
-
-    test('Корректная миграция с legacy флага settings_dark_mode = true',
-        () async {
-      FlutterSecureStorage.setMockInitialValues({
-        'settings_dark_mode': 'true',
+        expect(await PreferencesService.instance.getThemeMode(), mode);
+        expect(PreferencesService.instance.themeModeNotifier.value, mode);
       });
+    }
 
-      final mode = await PreferencesService.instance.getThemeMode();
-      expect(mode, ThemeMode.dark);
+    test('loadSavedThemeMode выставляет сохранённый режим', () async {
+      SharedPreferences.setMockInitialValues({'settings_theme_mode': 'dark'});
 
       await PreferencesService.instance.loadSavedThemeMode();
+
       expect(
           PreferencesService.instance.themeModeNotifier.value, ThemeMode.dark);
-      expect(PreferencesService.instance.darkModeNotifier.value, isTrue);
-    });
-
-    test('Корректная миграция с legacy флага settings_dark_mode = false',
-        () async {
-      FlutterSecureStorage.setMockInitialValues({
-        'settings_dark_mode': 'false',
-      });
-
-      final mode = await PreferencesService.instance.getThemeMode();
-      expect(mode, ThemeMode.light);
-
-      await PreferencesService.instance.loadSavedThemeMode();
-      expect(
-          PreferencesService.instance.themeModeNotifier.value, ThemeMode.light);
-      expect(PreferencesService.instance.darkModeNotifier.value, isFalse);
-    });
-
-    test('Обратная совместимость: saveDarkMode и loadSavedDarkMode', () async {
-      await PreferencesService.instance.saveDarkMode(true);
-      expect(await PreferencesService.instance.getThemeMode(), ThemeMode.dark);
-      expect(
-          PreferencesService.instance.themeModeNotifier.value, ThemeMode.dark);
-
-      await PreferencesService.instance.saveDarkMode(false);
-      expect(await PreferencesService.instance.getThemeMode(), ThemeMode.light);
-      expect(
-          PreferencesService.instance.themeModeNotifier.value, ThemeMode.light);
     });
   });
 
   group('ThemeModePickerSheet Widget Tests', () {
     setUp(() {
-      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
       PreferencesService.instance.themeModeNotifier.value = ThemeMode.system;
       LanguageManager.initFallback();
     });
@@ -218,9 +164,8 @@ void main() {
 
   group('ProfileSettingsCard Theme Integration Tests', () {
     setUp(() {
-      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
       PreferencesService.instance.themeModeNotifier.value = ThemeMode.system;
-      PreferencesService.instance.darkModeNotifier.value = false;
       LanguageManager.initFallback();
     });
 

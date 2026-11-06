@@ -1,5 +1,7 @@
-import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+import '../utils/app_logger.dart';
 
 /// Сервис определения аппаратных и платформенных возможностей устройства.
 ///
@@ -11,40 +13,31 @@ class DeviceCapabilityService {
   static final DeviceCapabilityService instance =
       DeviceCapabilityService._internal();
 
-  int? _cachedAndroidSdk;
+  /// Канал к `MainActivity`: уровень API берётся из `Build.VERSION.SDK_INT`.
+  @visibleForTesting
+  static const channel = MethodChannel('com.getbalanceai.mobile/device');
+
+  int? _androidSdk;
   bool? _mockBlurSupported;
 
   /// Проверяет, является ли текущая платформа Android (безопасно для Web).
-  bool get isAndroid => !kIsWeb && io.Platform.isAndroid;
+  bool get isAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  /// Возвращает уровень Android API (SDK_INT) или null, если платформа не Android
-  /// либо версию не удалось определить.
-  int? get androidSdkVersion {
-    if (_cachedAndroidSdk != null) return _cachedAndroidSdk;
-    if (!isAndroid) return null;
+  /// Уровень Android API (SDK_INT); `null` — не Android, [init] ещё не
+  /// вызывался или версию не удалось получить.
+  int? get androidSdkVersion => _androidSdk;
 
+  /// Запрашивает уровень API у платформы. Вызывается один раз при старте,
+  /// до первого кадра: [isBlurSupported] читается синхронно при отрисовке.
+  /// Сбой канала не мешает запуску — размытие тогда остаётся включённым.
+  Future<void> init() async {
+    if (!isAndroid) return;
     try {
-      final versionStr = io.Platform.operatingSystemVersion;
-      final apiMatch =
-          RegExp(r'API\s*(\d+)', caseSensitive: false).firstMatch(versionStr);
-      if (apiMatch != null) {
-        _cachedAndroidSdk = int.tryParse(apiMatch.group(1)!);
-        return _cachedAndroidSdk;
-      }
-
-      final androidMatch = RegExp(r'Android\s*(\d+)', caseSensitive: false)
-          .firstMatch(versionStr);
-      if (androidMatch != null) {
-        final version = int.tryParse(androidMatch.group(1)!);
-        if (version != null) {
-          // Android 10 = API 29, 11 = 30, 12 = 31, 13 = 33, 14 = 34
-          _cachedAndroidSdk = version >= 10 ? version + 19 : version;
-          return _cachedAndroidSdk;
-        }
-      }
-    } catch (_) {}
-
-    return null;
+      _androidSdk = await channel.invokeMethod<int>('androidSdkInt');
+    } catch (e) {
+      AppLogger.w('[DeviceCapabilityService] Android SDK unavailable: $e');
+    }
   }
 
   /// Проверяет, поддерживается ли аппаратно ускоренное размытие фона ([BackdropFilter]).
@@ -73,7 +66,7 @@ class DeviceCapabilityService {
   /// Сбрасывает закешированные значения (для тестов).
   @visibleForTesting
   void reset() {
-    _cachedAndroidSdk = null;
+    _androidSdk = null;
     _mockBlurSupported = null;
   }
 }

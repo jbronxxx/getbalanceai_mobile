@@ -74,12 +74,16 @@ class AuthApiService {
     });
   }
 
-  Future<void> init() async {
-    await _readTokens();
-    _userId = await _storage.read(key: 'auth_user_id');
-    _userName = await _storage.read(key: 'auth_user');
-    _email = await _storage.read(key: 'auth_email');
-    _avatarUrl = await _storage.read(key: 'auth_avatar_url');
+  /// Восстанавливает сессию при старте. [stored] — содержимое хранилища,
+  /// уже прочитанное одним `readAll()` (каждое отдельное чтение — вызов
+  /// Keystore/Keychain); без него хранилище читается здесь.
+  Future<void> init([Map<String, String>? stored]) async {
+    stored ??= await _storage.readAll();
+    await _restoreTokens(stored);
+    _userId = stored['auth_user_id'];
+    _userName = stored['auth_user'];
+    _email = stored['auth_email'];
+    _avatarUrl = stored['auth_avatar_url'];
   }
 
   Future<void> setTokens(String? token, String? refresh) async {
@@ -98,8 +102,8 @@ class AuthApiService {
     }
   }
 
-  Future<void> _readTokens() async {
-    final raw = await _storage.read(key: sessionStorageKey);
+  Future<void> _restoreTokens(Map<String, String> stored) async {
+    final raw = stored[sessionStorageKey];
     if (raw != null) {
       try {
         final session = jsonDecode(raw) as Map<String, dynamic>;
@@ -112,10 +116,10 @@ class AuthApiService {
     }
 
     // Установка, обновлённая с версии, где токены лежали в двух ключах
-    final token = await _storage.read(key: _legacyAccessKey);
+    final token = stored[_legacyAccessKey];
     if (token == null) return;
     _token = token;
-    _refreshToken = await _storage.read(key: _legacyRefreshKey);
+    _refreshToken = stored[_legacyRefreshKey];
     await _writeTokens(token, _refreshToken);
     await _deleteLegacyTokens();
   }

@@ -925,7 +925,7 @@ void main() {
       expect(txs.first.currencyCode, equals('RUB'));
 
       // Запускаем миграцию
-      LocalDbService.instance.migrateLegacyTransactionsForTesting();
+      LocalDbService.instance.migrateLegacyTransactions();
 
       // После миграции currencyCode должен стать USD (текущая базовая валюта)
       txs = LocalDbService.instance.getAllTransactions();

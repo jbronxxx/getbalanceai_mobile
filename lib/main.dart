@@ -67,24 +67,55 @@ void main() async {
 /// шаги просто перечитывают сохранённые значения.
 Future<bool> _initServices() async {
   try {
-    await EnvironmentConfig.init();
+    // Две независимые цепочки идут параллельно: каждый шаг в основном ждёт
+    // платформу (диск, Keystore), а не процессор.
+    await Future.wait([
+      _loadSettings(),
+      _restoreAccount(),
+    ]);
 
-    if (!LocalDbService.isInitialized) await LocalDbService.init();
-    await PendingDeletionsStore.init();
-    await ApiService.instance.init();
-    await CurrencyFormatter.loadSavedCurrency();
-    await CurrencyExchangeService.instance.init();
+    // Нужны и база, и сохранённая валюта (в неё переводятся операции в RUB)
+    final prefs = PreferencesService.instance;
+    if (!await prefs.isLegacyTransactionsMigrated() &&
+        LocalDbService.instance.migrateLegacyTransactions()) {
+      await prefs.setLegacyTransactionsMigrated();
+    }
+
     unawaited(CurrencyExchangeService.instance.fetchLatestRates());
-    await LanguageManager.loadSavedLanguage();
-    LanguageManager.initFallback();
-    await PreferencesService.instance.loadSavedOnboardingStatus();
-    await PreferencesService.instance.loadSavedThemeMode();
     return true;
   } catch (e, stack) {
     AppLogger.e('[Startup] Инициализация не удалась', e, stack);
     CrashReporter.recordError(e, stack, reason: 'startup init');
     return false;
   }
+}
+
+/// Настройки, язык, тема и возможности устройства. После [PreferencesService.init]
+/// все чтения идут из памяти `shared_preferences`.
+Future<void> _loadSettings() async {
+  final prefs = PreferencesService.instance;
+  await Future.wait([
+    prefs.init(),
+    DeviceCapabilityService.instance.init(),
+  ]);
+  await CurrencyFormatter.loadSavedCurrency();
+  await CurrencyExchangeService.instance.init();
+  await LanguageManager.loadSavedLanguage();
+  LanguageManager.initFallback();
+  await prefs.loadSavedOnboardingStatus();
+  await prefs.loadSavedThemeMode();
+}
+
+/// База, очередь удалений и сессия. Сессия — последней: ключи ETag зависят
+/// от окружения, а данные другого аккаунта на устройстве стираются из базы
+/// и очереди удалений (`SyncService.claimLocalData`).
+Future<void> _restoreAccount() async {
+  await Future.wait([
+    EnvironmentConfig.init(),
+    if (!LocalDbService.isInitialized) LocalDbService.init(),
+    PendingDeletionsStore.init(),
+  ]);
+  await ApiService.instance.init();
 }
 
 /// Повтор с экрана ошибки запуска: при успехе подменяет корневой виджет.
