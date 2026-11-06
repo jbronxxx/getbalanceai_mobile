@@ -60,6 +60,12 @@ void main() {
     expect(find.text('G'), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
 
+    // Картинка декодируется под размер круга, а не в исходном разрешении
+    final provider = tester.widget<Image>(find.byType(Image)).image;
+    final dpr = tester.view.devicePixelRatio;
+    expect(provider, isA<ResizeImage>());
+    expect((provider as ResizeImage).width, (60 * dpr).round());
+
     // При возникновении сетевой ошибки (в тестах HttpClient возвращает 400)
     // errorBuilder безопасно перехватывает сбой
     await tester.pump();
