@@ -139,8 +139,7 @@ class _InsightsScreenView extends StatelessWidget {
         child: CustomPullToRefresh(
           releaseImmediately: true,
           topPadding: topOffset,
-          onRefresh: () =>
-              context.read<InsightsCubit>().loadInsights(force: true),
+          onRefresh: () => context.read<InsightsCubit>().refresh(),
           // Один список, как на других вкладках: месяц, структура расходов,
           // затем AI-советы в состоянии кубита.
           child: ListView(

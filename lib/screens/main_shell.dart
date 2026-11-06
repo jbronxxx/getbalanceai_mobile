@@ -96,7 +96,15 @@ class _MainShellState extends State<MainShell> {
                             userName: name,
                             avatarUrl: avatarUrl,
                           ),
-                        ],
+                        ]
+                            .indexed
+                            // Скрытые вкладки остаются в дереве, но их
+                            // анимации (лоадер ИИ, подсказки) не тикают.
+                            .map((tab) => TickerMode(
+                                  enabled: tab.$1 == _currentIndex,
+                                  child: tab.$2,
+                                ))
+                            .toList(),
                       );
                     },
                   ),

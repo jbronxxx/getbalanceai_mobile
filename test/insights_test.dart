@@ -5,8 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:getbalanceai_mobile/services/local_db_service.dart';
+import 'package:getbalanceai_mobile/services/selected_period_service.dart';
 import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
+import 'package:getbalanceai_mobile/models/month_period.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
 import 'package:getbalanceai_mobile/widgets/insights/report_export_action.dart';
@@ -360,6 +362,84 @@ void main() {
       expect(requestCount, greaterThan(1));
     } finally {
       ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
+  });
+
+  for (final status in [429, 503, 500]) {
+    testWidgets('ошибка $status — «помощники заняты»', (tester) async {
+      await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
+      final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+      var requestCount = 0;
+      ApiService.instance.dio.httpClientAdapter =
+          _MockHttpClientAdapter((options) async {
+        requestCount++;
+        return ResponseBody.fromString('{}', status);
+      });
+
+      try {
+        await tester.pumpWidget(const MaterialApp(
+            locale: Locale('ru'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: InsightsScreen()));
+        await tester.pumpAndSettle();
+        expect(find.text(LanguageManager.l10n.insights_assistants_busy_msg1),
+            findsOneWidget);
+        expect(find.text(LanguageManager.l10n.no_network_title), findsNothing);
+        expect(requestCount, 1);
+      } finally {
+        ApiService.instance.dio.httpClientAdapter = originalAdapter;
+        await ApiService.instance.clearAllUserData();
+      }
+    });
+  }
+
+  testWidgets('pull-to-refresh на прошлом месяце — без генерации',
+      (tester) async {
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
+    SelectedPeriodService.instance.select(MonthPeriod.current().previous);
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    final generateFlags = <Object?>[];
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      generateFlags.add(options.queryParameters['generate'] ?? true);
+      return ResponseBody.fromString(
+        jsonEncode({
+          'status': 'success',
+          'data': {
+            'insights': ['Сохранённый отчёт'],
+            'state': 'ready',
+          },
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    });
+
+    try {
+      await tester.pumpWidget(const MaterialApp(
+          locale: Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: InsightsScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.fling(
+        find.text('Сохранённый отчёт'),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(generateFlags, [false, false]);
+    } finally {
+      // Экран закрывается до сброса периода: иначе он запросил бы отчёт
+      await tester.pumpWidget(const SizedBox());
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      SelectedPeriodService.instance.reset();
       await ApiService.instance.clearAllUserData();
     }
   });

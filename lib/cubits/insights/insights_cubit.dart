@@ -17,7 +17,8 @@ part 'insights_state.dart';
 /// * текущий месяц запрашивается с генерацией: бэкенд сам отдаёт сохранённый
 ///   отчёт, пока данные месяца почти не менялись;
 /// * прошлые месяцы и смена валюты/языка — только сохранённый отчёт
-///   (`generate=false`); если его нет — [InsightsAwaitingRequest] с кнопкой;
+///   (`generate=false`), в том числе по pull-to-refresh ([refresh]); если
+///   его нет — [InsightsAwaitingRequest] с кнопкой;
 /// * полученные отчёты кэшируются на сессию (очищается при выходе);
 /// * изменение операций или лимитов (в том числе загрузка с сервера при
 ///   синхронизации) сбрасывает кэш сессии: видимая вкладка сразу
@@ -31,6 +32,9 @@ class InsightsCubit extends Cubit<InsightsState> {
   CancelToken? _cancelToken;
   StreamSubscription<bool>? _authSub;
   bool _hasLoadedOnce = false;
+
+  /// Вошёл ли пользователь по последнему событию [ApiService.authStream].
+  bool _wasAuthenticated;
 
   /// Вкладка аналитики видна пользователю ([setActive]).
   bool _isActive = false;
@@ -64,6 +68,7 @@ class InsightsCubit extends Cubit<InsightsState> {
         _connectivity = connectivity ?? Connectivity(),
         _selectedMonth = initialMonth ?? DateTime.now().month,
         _selectedYear = initialYear ?? DateTime.now().year,
+        _wasAuthenticated = (api ?? ApiService.instance).isAuthenticated,
         super(InsightsInitial(
           selectedMonth: initialMonth ?? DateTime.now().month,
           selectedYear: initialYear ?? DateTime.now().year,
@@ -73,23 +78,36 @@ class InsightsCubit extends Cubit<InsightsState> {
     LanguageManager.languageNotifier.addListener(_onCurrencyOrLanguageChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
     LocalDbService.budgetsChanged.addListener(_onDataChanged);
-    _authSub = _api.authStream.listen((isAuthenticated) {
-      if (isClosed) return;
-      if (isAuthenticated) {
-        if (_hasLoadedOnce) {
-          resolvePeriod();
-        }
-      } else {
-        _cancelToken?.cancel();
-        // Отчёты принадлежат вышедшему пользователю.
-        _cache.clear();
-        emit(InsightsUnauthenticated(
-          LanguageManager.l10n.insight_login_hint,
-          selectedMonth: _selectedMonth,
-          selectedYear: _selectedYear,
-        ));
-      }
-    });
+    _authSub = _api.authStream.listen(_onAuthChanged);
+  }
+
+  /// Вход шлёт в [ApiService.authStream] несколько `true` подряд (токены,
+  /// имя, аватар), а каждый запрос текущего месяца может стоить генерации.
+  /// Поэтому отчёт запрашивается только на переход «не вошёл» → «вошёл» и
+  /// только на видимой вкладке; скрытая запросит его при открытии.
+  void _onAuthChanged(bool isAuthenticated) {
+    if (isClosed) return;
+    final signedIn = isAuthenticated && !_wasAuthenticated;
+    _wasAuthenticated = isAuthenticated;
+
+    if (!isAuthenticated) {
+      _cancelToken?.cancel();
+      // Отчёты принадлежат вышедшему пользователю.
+      _cache.clear();
+      emit(InsightsUnauthenticated(
+        LanguageManager.l10n.insight_login_hint,
+        selectedMonth: _selectedMonth,
+        selectedYear: _selectedYear,
+      ));
+      return;
+    }
+
+    if (!signedIn || !_hasLoadedOnce) return;
+    if (_isActive) {
+      resolvePeriod();
+    } else {
+      _dataChangedWhileHidden = true;
+    }
   }
 
   String get _cacheKey => '$_selectedYear-$_selectedMonth-'
@@ -116,8 +134,8 @@ class InsightsCubit extends Cubit<InsightsState> {
   /// Вкладка аналитики показана или скрыта.
   void setActive(bool active) => _isActive = active;
 
-  /// Данные менялись, пока вкладка была скрыта, — показанный отчёт нужно
-  /// запросить заново.
+  /// Данные или аккаунт менялись, пока вкладка была скрыта, — показанный
+  /// отчёт нужно запросить заново.
   bool get hasDataChangedWhileHidden => _dataChangedWhileHidden;
 
   /// Операции или лимиты изменились: отчёты сессии больше не соответствуют
@@ -158,6 +176,12 @@ class InsightsCubit extends Cubit<InsightsState> {
     return loadInsights(generate: allowGenerate && _isCurrentMonth);
   }
 
+  /// Pull-to-refresh: запрос мимо кэша сессии по тем же правилам, что и
+  /// открытие периода. Прошлый месяц только перечитывает сохранённый отчёт;
+  /// генерация за него — лишь по кнопке «Сформировать анализ».
+  Future<void> refresh() =>
+      loadInsights(force: true, generate: _isCurrentMonth);
+
   /// Запрашивает отчёт, отменяя предыдущий незавершённый запрос.
   ///
   /// [generate] — разрешить генерацию через LLM (кнопка, текущий месяц);
@@ -168,11 +192,24 @@ class InsightsCubit extends Cubit<InsightsState> {
     _dataChangeDebounce?.cancel();
     _cancelToken?.cancel();
 
+    // Запрос фиксируется до первого await: пока проверяется сеть и
+    // выгружаются операции, пользователь может переключить месяц, и
+    // генерация не должна уйти (и лечь в кэш) за другой период. Токен
+    // создаётся тут же, чтобы следующий вызов отменил и этот запрос.
+    final month = _selectedMonth;
+    final year = _selectedYear;
+    final currency = CurrencyFormatter.currentCurrency.code;
+    final locale = LanguageManager.code;
+    final requestKey = _cacheKey;
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
+    bool superseded() => isClosed || cancelToken.isCancelled;
+
     if (!_api.isAuthenticated) {
       emit(InsightsUnauthenticated(
         LanguageManager.l10n.insight_login_hint,
-        selectedMonth: _selectedMonth,
-        selectedYear: _selectedYear,
+        selectedMonth: month,
+        selectedYear: year,
       ));
       return;
     }
@@ -181,36 +218,26 @@ class InsightsCubit extends Cubit<InsightsState> {
     if (unavailable != null) {
       emit(InsightsUnavailable(
         unavailable,
-        selectedMonth: _selectedMonth,
-        selectedYear: _selectedYear,
+        selectedMonth: month,
+        selectedYear: year,
       ));
       return;
     }
 
-    final cached = _cache[_cacheKey];
+    final cached = _cache[requestKey];
     if (!force && cached != null) {
       emit(cached);
       return;
     }
 
     final connectivityResult = await _connectivity.checkConnectivity();
-    if (isClosed) return;
+    if (superseded()) return;
     if (connectivityResult.contains(ConnectivityResult.none)) {
-      emit(InsightsNetworkError(
-        selectedMonth: _selectedMonth,
-        selectedYear: _selectedYear,
-      ));
+      emit(InsightsNetworkError(selectedMonth: month, selectedYear: year));
       return;
     }
 
-    final cancelToken = CancelToken();
-    _cancelToken = cancelToken;
-    final requestKey = _cacheKey;
-
-    emit(InsightsLoading(
-      selectedMonth: _selectedMonth,
-      selectedYear: _selectedYear,
-    ));
+    emit(InsightsLoading(selectedMonth: month, selectedYear: year));
 
     try {
       if (LocalDbService.isInitialized &&
@@ -225,54 +252,73 @@ class InsightsCubit extends Cubit<InsightsState> {
         }
       }
 
-      if (isClosed || cancelToken.isCancelled) return;
+      if (superseded()) return;
 
       AppLogger.d('[Insights] Loading insights for '
-          '$_selectedMonth/$_selectedYear (generate: $generate)');
+          '$month/$year (generate: $generate)');
       final data = await _api.getInsights(
-        currency: CurrencyFormatter.currentCurrency.code,
-        locale: LanguageManager.code,
-        month: _selectedMonth,
-        year: _selectedYear,
+        currency: currency,
+        locale: locale,
+        month: month,
+        year: year,
         generate: generate,
         cancelToken: cancelToken,
       );
-      if (isClosed || cancelToken.isCancelled) return;
+      if (superseded()) return;
 
-      emit(_stateFromResponse(InsightsModel.fromJson(data), requestKey));
+      emit(_stateFromResponse(
+        InsightsModel.fromJson(data),
+        requestKey,
+        month: month,
+        year: year,
+      ));
     } catch (e) {
-      if (isClosed || (e is DioException && CancelToken.isCancel(e))) {
+      if (superseded() || (e is DioException && CancelToken.isCancel(e))) {
         return;
       }
       AppLogger.e('[Insights] Failed to load insights', e);
-      emit(InsightsError(
-        LanguageManager.l10n.insights_assistants_busy,
-        selectedMonth: _selectedMonth,
-        selectedYear: _selectedYear,
-      ));
+      emit(_errorState(e, month: month, year: year));
     }
   }
 
-  InsightsState _stateFromResponse(InsightsModel parsed, String requestKey) {
+  /// Связь с сервером не установилась — экран «нет сети». Любой другой
+  /// сбой (таймаут ответа, 429, 5xx) — «помощники заняты»: сервер на связи,
+  /// не справился ИИ или бэкенд. Повтор — pull-to-refresh.
+  static InsightsState _errorState(
+    Object error, {
+    required int month,
+    required int year,
+  }) {
+    if (error is DioException &&
+        (error.type == DioExceptionType.connectionError ||
+            error.type == DioExceptionType.connectionTimeout)) {
+      return InsightsNetworkError(selectedMonth: month, selectedYear: year);
+    }
+    return InsightsError(selectedMonth: month, selectedYear: year);
+  }
+
+  InsightsState _stateFromResponse(
+    InsightsModel parsed,
+    String requestKey, {
+    required int month,
+    required int year,
+  }) {
     switch (parsed.state) {
       case InsightsReportState.notGenerated:
         return InsightsAwaitingRequest(
-          selectedMonth: _selectedMonth,
-          selectedYear: _selectedYear,
-        );
+            selectedMonth: month, selectedYear: year);
       case InsightsReportState.noData:
         return InsightsUnavailable(
           InsightsUnavailableReason.noTransactions,
-          selectedMonth: _selectedMonth,
-          selectedYear: _selectedYear,
+          selectedMonth: month,
+          selectedYear: year,
         );
       case InsightsReportState.busy:
-        // Та же карточка «помощники заняты», что и при сбое сети; не кэшируется,
-        // поэтому повторное открытие или pull-to-refresh запросит отчёт снова.
+        // Не кэшируется: повторное открытие или pull-to-refresh запросят
+        // отчёт снова.
         return InsightsError(
-          LanguageManager.l10n.insights_assistants_busy,
-          selectedMonth: _selectedMonth,
-          selectedYear: _selectedYear,
+          selectedMonth: month,
+          selectedYear: year,
         );
       case InsightsReportState.ready:
       case InsightsReportState.quotaExceeded:
@@ -283,8 +329,8 @@ class InsightsCubit extends Cubit<InsightsState> {
           generatedAt: parsed.generatedAt,
           isOutdated: parsed.isOutdated,
           canRefresh: parsed.state != InsightsReportState.quotaExceeded,
-          selectedMonth: _selectedMonth,
-          selectedYear: _selectedYear,
+          selectedMonth: month,
+          selectedYear: year,
         );
         // Сообщение о квоте и устаревший отчёт — не актуальный отчёт: в кэш
         // не кладём, следующее открытие спросит бэкенд снова.

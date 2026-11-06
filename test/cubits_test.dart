@@ -43,6 +43,7 @@ void main() {
     connectivity = MockConnectivity();
     authStreamController = StreamController<bool>.broadcast();
     when(() => api.authStream).thenAnswer((_) => authStreamController.stream);
+    when(() => api.isAuthenticated).thenReturn(false);
     when(() => connectivity.checkConnectivity())
         .thenAnswer((_) async => [ConnectivityResult.wifi]);
   });
@@ -135,7 +136,7 @@ void main() {
     );
 
     blocTest<InsightsCubit, InsightsState>(
-      'emits Error when API call fails',
+      'таймаут подключения — экран «нет сети», а не «помощники заняты»',
       setUp: () {
         when(() => api.isAuthenticated).thenReturn(true);
         when(() => api.getInsights(
@@ -154,7 +155,7 @@ void main() {
       act: (cubit) => cubit.loadInsights(),
       expect: () => [
         isA<InsightsLoading>(),
-        isA<InsightsError>().having((s) => s.message, 'message', isNotEmpty),
+        isA<InsightsNetworkError>(),
       ],
     );
 
@@ -578,8 +579,7 @@ void main() {
       await cubit.loadInsights();
       expect(
         cubit.state,
-        isA<InsightsError>().having((s) => s.message, 'message',
-            LanguageManager.l10n.insights_assistants_busy),
+        isA<InsightsError>(),
       );
 
       // Повторный запрос снова идёт на сервер: ошибка не попала в кэш сессии.
@@ -665,6 +665,167 @@ void main() {
           ));
 
       await cubit.close();
+    });
+
+    group('гонки и лишние генерации', () {
+      /// Месяцы и флаги генерации, с которыми ушли запросы.
+      List<(int, bool)> capturedRequests() {
+        final captured = verify(() => api.getInsights(
+              currency: any(named: 'currency'),
+              locale: any(named: 'locale'),
+              month: captureAny(named: 'month'),
+              year: any(named: 'year'),
+              generate: captureAny(named: 'generate'),
+              cancelToken: any(named: 'cancelToken'),
+            )).captured;
+        return [
+          for (var i = 0; i < captured.length; i += 2)
+            (
+              [captured[i], captured[i + 1]].whereType<int>().single,
+              [captured[i], captured[i + 1]].whereType<bool>().single,
+            ),
+        ];
+      }
+
+      void stubFailure(int? status, {DioExceptionType? type}) {
+        when(() => api.getInsights(
+              currency: any(named: 'currency'),
+              locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
+              generate: any(named: 'generate'),
+              cancelToken: any(named: 'cancelToken'),
+            )).thenThrow(DioException(
+          requestOptions: RequestOptions(path: '/insights/'),
+          type: type ?? DioExceptionType.badResponse,
+          response: status == null
+              ? null
+              : Response(
+                  requestOptions: RequestOptions(path: '/insights/'),
+                  statusCode: status,
+                ),
+        ));
+      }
+
+      test('смена месяца во время проверки сети — запрос только за новый',
+          () async {
+        when(() => api.isAuthenticated).thenReturn(true);
+        stubInsights(['Report'], storedOnly: ['Stored']);
+        final network = Completer<List<ConnectivityResult>>();
+        var checks = 0;
+        when(() => connectivity.checkConnectivity()).thenAnswer((_) {
+          checks++;
+          return checks == 1
+              ? network.future
+              : Future.value([ConnectivityResult.wifi]);
+        });
+        final cubit = build();
+
+        final first = cubit.loadInsights();
+        cubit.setPeriod(month: previousMonth.month, year: previousMonth.year);
+        network.complete([ConnectivityResult.wifi]);
+        await first;
+        await Future<void>.delayed(Duration.zero);
+
+        expect(capturedRequests(), [(previousMonth.month, false)]);
+        expect(
+          cubit.state,
+          isA<InsightsLoaded>()
+              .having((s) => s.selectedMonth, 'month', previousMonth.month),
+        );
+        await cubit.close();
+      });
+
+      test('несколько событий входа подряд — один запрос отчёта', () async {
+        when(() => api.isAuthenticated).thenReturn(false);
+        stubInsights(['Report']);
+        final cubit = build()..setActive(true);
+        await cubit.loadInsights();
+
+        when(() => api.isAuthenticated).thenReturn(true);
+        for (var i = 0; i < 4; i++) {
+          authStreamController.add(true);
+        }
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(capturedRequests(), [(now.month, true)]);
+        await cubit.close();
+      });
+
+      test('вход на скрытой вкладке — запрос откладывается до её открытия',
+          () async {
+        when(() => api.isAuthenticated).thenReturn(false);
+        stubInsights(['Report']);
+        final cubit = build()..setActive(false);
+        await cubit.loadInsights();
+
+        when(() => api.isAuthenticated).thenReturn(true);
+        authStreamController.add(true);
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => api.getInsights(
+              currency: any(named: 'currency'),
+              locale: any(named: 'locale'),
+              month: any(named: 'month'),
+              year: any(named: 'year'),
+              generate: any(named: 'generate'),
+              cancelToken: any(named: 'cancelToken'),
+            ));
+        expect(cubit.hasDataChangedWhileHidden, isTrue);
+        await cubit.close();
+      });
+
+      for (final (name, status, type) in [
+        ('429', 429, null),
+        ('503', 503, null),
+        ('500', 500, null),
+        // Сервер на связи, но ИИ отвечает дольше ожидания
+        ('таймаут ответа', null, DioExceptionType.receiveTimeout),
+      ]) {
+        blocTest<InsightsCubit, InsightsState>(
+          '$name — «помощники заняты», а не «нет сети»',
+          setUp: () {
+            when(() => api.isAuthenticated).thenReturn(true);
+            stubFailure(status, type: type);
+          },
+          build: build,
+          act: (cubit) => cubit.loadInsights(),
+          expect: () => [isA<InsightsLoading>(), isA<InsightsError>()],
+        );
+      }
+
+      test('pull-to-refresh: прошлый месяц без генерации, текущий — с ней',
+          () async {
+        when(() => api.isAuthenticated).thenReturn(true);
+        stubInsights(['Report'], storedOnly: ['Stored']);
+        final cubit = build();
+        await cubit.loadInsights(generate: false);
+
+        await cubit.refresh();
+        cubit.setPeriod(month: previousMonth.month, year: previousMonth.year);
+        await Future<void>.delayed(Duration.zero);
+        await cubit.refresh();
+
+        expect(capturedRequests(), [
+          (now.month, false),
+          (now.month, true),
+          (previousMonth.month, false),
+          (previousMonth.month, false),
+        ]);
+        await cubit.close();
+      });
+
+      blocTest<InsightsCubit, InsightsState>(
+        'обрыв соединения — экран «нет сети»',
+        setUp: () {
+          when(() => api.isAuthenticated).thenReturn(true);
+          stubFailure(null, type: DioExceptionType.connectionError);
+        },
+        build: build,
+        act: (cubit) => cubit.loadInsights(),
+        expect: () => [isA<InsightsLoading>(), isA<InsightsNetworkError>()],
+      );
     });
   });
 
@@ -822,6 +983,30 @@ void main() {
       expect: () => [
         isA<Authenticated>().having((s) => s.avatarUrl, 'avatarUrl',
             'https://lh3.googleusercontent.com/new_avatar'),
+      ],
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'повторные события входа с теми же данными не перестраивают подписчиков',
+      setUp: () {
+        when(() => api.isAuthenticated).thenReturn(false);
+      },
+      build: () => AuthCubit(apiService: api),
+      act: (cubit) async {
+        when(() => api.isAuthenticated).thenReturn(true);
+        when(() => api.email).thenReturn('u@example.com');
+        when(() => api.userName).thenReturn('User');
+        when(() => api.avatarUrl).thenReturn(null);
+        for (var i = 0; i < 3; i++) {
+          authStreamController.add(true);
+          await Future<void>.delayed(Duration.zero);
+        }
+        when(() => api.userName).thenReturn('Renamed');
+        authStreamController.add(true);
+      },
+      expect: () => [
+        isA<Authenticated>().having((s) => s.name, 'name', 'User'),
+        isA<Authenticated>().having((s) => s.name, 'name', 'Renamed'),
       ],
     );
   });
