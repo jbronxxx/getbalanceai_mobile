@@ -7,6 +7,9 @@ import '../utils/utils.dart';
 /// узбекской локалях ожидает `;` как разделитель полей и `,` как десятичный
 /// знак, в английской — `,` и `.`. Файл в UTF-8 с BOM, иначе Excel ломает
 /// кириллицу.
+///
+/// Как и PDF, строится в фоновом изоляте: тексты — только из
+/// [AppLocalizations] в параметрах.
 class CsvReportGenerator {
   static const _bom = '﻿';
   static const _lineBreak = '\r\n';
@@ -46,7 +49,7 @@ class CsvReportGenerator {
       writeRow([
         _formatDateTime(t.date),
         t.type == TransactionType.income ? l10n.type_income : l10n.type_expense,
-        t.category.getLocalizedName(),
+        t.category.localizedIn(l10n),
         _neutralizeFormula(t.description),
         number(t.amount, t.currency.defaultDecimalDigits),
         t.currency.code,

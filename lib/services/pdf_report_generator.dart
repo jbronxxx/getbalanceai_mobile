@@ -8,7 +8,9 @@ import '../utils/utils.dart';
 /// и таблица операций.
 ///
 /// Шрифты передаются снаружи (из ассетов) — встроенные шрифты PDF не
-/// содержат кириллицу. Суммы выводятся с кодом валюты, а не символом: так
+/// содержат кириллицу. Тексты берутся только из [AppLocalizations] в
+/// параметрах, а не из `LanguageManager`: генератор работает в фоновом
+/// изоляте, где глобальное состояние приложения не инициализировано. Суммы выводятся с кодом валюты, а не символом: так
 /// отчёт не зависит от наличия глифа (например, ₸) в шрифте.
 class PdfReportGenerator {
   /// Максимум страниц: значение по умолчанию (20) обрывает выгрузку
@@ -102,7 +104,7 @@ class PdfReportGenerator {
               data: [
                 for (final e in categories)
                   [
-                    e.key.getLocalizedName(),
+                    e.key.localizedIn(l10n),
                     money(e.value, data.currency),
                     _percent(e.value, totalExpense),
                   ],
@@ -130,8 +132,8 @@ class PdfReportGenerator {
               data: [
                 for (final b in data.budgetLines)
                   [
-                    '${LanguageManager.getMonthName(b.month)} ${b.year}',
-                    b.category.getLocalizedName(),
+                    '${LanguageManager.getMonthName(b.month, l10n)} ${b.year}',
+                    b.category.localizedIn(l10n),
                     money(b.limit, data.currency),
                     money(b.spent, data.currency),
                     _percent(b.spent, b.limit),
@@ -167,7 +169,7 @@ class PdfReportGenerator {
                     t.type == TransactionType.income
                         ? l10n.type_income
                         : l10n.type_expense,
-                    t.category.getLocalizedName(),
+                    t.category.localizedIn(l10n),
                     t.description,
                     '${money(t.amount, t.currency)} ${t.currency.code}',
                     money(t.baseAmount, data.currency),

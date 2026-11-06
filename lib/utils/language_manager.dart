@@ -66,7 +66,11 @@ class LanguageManager {
   static String get code => _currentLanguage.code;
 
   /// Возвращает локализованное название месяца в именительном падеже (1..12).
-  static String getMonthName(int month) {
+  ///
+  /// [localizations] — явный язык вместо текущего: в фоновом изоляте
+  /// (выгрузка отчёта) текущий язык не установлен.
+  static String getMonthName(int month, [AppLocalizations? localizations]) {
+    final l10n = localizations ?? LanguageManager.l10n;
     switch (month) {
       case 1:
         return l10n.month_1;
