@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,14 +25,16 @@ import 'package:getbalanceai_mobile/config/environment.dart';
 
 class MockAuthCubit extends MockCubit<AuthState> implements AuthCubit {}
 
+TestDefaultBinaryMessenger get _messenger =>
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    FlutterSecureStorage.setMockInitialValues({
-      'onboarding_setup_completed': 'true',
-    });
+    FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({
       'language_code': 'ru',
+      'onboarding_setup_completed': true,
     });
     PackageInfo.setMockInitialValues(
       appName: 'FinanceApp',
@@ -100,6 +103,58 @@ void main() {
       service.reset();
       // После сброса возвращается дефолтное поведение платформы
       expect(service.isBlurSupported, isNotNull);
+    });
+
+    group('уровень API Android берётся из Build.VERSION.SDK_INT', () {
+      Future<void> initWithSdk(int? sdk) async {
+        _messenger.setMockMethodCallHandler(DeviceCapabilityService.channel,
+            (call) async {
+          if (call.method != 'androidSdkInt') return null;
+          if (sdk == null) throw PlatformException(code: 'unavailable');
+          return sdk;
+        });
+        await DeviceCapabilityService.instance.init();
+      }
+
+      setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.android);
+      tearDown(() {
+        debugDefaultTargetPlatformOverride = null;
+        _messenger.setMockMethodCallHandler(
+            DeviceCapabilityService.channel, null);
+      });
+
+      for (final (sdk, blur) in [(26, false), (30, false), (31, true)]) {
+        test('API $sdk → размытие ${blur ? 'включено' : 'выключено'}',
+            () async {
+          await initWithSdk(sdk);
+
+          expect(DeviceCapabilityService.instance.androidSdkVersion, sdk);
+          expect(DeviceCapabilityService.instance.isBlurSupported, blur);
+        });
+      }
+
+      test('сбой канала не мешает запуску: размытие остаётся включённым',
+          () async {
+        await initWithSdk(null);
+
+        expect(DeviceCapabilityService.instance.androidSdkVersion, isNull);
+        expect(DeviceCapabilityService.instance.isBlurSupported, isTrue);
+      });
+
+      test('не на Android канал не вызывается', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        var called = false;
+        _messenger.setMockMethodCallHandler(DeviceCapabilityService.channel,
+            (call) async {
+          called = true;
+          return 26;
+        });
+
+        await DeviceCapabilityService.instance.init();
+
+        expect(called, isFalse);
+        expect(DeviceCapabilityService.instance.isBlurSupported, isTrue);
+      });
     });
   });
 
@@ -215,9 +270,6 @@ void main() {
     late MockAuthCubit mockAuthCubit;
 
     setUp(() async {
-      FlutterSecureStorage.setMockInitialValues({
-        'onboarding_setup_completed': 'true',
-      });
       await PreferencesService.instance.setOnboardingCompleted();
       mockAuthCubit = MockAuthCubit();
       when(() => mockAuthCubit.state).thenReturn(

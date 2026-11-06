@@ -125,7 +125,7 @@ void main() {
     testWidgets(
         'При первом открытии без завершенного онбординга сразу открывается WelcomeSetupScreen',
         (tester) async {
-      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
       await PreferencesService.instance.loadSavedOnboardingStatus();
       expect(PreferencesService.instance.isOnboardingCompletedSync, isFalse);
 

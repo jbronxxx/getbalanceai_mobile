@@ -132,10 +132,13 @@ class SyncService {
   static const _localDataOwnerKey = 'local_data_owner';
   String? _localDataOwner;
 
-  Future<void> init() async {
-    _transactionsEtag = await _storage.read(key: _transactionsEtagKey);
-    _budgetsEtag = await _storage.read(key: _budgetsEtagKey);
-    _localDataOwner = await _storage.read(key: _localDataOwnerKey);
+  /// [stored] — содержимое хранилища, уже прочитанное одним `readAll()`
+  /// (см. `AuthApiService.init`); без него хранилище читается здесь.
+  Future<void> init([Map<String, String>? stored]) async {
+    stored ??= await _storage.readAll();
+    _transactionsEtag = stored[_transactionsEtagKey];
+    _budgetsEtag = stored[_budgetsEtagKey];
+    _localDataOwner = stored[_localDataOwnerKey];
   }
 
   /// Сбрасывает ETag пользователя [userId] (по умолчанию — текущего).

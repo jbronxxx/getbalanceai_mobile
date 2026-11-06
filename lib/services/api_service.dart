@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:talker_dio_logger/talker_dio_logger.dart';
 import '../config/api_config.dart';
 import '../config/environment.dart';
+import '../config/secure_storage_config.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
 import 'auth_api_service.dart';
@@ -199,8 +200,10 @@ class ApiService {
   }
 
   Future<void> init() async {
-    await _authService.init();
-    await _syncService.init();
+    // Одно обращение к Keystore/Keychain вместо отдельного на каждый ключ
+    final stored = await appSecureStorage.readAll();
+    await _authService.init(stored);
+    await _syncService.init(stored);
     // Установки, где владелец данных ещё не записан: данные на устройстве
     // принадлежат вошедшему пользователю.
     final userId = _authService.userId;
