@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui' show Rect;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -39,18 +41,18 @@ class ReportExportService {
     final data = _dataService.build(period);
     if (data.transactions.isEmpty) return ReportExportOutcome.empty;
 
-    final bytes = switch (format) {
-      ReportFormat.csv => Uint8List.fromList(utf8.encode(
-          CsvReportGenerator.generate(data, l10n, languageCode: languageCode),
-        )),
-      ReportFormat.pdf => await PdfReportGenerator.generate(
-          data,
-          l10n,
-          languageCode: languageCode,
-          regularFont: await _loadFont(_regularFontAsset),
-          boldFont: await _loadFont(_boldFontAsset),
-        ),
-    };
+    final bytes = await render(
+      format: format,
+      data: data,
+      l10n: l10n,
+      languageCode: languageCode,
+      fonts: format == ReportFormat.pdf
+          ? (
+              regular: await rootBundle.load(_regularFontAsset),
+              bold: await rootBundle.load(_boldFontAsset),
+            )
+          : null,
+    );
     final fileName = _fileName(period, format);
 
     switch (mode) {
@@ -77,8 +79,43 @@ class ReportExportService {
     }
   }
 
-  Future<pw.Font> _loadFont(String asset) async =>
-      pw.Font.ttf(await rootBundle.load(asset));
+  /// Строит файл отчёта в фоновом изоляте: на тысячах операций вёрстка PDF
+  /// занимает секунды, и в UI-изоляте приложение на это время замирало.
+  ///
+  /// Статический метод: замыкание, переданное в изолят, не должно захватить
+  /// `this` (база данных в другой изолят не передаётся). Шрифты читаются из
+  /// ассетов заранее — `rootBundle` работает только в UI-изоляте.
+  @visibleForTesting
+  static Future<Uint8List> render({
+    required ReportFormat format,
+    required ReportData data,
+    required AppLocalizations l10n,
+    required String languageCode,
+    ({ByteData regular, ByteData bold})? fonts,
+  }) {
+    return Isolate.run(() async {
+      switch (format) {
+        case ReportFormat.csv:
+          final csv = CsvReportGenerator.generate(
+            data,
+            l10n,
+            languageCode: languageCode,
+          );
+          return Uint8List.fromList(utf8.encode(csv));
+        case ReportFormat.pdf:
+          if (fonts == null) {
+            throw ArgumentError.notNull('fonts');
+          }
+          return PdfReportGenerator.generate(
+            data,
+            l10n,
+            languageCode: languageCode,
+            regularFont: pw.Font.ttf(fonts.regular),
+            boldFont: pw.Font.ttf(fonts.bold),
+          );
+      }
+    }, debugName: 'report-export');
+  }
 
   Future<File> _writeTempFile(Uint8List bytes, String fileName) async {
     final dir = await getTemporaryDirectory();

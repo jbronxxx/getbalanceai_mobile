@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -305,6 +306,65 @@ void main() {
       );
 
       expect(bytes.length, greaterThan(10000));
+    });
+  });
+
+  group('Построение файла в фоновом изоляте', () {
+    final ru = lookupAppLocalizations(const Locale('ru'));
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    Future<ByteData> fontBytes(String name) async => ByteData.sublistView(
+        await File('assets/google_fonts/$name').readAsBytes());
+
+    // В изоляте своё глобальное состояние, и язык там по умолчанию русский:
+    // английский отчёт выйдет английским, только если тексты идут из
+    // переданного l10n.
+    test('CSV: язык отчёта из параметров, а не глобальный', () async {
+      final bytes = await ReportExportService.render(
+        format: ReportFormat.csv,
+        data: _sampleData(),
+        l10n: en,
+        languageCode: 'en',
+      );
+      final lines = utf8.decode(bytes).split('\r\n');
+
+      expect(lines[1], startsWith('2030-03-05 09:30,Expense,Food,'));
+      expect(lines[2], startsWith('2030-03-01 00:00,Income,Salary,'));
+    });
+
+    test('PDF строится с переданными шрифтами', () async {
+      final bytes = await ReportExportService.render(
+        format: ReportFormat.pdf,
+        data: _sampleData(),
+        l10n: ru,
+        languageCode: 'ru',
+        fonts: (
+          regular: await fontBytes('Inter-Regular.ttf'),
+          bold: await fontBytes('Inter-Bold.ttf'),
+        ),
+      );
+
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    });
+
+    test('PDF без шрифтов — ошибка, а не отчёт без кириллицы', () {
+      expect(
+        ReportExportService.render(
+          format: ReportFormat.pdf,
+          data: _sampleData(),
+          l10n: ru,
+          languageCode: 'ru',
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('категории и месяцы — на языке переданного l10n', () {
+      LanguageManager.setLanguage(AppLanguage.en, save: false);
+
+      expect(Category.food.localizedIn(ru), 'Питание');
+      expect(LanguageManager.getMonthName(3, ru), 'Март');
+      expect(LanguageManager.getMonthName(3), 'March');
     });
   });
 

@@ -121,8 +121,12 @@ enum Category {
   }
 
   /// Возвращает локализованное название категории.
-  String getLocalizedName([BuildContext? context]) {
-    final l = context != null ? context.l10n : LanguageManager.l10n;
+  String getLocalizedName([BuildContext? context]) =>
+      localizedIn(context != null ? context.l10n : LanguageManager.l10n);
+
+  /// Название категории на языке [l]. Не читает глобальное состояние,
+  /// поэтому работает и в фоновом изоляте (выгрузка отчёта).
+  String localizedIn(AppLocalizations l) {
     switch (this) {
       case Category.food:
         return l.category_food;
