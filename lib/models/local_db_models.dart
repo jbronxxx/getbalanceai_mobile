@@ -182,6 +182,10 @@ class Transaction {
   final String description;
   final String dbCategory;
   final String dbType;
+
+  /// Индекс: экраны, отчёты и подсказки категорий выбирают операции
+  /// по диапазону дат — без него каждый такой запрос шёл по всей таблице.
+  @Index()
   final int dateMilliseconds;
   final int dateCreatedMilliseconds;
   bool isModified;

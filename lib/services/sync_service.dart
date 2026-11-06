@@ -400,7 +400,7 @@ class SyncService {
       } else {
         AppLogger.i(
             '[SyncService] Transactions not modified (304). Skipping reconciliation.');
-        transLength = LocalDbService.instance.getAllTransactions().length;
+        transLength = LocalDbService.instance.transactionsCount;
       }
 
       int removedBudgets = 0;
@@ -413,7 +413,7 @@ class SyncService {
       } else {
         AppLogger.i(
             '[SyncService] Budgets not modified (304). Skipping reconciliation.');
-        budgetsLength = LocalDbService.instance.getAllBudgets().length;
+        budgetsLength = LocalDbService.instance.budgetsCount;
       }
 
       AppLogger.i('[SyncService] Sync backend -> local: '
