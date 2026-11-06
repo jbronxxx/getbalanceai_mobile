@@ -64,8 +64,7 @@ void main() {
       expect(authService.token, isNull);
       expect(authService.refreshToken, isNull);
       expect(authService.isAuthenticated, isFalse);
-      expect(await storage.read(key: 'auth_token'), isNull);
-      expect(await storage.read(key: 'refresh_token'), isNull);
+      expect(await storage.read(key: AuthApiService.sessionStorageKey), isNull);
     });
   });
 
@@ -86,8 +85,10 @@ void main() {
       expect(requests.single.path, contains('/auth/me'));
       expect(authService.token, equals('access-token'));
       expect(authService.refreshToken, equals('refresh-token'));
-      expect(await storage.read(key: 'auth_token'), equals('access-token'));
-      expect(await storage.read(key: 'refresh_token'), equals('refresh-token'));
+      final stored = jsonDecode(
+          (await storage.read(key: AuthApiService.sessionStorageKey))!) as Map;
+      expect(stored['access_token'], equals('access-token'));
+      expect(stored['refresh_token'], equals('refresh-token'));
       expect(authEvents, isEmpty);
     });
   });

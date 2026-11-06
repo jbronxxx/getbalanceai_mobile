@@ -20,11 +20,11 @@ class BudgetApiService {
         _isAuthenticated = isAuthenticated;
 
   /// Удалить бюджет с сервера по ID.
-  Future<void> deleteBudget(String id, [String? token]) async {
+  Future<void> deleteBudget(String id) async {
     try {
       await _dio.delete(
         '${ApiConfig.budgets}$id',
-        options: _authOptions(token),
+        options: _authOptions(),
       );
     } catch (e) {
       AppLogger.e('[BudgetApiService] Delete budget error', e);

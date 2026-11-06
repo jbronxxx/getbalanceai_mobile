@@ -17,9 +17,25 @@ class AuthApiService {
   final FlutterSecureStorage _storage;
   final StreamController<bool> _authStream = StreamController.broadcast();
 
+  /// Пара токенов хранится одним ключом: запись атомарна, и сбой между
+  /// записями не оставит новый access со старым refresh. Старый refresh
+  /// сервер принимает повторно только 30 секунд после ротации, позже
+  /// считает украденным и отзывает все сессии пользователя.
+  static const sessionStorageKey = 'auth_session';
+
+  /// Ключи, в которых токены хранились до [sessionStorageKey].
+  static const _legacyAccessKey = 'auth_token';
+  static const _legacyRefreshKey = 'refresh_token';
+
+  /// Повтор с тем же refresh-токеном должен уложиться в окно, в котором
+  /// сервер заменяет недошедшую пару новой (30 с): таймаут ответа
+  /// и пауза перед повтором с запасом меньше окна.
+  static const _refreshTimeout = Duration(seconds: 15);
+  static const _refreshRetryDelay = Duration(seconds: 1);
+
   String? _token;
   String? _refreshToken;
-  Completer<String?>? _refreshCompleter;
+  Future<String?>? _refreshInFlight;
 
   /// Растёт при каждой очистке сессии. Refresh, начатый до выхода, сверяет
   /// эпоху и не записывает новые токены обратно (иначе выход «откатился» бы).
@@ -59,8 +75,7 @@ class AuthApiService {
   }
 
   Future<void> init() async {
-    _token = await _storage.read(key: 'auth_token');
-    _refreshToken = await _storage.read(key: 'refresh_token');
+    await _readTokens();
     _userId = await _storage.read(key: 'auth_user_id');
     _userName = await _storage.read(key: 'auth_user');
     _email = await _storage.read(key: 'auth_email');
@@ -72,17 +87,54 @@ class AuthApiService {
     _refreshToken = refresh;
 
     if (token != null) {
-      await _storage.write(key: 'auth_token', value: token);
-      await _storage.write(key: 'refresh_token', value: refresh);
+      await _writeTokens(token, refresh);
       final extracted = _extractUserIdFromToken(token);
       if (extracted != null && _userId == null) {
         await setUserId(extracted);
       }
     } else {
-      await _storage.delete(key: 'auth_token');
-      await _storage.delete(key: 'refresh_token');
+      await _deleteTokens();
       await setUserId(null);
     }
+  }
+
+  Future<void> _readTokens() async {
+    final raw = await _storage.read(key: sessionStorageKey);
+    if (raw != null) {
+      try {
+        final session = jsonDecode(raw) as Map<String, dynamic>;
+        _token = session['access_token'] as String?;
+        _refreshToken = session['refresh_token'] as String?;
+      } catch (e) {
+        AppLogger.w('[AuthApiService] Stored session is unreadable: $e');
+      }
+      return;
+    }
+
+    // Установка, обновлённая с версии, где токены лежали в двух ключах
+    final token = await _storage.read(key: _legacyAccessKey);
+    if (token == null) return;
+    _token = token;
+    _refreshToken = await _storage.read(key: _legacyRefreshKey);
+    await _writeTokens(token, _refreshToken);
+    await _deleteLegacyTokens();
+  }
+
+  Future<void> _writeTokens(String token, String? refresh) async {
+    await _storage.write(
+      key: sessionStorageKey,
+      value: jsonEncode({'access_token': token, 'refresh_token': refresh}),
+    );
+  }
+
+  Future<void> _deleteTokens() async {
+    await _storage.delete(key: sessionStorageKey);
+    await _deleteLegacyTokens();
+  }
+
+  Future<void> _deleteLegacyTokens() async {
+    await _storage.delete(key: _legacyAccessKey);
+    await _storage.delete(key: _legacyRefreshKey);
   }
 
   static String? _extractUserIdFromToken(String? token) {
@@ -158,8 +210,7 @@ class AuthApiService {
     _avatarUrl = null;
 
     try {
-      await _storage.delete(key: 'auth_token');
-      await _storage.delete(key: 'refresh_token');
+      await _deleteTokens();
       await _storage.delete(key: 'auth_user_id');
       await _storage.delete(key: 'auth_user');
       await _storage.delete(key: 'auth_email');
@@ -399,74 +450,104 @@ class AuthApiService {
   /// Сообщает подписчикам [authStream], что сессия завершена.
   void notifyLoggedOut() => _authStream.add(false);
 
-  Future<String?> performTokenRefresh() async {
-    if (_refreshCompleter != null) {
-      return _refreshCompleter!.future;
+  /// Обновляет пару токенов по refresh-токену; параллельные вызовы ждут
+  /// один запрос.
+  ///
+  /// `null` — сессии больше нет: сервер отклонил refresh-токен (401), токена
+  /// нет или пользователь вышел, пока шёл запрос. Временный сбой (сеть, 429,
+  /// 5xx) пробрасывается как [DioException]: токены сохраняются, а вызывающий
+  /// показывает настоящую причину вместо «Сессия истекла».
+  Future<String?> performTokenRefresh() => _refreshInFlight ??=
+      _refresh().whenComplete(() => _refreshInFlight = null);
+
+  Future<String?> _refresh() async {
+    final epoch = _sessionEpoch;
+    final currentRefresh = _refreshToken;
+    if (currentRefresh == null || currentRefresh.isEmpty) {
+      AppLogger.w('[AuthApiService] No refresh token available');
+      await handleSessionExpired();
+      return null;
     }
 
-    final completer = Completer<String?>();
-    _refreshCompleter = completer;
-    final epoch = _sessionEpoch;
+    AppLogger.i('[AuthApiService] Token expired (401), attempting refresh...');
 
+    final Response<dynamic> response;
     try {
-      final currentRefresh =
-          _refreshToken ?? await _storage.read(key: 'refresh_token');
-      if (currentRefresh == null || currentRefresh.isEmpty) {
-        AppLogger.w('[AuthApiService] No refresh token available');
-        await handleSessionExpired();
-        completer.complete(null);
-        return null;
-      }
-
-      AppLogger.i(
-          '[AuthApiService] Token expired (401), attempting refresh...');
-
-      final response = await _dio.post(
-        ApiConfig.refreshToken,
-        data: {'refresh_token': currentRefresh},
-      );
-
-      if (epoch != _sessionEpoch) {
-        AppLogger.i(
-            '[AuthApiService] Session ended during refresh, tokens discarded');
-        completer.complete(null);
-        return null;
-      }
-
-      final resData = response.data is Map
-          ? (response.data['data'] is Map
-              ? response.data['data'] as Map<String, dynamic>
-              : response.data as Map<String, dynamic>)
-          : <String, dynamic>{};
-
-      final newAccess = resData['access_token'] as String?;
-      final newRefresh = resData['refresh_token'] as String? ?? currentRefresh;
-
-      if (newAccess != null && newAccess.isNotEmpty) {
-        await setTokens(newAccess, newRefresh);
-        AppLogger.i('[AuthApiService] Token refreshed successfully');
-        completer.complete(newAccess);
-        return newAccess;
-      } else {
-        throw Exception('Empty access token returned on refresh');
-      }
-    } catch (e) {
-      AppLogger.e('[AuthApiService] Token refresh failed', e);
-      completer.complete(null);
-
+      response = await _postRefresh(currentRefresh, epoch);
+    } on DioException catch (e) {
+      if (epoch != _sessionEpoch) return null;
       // Сессию завершает только 401: сервер отклонил refresh-токен. Сеть, 429
       // и 5xx (например, 503 при сбое Redis) — временные сбои: токены
       // сохраняются, запрос можно повторить, пользователь остаётся в аккаунте.
-      if (epoch == _sessionEpoch &&
-          e is DioException &&
-          e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 401) {
+        AppLogger.w('[AuthApiService] Refresh token rejected, session ended');
         await handleSessionExpired();
+        return null;
       }
+      AppLogger.e('[AuthApiService] Token refresh failed', e);
+      rethrow;
+    }
+
+    if (epoch != _sessionEpoch) {
+      AppLogger.i(
+          '[AuthApiService] Session ended during refresh, tokens discarded');
       return null;
-    } finally {
-      _refreshCompleter = null;
+    }
+
+    final data = response.data is Map ? response.data['data'] : null;
+    final newAccess = data is Map ? data['access_token'] as String? : null;
+    if (newAccess == null || newAccess.isEmpty) {
+      throw DioException.badResponse(
+        statusCode: response.statusCode ?? 200,
+        requestOptions: response.requestOptions,
+        response: response,
+      );
+    }
+    final newRefresh = data['refresh_token'] as String? ?? currentRefresh;
+
+    await setTokens(newAccess, newRefresh);
+    AppLogger.i('[AuthApiService] Token refreshed successfully');
+    return newAccess;
+  }
+
+  /// Ответ на ротацию мог потеряться (обрыв, таймаут, сбой прокси), когда
+  /// сервер уже выдал новую пару и отозвал [refreshToken]. Повтор с тем же
+  /// токеном в течение 30 секунд сервер обслуживает как повтор ротации;
+  /// позже — отзывает все сессии, поэтому повтор один и сразу.
+  Future<Response<dynamic>> _postRefresh(String refreshToken, int epoch) async {
+    Future<Response<dynamic>> post() => _dio.post(
+          ApiConfig.refreshToken,
+          data: {'refresh_token': refreshToken},
+          options: Options(
+            sendTimeout: _refreshTimeout,
+            receiveTimeout: _refreshTimeout,
+          ),
+        );
+
+    try {
+      return await post();
+    } on DioException catch (e) {
+      if (!_responseMayBeLost(e) || epoch != _sessionEpoch) rethrow;
+      AppLogger.w('[AuthApiService] Refresh response lost (${e.type}), '
+          'retrying with the same token');
+      await Future<void>.delayed(_refreshRetryDelay);
+      if (epoch != _sessionEpoch) rethrow;
+      return post();
     }
   }
+
+  /// Запрос мог дойти до сервера, а ответ — потеряться. Таймаут соединения
+  /// сюда не входит: запрос не ушёл.
+  static bool _responseMayBeLost(DioException e) => switch (e.type) {
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout ||
+        DioExceptionType.connectionError ||
+        DioExceptionType.unknown =>
+          true,
+        DioExceptionType.badResponse =>
+          const {502, 504}.contains(e.response?.statusCode),
+        _ => false,
+      };
 
   void dispose() {
     _authStream.close();

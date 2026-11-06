@@ -6,6 +6,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import '../config/api_config.dart';
 import '../main.dart';
 
 /// Централизованный обработчик ошибок приложения.
@@ -56,6 +57,8 @@ class AppErrorHandler {
   /// `toString()` пользователю не показывается, детали уходят в лог.
   static String getMessage(dynamic error) {
     if (error is SyncException) {
+      final cause = error.cause;
+      if (cause is DioException) return _handleDioError(cause);
       return error.getLocalizedMessage();
     }
     if (error is DioException) {
@@ -92,6 +95,13 @@ class AppErrorHandler {
         );
         return;
       }
+      // Синк упал на запросе: 429, 503, сеть показываются как у любого
+      // запроса, а не «Ошибка синхронизации: 429».
+      final cause = error.cause;
+      if (cause is DioException) {
+        show(context, cause, title: title);
+        return;
+      }
       AppAlerts.error(context, message,
           title: title ?? LanguageManager.l10n.sync_error);
       return;
@@ -101,9 +111,10 @@ class AppErrorHandler {
       final data = error.response?.data;
       final code = (data is Map) ? data['code'] : null;
 
+      // 401 на входе — отказ провайдера, а не конец сессии
       final path = error.requestOptions.path;
-      final isAuthEndpoint =
-          path.contains('/auth/login') || path.contains('/auth/register');
+      final isAuthEndpoint = path.contains(ApiConfig.loginGoogle) ||
+          path.contains(ApiConfig.loginApple);
 
       // Обработка истечения срока действия сессии (только для защищенных запросов)
       if (!isAuthEndpoint &&
