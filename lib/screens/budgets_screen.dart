@@ -17,7 +17,7 @@ class BudgetsScreen extends StatefulWidget {
   State<BudgetsScreen> createState() => _BudgetsScreenState();
 }
 
-class _BudgetsScreenState extends State<BudgetsScreen> {
+class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
   int get _selectedMonth => SelectedPeriodService.instance.period.month;
   int get _selectedYear => SelectedPeriodService.instance.period.year;
 
@@ -50,12 +50,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   /// Перечитывает лимиты и расходы при смене валюты, периода или операций
-  /// (в том числе добавленных с другой вкладки).
-  void _onDataChanged() {
-    if (mounted) {
-      _loadBudgets();
-    }
-  }
+  /// (в том числе добавленных с другой вкладки — тогда при показе вкладки).
+  void _onDataChanged() => requestReload();
+
+  @override
+  void reloadData() => _loadBudgets();
 
   @override
   void dispose() {

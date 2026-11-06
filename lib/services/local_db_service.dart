@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -270,7 +270,9 @@ class LocalDbService {
     return result;
   }
 
-  /// Возвращает все транзакции, отсортированные от новых к старым.
+  /// Все транзакции от новых к старым. В приложении не используется —
+  /// чтение всей таблицы; экраны читают по периоду.
+  @visibleForTesting
   List<Transaction> getAllTransactions() {
     final query = _transactionBox.query()
       ..order(Transaction_.dateMilliseconds, flags: Order.descending);
@@ -515,14 +517,17 @@ class LocalDbService {
 
   /// Возвращает лимиты бюджета за конкретные месяц и год.
   List<Budget> getBudgetsForPeriod(int month, int year) {
-    return _budgetBox
+    final query = _budgetBox
         .query(Budget_.month.equals(month).and(Budget_.year.equals(year)))
-        .build()
-        .find();
+        .build();
+    final results = query.find();
+    query.close();
+    return results;
   }
 
-  /// Возвращает все сохранённые лимиты бюджета — нужен для полной
-  /// синхронизации с бэкендом.
+  /// Все сохранённые лимиты. В приложении не используется — для
+  /// проверки содержимого базы в тестах.
+  @visibleForTesting
   List<Budget> getAllBudgets() {
     return _budgetBox.getAll();
   }

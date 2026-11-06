@@ -22,7 +22,8 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with ReloadWhenVisible {
   int get _selectedMonth => SelectedPeriodService.instance.period.month;
   int get _selectedYear => SelectedPeriodService.instance.period.year;
 
@@ -45,6 +46,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ScrollController _scrollController = ScrollController();
   int _offset = 0;
   final int _pageSize = 20;
+
+  /// Операции месяца без скрытых: читаются из базы один раз на перезагрузку,
+  /// из них же считаются итоги и берутся страницы списка.
+  List<Transaction> _monthTransactions = const [];
   bool _hasMore = true;
   bool _isLoading = false;
 
@@ -60,12 +65,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _deletions.addListener(_onDataChanged);
   }
 
-  /// Перечитывает данные при смене валюты, периода или операций.
-  void _onDataChanged() {
-    if (mounted) {
-      _loadTransactions();
-    }
-  }
+  /// Перечитывает данные при смене валюты, периода или операций
+  /// (у скрытой вкладки — при её показе).
+  void _onDataChanged() => requestReload();
+
+  @override
+  void reloadData() => _loadTransactions();
 
   @override
   void dispose() {
@@ -153,28 +158,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = true);
 
     if (!isLoadMore) {
-      final totals =
-          LocalDbService.instance.totalsFor(_visibleMonthTransactions());
+      _monthTransactions = _visibleMonthTransactions();
+      final totals = LocalDbService.instance.totalsFor(_monthTransactions);
       _totalIncome = totals['income'] ?? 0;
       _totalExpense = totals['expense'] ?? 0;
       _totalBalance = _totalIncome - _totalExpense;
     }
 
-    final newBatch = LocalDbService.instance.getTransactionsForPeriod(
-      _selectedMonth,
-      _selectedYear,
-      limit: _pageSize,
-      offset: _offset,
-    );
+    final visibleBatch = _monthTransactions
+        .skip(_offset)
+        .take(_pageSize)
+        .toList(growable: false);
 
-    if (newBatch.length < _pageSize) {
+    if (visibleBatch.length < _pageSize) {
       _hasMore = false;
     }
 
-    // Смещение считается по базе, скрытые операции только не показываются
-    _offset += newBatch.length;
-    final visibleBatch =
-        newBatch.where((t) => !_deletions.isPending(t)).toList(growable: false);
+    _offset += visibleBatch.length;
     _transactions.addAll(visibleBatch);
 
     final sortedGrouped = DayGroupWidget.groupByDay(

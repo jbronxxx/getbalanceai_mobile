@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
 import '../budgets/budget_expense_ratio_card.dart';
+import '../reload_when_visible.dart';
 
 /// Структура расходов выбранного месяца (кольцо по категориям) над AI-советами.
 ///
@@ -17,7 +18,8 @@ class ExpenseStructureSection extends StatefulWidget {
       _ExpenseStructureSectionState();
 }
 
-class _ExpenseStructureSectionState extends State<ExpenseStructureSection> {
+class _ExpenseStructureSectionState extends State<ExpenseStructureSection>
+    with ReloadWhenVisible {
   double _income = 0;
   double _expense = 0;
   Map<Category, double> _byCategory = {};
@@ -41,9 +43,11 @@ class _ExpenseStructureSectionState extends State<ExpenseStructureSection> {
     super.dispose();
   }
 
-  void _reload() {
-    if (mounted) setState(_load);
-  }
+  /// У скрытой вкладки «Аналитика» — при её показе.
+  void _reload() => requestReload();
+
+  @override
+  void reloadData() => setState(_load);
 
   void _load() {
     if (!LocalDbService.isInitialized) return;

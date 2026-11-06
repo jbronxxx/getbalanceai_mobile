@@ -105,7 +105,9 @@
         {
           "id": "7:5012737802703416520",
           "name": "dateMilliseconds",
-          "type": 6
+          "indexId": "3:6924193905683547091",
+          "type": 6,
+          "flags": 8
         },
         {
           "id": "8:7388451711990150673",
@@ -137,7 +139,7 @@
     }
   ],
   "lastEntityId": "2:4394803372386859630",
-  "lastIndexId": "2:827320364083288677",
+  "lastIndexId": "3:6924193905683547091",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

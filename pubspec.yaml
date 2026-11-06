@@ -43,6 +43,11 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   build_runner: ^2.4.9
   objectbox_generator: any
+  # objectbox_generator 4.x требует source_gen 3.1, а тот вызывает
+  # DartObjectImpl.getInvocation, удалённый в analyzer 8.2+ — без этого
+  # ограничения build_runner не компилируется. Снять при переходе на
+  # objectbox_generator 6 (source_gen 4).
+  analyzer: ">=8.1.1 <8.2.0"
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
   flutter_launcher_icons: ^0.14.3
