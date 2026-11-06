@@ -75,11 +75,10 @@ class InsightsLoaded extends InsightsState {
   });
 }
 
+/// Отчёт не загрузился (сбой ИИ или сервера) — «помощники заняты»; обрыв
+/// связи — [InsightsNetworkError]. Повтор — pull-to-refresh.
 class InsightsError extends InsightsState {
-  final String message;
-
-  const InsightsError(
-    this.message, {
+  const InsightsError({
     required super.selectedMonth,
     required super.selectedYear,
   });

@@ -298,6 +298,25 @@ void main() {
       final updatedStack = tester.widget<IndexedStack>(indexedStackFinder);
       expect(updatedStack.index, equals(1));
 
+      // Анимации тикают только у видимой вкладки
+      final tickerModes = [
+        for (final key in const [
+          'dashboard_tab',
+          'budgets_tab',
+          'insights_tab',
+          'profile_tab'
+        ])
+          tester
+              .widget<TickerMode>(find
+                  .ancestor(
+                    of: find.byKey(PageStorageKey(key), skipOffstage: false),
+                    matching: find.byType(TickerMode, skipOffstage: false),
+                  )
+                  .first)
+              .enabled,
+      ];
+      expect(tickerModes, [false, true, false, false]);
+
       // Все экраны продолжают существовать в дереве (не пересоздаются с нуля)
       expect(
         find.byKey(const PageStorageKey('dashboard_tab'), skipOffstage: false),

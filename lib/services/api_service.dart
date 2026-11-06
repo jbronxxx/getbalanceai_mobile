@@ -309,7 +309,9 @@ class ApiService {
           if (!generate) 'generate': false,
         },
         options: Options(
-          receiveTimeout: const Duration(seconds: 30),
+          // Бэкенд ждёт ИИ до AI_REQUEST_TIMEOUT (30 с) и отвечает
+          // state=busy; клиент не должен оборвать запрос раньше.
+          receiveTimeout: const Duration(seconds: 45),
           sendTimeout: const Duration(seconds: 15),
         ),
         cancelToken: cancelToken,
