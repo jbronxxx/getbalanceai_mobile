@@ -139,6 +139,24 @@ void main() {
       expect(find.byType(LiquidGlassNavBar), findsNothing);
     });
 
+    testWidgets('Под непрозрачной кнопкой «Продолжить» нет размытия фона',
+        (tester) async {
+      DeviceCapabilityService.instance.setMockBlurSupported(true);
+      addTearDown(() => DeviceCapabilityService.instance.reset());
+      await tester.pumpWidget(_buildTestApp(const WelcomeSetupScreen()));
+      await tester.pumpAndSettle();
+
+      final button = find.ancestor(
+        of: find.text('Продолжить'),
+        matching: find.byType(GlassContainer),
+      );
+      expect(button, findsOneWidget);
+      expect(
+        find.descendant(of: button, matching: find.byType(BackdropFilter)),
+        findsNothing,
+      );
+    });
+
     testWidgets(
         'Позиция кнопок выбора языка не меняется при переключении языков (нет скачков)',
         (tester) async {

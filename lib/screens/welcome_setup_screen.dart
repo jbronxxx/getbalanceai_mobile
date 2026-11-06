@@ -427,7 +427,9 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
       padding: const EdgeInsets.all(24.0),
       child: GlassContainer(
         borderRadius: 18,
-        blurSigma: 16,
+        // Градиент непрозрачный: размытие под ним не видно, а BackdropFilter —
+        // дорогой лишний проход отрисовки на каждом кадре.
+        blurSigma: 0,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

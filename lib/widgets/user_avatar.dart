@@ -80,6 +80,9 @@ class UserAvatar extends StatelessWidget {
             key: ValueKey(url),
             width: size,
             height: size,
+            // Декодируем под размер на экране, а не в исходном разрешении
+            // (фото профиля бывает в сотни пикселей при круге в 40).
+            cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round(),
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               AppLogger.w('Avatar network load error for $url: $error');
