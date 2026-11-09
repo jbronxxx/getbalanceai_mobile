@@ -161,14 +161,7 @@
   },
   "sync_rejected_title": "Server qabul qilmagan",
   "sync_rejected_hint": "Tuzatish uchun yozuvni bosing. Saqlangandan keyin u qayta yuboriladi.",
-  "sync_reject_invalid_currency": "Server {currency} valyutasini qo‘llab-quvvatlamaydi",
-  "@sync_reject_invalid_currency": {
-    "placeholders": {
-      "currency": {
-        "type": "String"
-      }
-    }
-  },
+  "sync_reject_invalid_currency": "Server valyuta kursini ololmadi",
   "sync_reject_invalid_amount": "Asosiy valyutadagi summa juda katta",
   "sync_reject_unknown": "Server bu yozuvni qabul qilmadi",
   "sync_done_with_rejected": "Sinxronlandi, lekin server qabul qilmadi: {count}",

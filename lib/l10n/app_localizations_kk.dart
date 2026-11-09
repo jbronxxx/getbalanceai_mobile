@@ -449,9 +449,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Түзету үшін жазбаны басыңыз. Сақтағаннан кейін ол қайта жіберіледі.';
 
   @override
-  String sync_reject_invalid_currency(String currency) {
-    return 'Сервер $currency валютасын қолдамайды';
-  }
+  String get sync_reject_invalid_currency => 'Сервер валюта бағамын ала алмады';
 
   @override
   String get sync_reject_invalid_amount => 'Негізгі валютадағы сома тым үлкен';

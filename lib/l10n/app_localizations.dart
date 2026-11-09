@@ -930,11 +930,11 @@ abstract class AppLocalizations {
   /// **'Tap a record to fix it. It will be uploaded again after you save it.'**
   String get sync_rejected_hint;
 
-  /// Rejection reason: currency of the record is not supported by the server
+  /// Rejection reason: the server could not get the exchange rate for the record currency
   ///
   /// In en, this message translates to:
-  /// **'The server does not support {currency}'**
-  String sync_reject_invalid_currency(String currency);
+  /// **'The server could not get the exchange rate'**
+  String get sync_reject_invalid_currency;
 
   /// Rejection reason: amount converted to the main currency is too large
   ///

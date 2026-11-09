@@ -161,14 +161,7 @@
   },
   "sync_rejected_title": "Сервер қабылдамаған",
   "sync_rejected_hint": "Түзету үшін жазбаны басыңыз. Сақтағаннан кейін ол қайта жіберіледі.",
-  "sync_reject_invalid_currency": "Сервер {currency} валютасын қолдамайды",
-  "@sync_reject_invalid_currency": {
-    "placeholders": {
-      "currency": {
-        "type": "String"
-      }
-    }
-  },
+  "sync_reject_invalid_currency": "Сервер валюта бағамын ала алмады",
   "sync_reject_invalid_amount": "Негізгі валютадағы сома тым үлкен",
   "sync_reject_unknown": "Сервер бұл жазбаны қабылдамады",
   "sync_done_with_rejected": "Синхрондалды, бірақ сервер қабылдамады: {count}",

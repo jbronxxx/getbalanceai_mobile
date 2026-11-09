@@ -448,9 +448,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap a record to fix it. It will be uploaded again after you save it.';
 
   @override
-  String sync_reject_invalid_currency(String currency) {
-    return 'The server does not support $currency';
-  }
+  String get sync_reject_invalid_currency =>
+      'The server could not get the exchange rate';
 
   @override
   String get sync_reject_invalid_amount =>

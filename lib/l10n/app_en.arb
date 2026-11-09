@@ -176,14 +176,9 @@
   "@sync_rejected_hint": {
     "description": "Hint under the title of the rejected records sheet"
   },
-  "sync_reject_invalid_currency": "The server does not support {currency}",
+  "sync_reject_invalid_currency": "The server could not get the exchange rate",
   "@sync_reject_invalid_currency": {
-    "description": "Rejection reason: currency of the record is not supported by the server",
-    "placeholders": {
-      "currency": {
-        "type": "String"
-      }
-    }
+    "description": "Rejection reason: the server could not get the exchange rate for the record currency"
   },
   "sync_reject_invalid_amount": "The amount in the main currency is too large",
   "@sync_reject_invalid_amount": {

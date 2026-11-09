@@ -31,7 +31,7 @@ class SyncRejectedSheet extends StatelessWidget {
   static String reasonText(AppLocalizations l10n, Transaction transaction) {
     switch (transaction.syncRejectCode) {
       case 'INVALID_CURRENCY':
-        return l10n.sync_reject_invalid_currency(transaction.currencyCode);
+        return l10n.sync_reject_invalid_currency;
       case 'INVALID_TRANSACTION_AMOUNT':
         return l10n.sync_reject_invalid_amount;
       default:

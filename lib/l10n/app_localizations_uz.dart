@@ -447,9 +447,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Tuzatish uchun yozuvni bosing. Saqlangandan keyin u qayta yuboriladi.';
 
   @override
-  String sync_reject_invalid_currency(String currency) {
-    return 'Server $currency valyutasini qo‘llab-quvvatlamaydi';
-  }
+  String get sync_reject_invalid_currency => 'Server valyuta kursini ololmadi';
 
   @override
   String get sync_reject_invalid_amount =>

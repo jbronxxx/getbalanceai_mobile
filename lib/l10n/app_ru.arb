@@ -161,14 +161,7 @@
   },
   "sync_rejected_title": "Не принято сервером",
   "sync_rejected_hint": "Нажмите на запись, чтобы исправить её. После сохранения она отправится снова.",
-  "sync_reject_invalid_currency": "Сервер не поддерживает валюту {currency}",
-  "@sync_reject_invalid_currency": {
-    "placeholders": {
-      "currency": {
-        "type": "String"
-      }
-    }
-  },
+  "sync_reject_invalid_currency": "Сервер не смог получить курс валюты",
   "sync_reject_invalid_amount": "Сумма в основной валюте слишком большая",
   "sync_reject_unknown": "Сервер не принял эту запись",
   "sync_done_with_rejected": "Синхронизировано, но сервер не принял: {count}",

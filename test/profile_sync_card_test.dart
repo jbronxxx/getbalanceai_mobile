@@ -41,7 +41,6 @@ Widget _card({
 
 Transaction _transaction({
   required String? rejectCode,
-  String currencyCode = 'USD',
   String description = 'Кофе',
 }) =>
     Transaction(
@@ -52,7 +51,7 @@ Transaction _transaction({
       dbType: 'expense',
       dateMilliseconds: DateTime(2025, 9, 30).millisecondsSinceEpoch,
       dateCreatedMilliseconds: DateTime(2025, 9, 30).millisecondsSinceEpoch,
-      currencyCode: currencyCode,
+      currencyCode: 'USD',
       isModified: true,
       syncRejectCode: rejectCode,
     );
@@ -140,14 +139,12 @@ void main() {
 
     test('причина по коду сервера', () {
       final l10n = LanguageManager.l10n;
-      String reason(String code, [String currency = 'USD']) =>
-          SyncRejectedSheet.reasonText(
+      String reason(String code) => SyncRejectedSheet.reasonText(
             l10n,
-            _transaction(rejectCode: code, currencyCode: currency),
+            _transaction(rejectCode: code),
           );
 
-      expect(reason('INVALID_CURRENCY', 'GBP'),
-          'Сервер не поддерживает валюту GBP');
+      expect(reason('INVALID_CURRENCY'), 'Сервер не смог получить курс валюты');
       expect(reason('INVALID_TRANSACTION_AMOUNT'),
           'Сумма в основной валюте слишком большая');
       expect(

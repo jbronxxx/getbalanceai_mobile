@@ -447,9 +447,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Нажмите на запись, чтобы исправить её. После сохранения она отправится снова.';
 
   @override
-  String sync_reject_invalid_currency(String currency) {
-    return 'Сервер не поддерживает валюту $currency';
-  }
+  String get sync_reject_invalid_currency =>
+      'Сервер не смог получить курс валюты';
 
   @override
   String get sync_reject_invalid_amount =>
