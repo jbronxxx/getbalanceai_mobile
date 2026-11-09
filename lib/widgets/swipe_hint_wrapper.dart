@@ -12,7 +12,6 @@ class SwipeHintWrapper extends StatefulWidget {
   final Widget child;
   final bool showHint;
   final Widget? background;
-  final BorderRadius? borderRadius;
   final VoidCallback? onHintShown;
 
   const SwipeHintWrapper({
@@ -20,7 +19,6 @@ class SwipeHintWrapper extends StatefulWidget {
     required this.child,
     this.showHint = false,
     this.background,
-    this.borderRadius,
     this.onHintShown,
   });
 
@@ -110,14 +108,7 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
           clipBehavior: Clip.hardEdge,
           children: [
             if (widget.background != null && hasOffset)
-              Positioned.fill(
-                child: widget.borderRadius != null
-                    ? ClipRRect(
-                        borderRadius: widget.borderRadius!,
-                        child: widget.background!,
-                      )
-                    : widget.background!,
-              ),
+              Positioned.fill(child: widget.background!),
             SlideTransition(
               position: _animation,
               child: widget.child,
