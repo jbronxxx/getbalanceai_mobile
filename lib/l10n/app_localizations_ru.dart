@@ -33,9 +33,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get select_language => 'Выбор языка';
 
   @override
-  String get dark_mode => 'Темная тема';
-
-  @override
   String get theme_mode => 'Тема оформления';
 
   @override
@@ -48,28 +45,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get theme_dark => 'Темная';
 
   @override
-  String get soon => 'Скоро появится';
-
-  @override
-  String get notifications => 'Уведомления';
-
-  @override
-  String get limits_and_budgets => 'Лимиты и бюджеты';
-
-  @override
   String get cloud => 'Облако';
 
   @override
   String get sync_status => 'Статус синхронизации';
-
-  @override
-  String get cloud_not_connected => 'Доступно после входа в аккаунт';
-
-  @override
-  String get guest_mode => 'Гостевой режим';
-
-  @override
-  String get login_cloud_hint => 'Войдите, чтобы сохранять данные в облаке';
 
   @override
   String get logout => 'Выйти из аккаунта';
@@ -84,17 +63,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get local_profile => 'Локальный профиль';
 
   @override
-  String get offline_storage_desc => 'Данные сохраняются на этом устройстве';
-
-  @override
   String get local_storage_warning =>
       'Данные хранятся только на вашем устройстве и удаляются при удалении приложения';
 
   @override
   String get cloud_backup_prompt => 'Войдите для включения резервной копии';
-
-  @override
-  String get user => 'Пользователь';
 
   @override
   String get select_currency => 'Выбор валюты';
@@ -137,10 +110,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Нет подключения к интернету. Проверьте сеть и повторите попытку.';
 
   @override
-  String get sync_no_internet_alert =>
-      'Для синхронизации нужно подключение к сети';
-
-  @override
   String get sync_error => 'Ошибка синхронизации';
 
   @override
@@ -166,9 +135,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'В этой валюте рассчитывается общий баланс и бюджеты';
 
   @override
-  String get currency_rate_hint => 'по курсу';
-
-  @override
   String get continue_btn => 'Продолжить';
 
   @override
@@ -184,23 +150,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get no_transactions => 'Нет записей за этот месяц';
 
   @override
-  String get all_months => 'Все месяцы';
-
-  @override
-  String get swipe_hint_text => 'Смахните операцию влево, чтобы удалить её';
-
-  @override
-  String get delete_confirm_title => 'Удаление';
-
-  @override
-  String get delete_confirm_desc =>
-      'Вы уверены, что хотите удалить эту запись?';
-
-  @override
   String get delete_btn => 'Удалить';
-
-  @override
-  String get today_prefix => 'Сегодня';
 
   @override
   String get new_transaction => 'Новая запись';
@@ -224,12 +174,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get save_changes_btn => 'Сохранить изменения';
 
   @override
-  String get alert_valid_amount => 'Введите корректную сумму';
-
-  @override
-  String get alert_amount_too_large => 'Сумма слишком велика для';
-
-  @override
   String get amount_requirement_enter => 'Укажите сумму';
 
   @override
@@ -250,57 +194,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get edit_budget_title => 'Редактировать лимит';
 
   @override
-  String get budget_amount_hint => 'Сумма лимита';
-
-  @override
   String get save_btn => 'Сохранить';
 
   @override
   String get budget_exceeded => 'Превышен на';
 
   @override
-  String get budget_out_of => 'из';
-
-  @override
-  String get no_budgets_title => 'Бюджеты не установлены';
-
-  @override
   String get no_budgets_subtitle =>
       'Установите лимиты по категориям, чтобы контролировать перерасход средств.';
-
-  @override
-  String get alert_enter_budget_amount => 'Введите сумму лимита';
-
-  @override
-  String get insights_screen_title => 'Аналитика и советы';
-
-  @override
-  String get insights_subtitle => 'Умный анализ ваших финансов';
-
-  @override
-  String get insight_advice_title => 'Финансовый совет';
-
-  @override
-  String get insight_advice_desc =>
-      'Старайтесь откладывать не менее 10-15% от доходов сразу в день их получения, формируя подушку безопасности.';
-
-  @override
-  String get insight_structure_title => 'Структура расходов за месяц';
-
-  @override
-  String get insight_structure_empty =>
-      'Недостаточно данных для анализа расходов. Добавьте транзакции.';
-
-  @override
-  String get insight_saving_title => 'Уровень сбережений';
-
-  @override
-  String get insight_saving_desc_positive =>
-      'Отличный результат! Вы откладываете средства. Продолжайте в том же духе для достижения долгосрочных целей.';
-
-  @override
-  String get insight_saving_desc_negative =>
-      'В этом месяце ваши расходы превысили доходы. Рекомендуем пересмотреть лимиты в необязательных категориях.';
 
   @override
   String get insight_login_hint =>
@@ -319,22 +220,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get insights_header_title => 'AI-Аналитика';
-
-  @override
-  String get personal_recs_title => 'Персональные рекомендации';
-
-  @override
-  String get insights_updated_prefix => 'Обновлено';
-
-  @override
-  String get insights_cache_hint =>
-      'Советы обновляются автоматически при добавлении новых расходов';
-
-  @override
-  String get insights_assistants_busy => 'Наши умные помощники заняты';
-
-  @override
-  String get insights_assistants_busy_desc => 'Попробуйте зайти позже';
 
   @override
   String get insights_assistants_busy_msg1 =>
@@ -381,13 +266,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get month_12 => 'Декабрь';
 
   @override
-  String get select_period => 'Выберите период';
-
-  @override
   String get month_label => 'Месяц';
-
-  @override
-  String get year_label => 'Год';
 
   @override
   String get no_description => 'Без описания';
@@ -396,67 +275,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get today => 'Сегодня';
 
   @override
-  String get welcome_back => 'С возвращением!';
-
-  @override
-  String get create_account => 'Создать аккаунт';
-
-  @override
-  String get login_subtitle =>
-      'Войдите, чтобы синхронизировать данные с сервером';
-
-  @override
-  String get register_subtitle =>
-      'Зарегистрируйтесь для доступа к облачному хранилищу';
-
-  @override
-  String get name_label => 'Имя';
-
-  @override
-  String get email_label => 'Email';
-
-  @override
-  String get password_label => 'Пароль';
-
-  @override
-  String get login_btn => 'Войти';
-
-  @override
-  String get register_btn => 'Зарегистрироваться';
-
-  @override
-  String get no_account_prompt => 'Нет аккаунта? Зарегистрируйтесь';
-
-  @override
-  String get have_account_prompt => 'Уже есть аккаунт? Войдите';
-
-  @override
-  String get fill_all_fields => 'Заполните все поля';
-
-  @override
-  String get enter_name_alert => 'Введите имя';
-
-  @override
-  String get auth_network_required =>
-      'Для входа или регистрации необходимо интернет-соединение';
-
-  @override
   String get login_error_title => 'Ошибка входа';
-
-  @override
-  String get register_error_title => 'Ошибка регистрации';
-
-  @override
-  String get password_validation_error =>
-      'Пароль должен содержать минимум 6 символов, включая минимум одну букву и одну цифру';
-
-  @override
-  String get password_requirements_hint =>
-      'Минимум 6 символов (1 буква и 1 цифра)';
-
-  @override
-  String get password_too_long_bytes =>
-      'Пароль слишком длинный (макс. 72 байта)';
 
   @override
   String get sync_login_required => 'Войдите в аккаунт для синхронизации';
@@ -542,7 +361,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rate_limit_exceeded_title => 'Превышен лимит запросов';
 
   @override
-  String get rate_limit_countdown_prefix => 'Повторите попытку через:';
+  String rate_limit_countdown(int seconds) {
+    return 'Повторите попытку через: $seconds сек.';
+  }
 
   @override
   String get rate_limit_ready => 'Вы можете повторить попытку прямо сейчас';
@@ -604,10 +425,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get budget_deleted => 'Лимит удален';
-
-  @override
-  String get sync_network_required =>
-      'Нет подключения к сети для синхронизации';
 
   @override
   String get sync_synced => 'Данные синхронизированы';
@@ -729,9 +546,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get report_period_label => 'Период';
 
   @override
-  String get report_period_month => 'Месяц';
-
-  @override
   String get report_period_year => 'Год';
 
   @override
@@ -739,9 +553,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get report_format_label => 'Формат';
-
-  @override
-  String get report_exporting => 'Готовим отчёт...';
 
   @override
   String get report_save_action => 'Скачать отчёт';
@@ -864,11 +675,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String version_label(String version) {
     return 'Версия $version';
-  }
-
-  @override
-  String debug_tap_hint(int count) {
-    return 'Осталось нажать $count раз(а) для открытия меню отладки';
   }
 
   @override
@@ -1039,5 +845,18 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String logout_unsynced_warning(int count) {
     return 'Не отправлено на сервер: $count. При выходе эти изменения будут удалены с устройства. Всё равно выйти?';
+  }
+
+  @override
+  String operations_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count операции',
+      many: '$count операций',
+      few: '$count операции',
+      one: '$count операция',
+    );
+    return '$_temp0';
   }
 }

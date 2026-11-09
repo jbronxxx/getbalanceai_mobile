@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../cubits/report_export/report_export_cubit.dart';
 import '../../models/models.dart';
+import '../../services/selected_period_service.dart';
 import '../../utils/utils.dart';
 import '../app_alerts.dart';
 import '../../theme/app_colors.dart';
@@ -137,12 +138,14 @@ class _PeriodChips extends StatelessWidget {
 
   Future<void> _pickRange(BuildContext context) async {
     final cubit = context.read<ReportExportCubit>();
-    final now = DateTime.now();
     final current = state.period;
+    // Границы — как у шапки периода: месяц и год из неё всегда попадают
+    // в календарь (иначе на +2…+5 годах initialDateRange вне lastDate).
+    final periods = SelectedPeriodService.instance;
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(now.year + 1, 12, 31),
+      firstDate: periods.firstDate,
+      lastDate: periods.lastDate,
       initialDateRange: current == null
           ? null
           : DateTimeRange(start: current.start, end: current.end),

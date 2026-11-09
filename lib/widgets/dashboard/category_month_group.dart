@@ -5,9 +5,13 @@ import '../category_style.dart';
 import 'transaction_item_tile.dart';
 import '../../theme/app_colors.dart';
 
-/// Операции одной категории за месяц.
+/// Операции одной категории одного типа за месяц.
+///
+/// Тип входит в группу: «Прочее» бывает и доходом, и расходом, и в общей
+/// группе они взаимно гасились бы до нуля.
 class CategoryMonthSummary {
   final Category category;
+  final TransactionType type;
   final List<Transaction> transactions;
 
   /// Итог в базовой валюте: доходы со знаком «+», расходы — «−».
@@ -15,24 +19,29 @@ class CategoryMonthSummary {
 
   const CategoryMonthSummary({
     required this.category,
+    required this.type,
     required this.transactions,
     required this.total,
   });
 
-  /// Группирует операции месяца по категориям. Сначала самые крупные по
+  /// Уникальный в пределах месяца ключ группы.
+  String get id => '${category.name}_${type.name}';
+
+  /// Группирует операции месяца по категориям и типу. Сначала самые крупные по
   /// модулю итога (расходы и доходы вперемешку — важнее масштаб), внутри
   /// группы порядок исходного списка (новые сверху).
   static List<CategoryMonthSummary> fromTransactions(
     List<Transaction> transactions,
   ) {
-    final byCategory = <Category, List<Transaction>>{};
+    final groups = <(Category, TransactionType), List<Transaction>>{};
     for (final t in transactions) {
-      byCategory.putIfAbsent(t.category, () => []).add(t);
+      groups.putIfAbsent((t.category, t.type), () => []).add(t);
     }
     final summaries = [
-      for (final entry in byCategory.entries)
+      for (final entry in groups.entries)
         CategoryMonthSummary(
-          category: entry.key,
+          category: entry.key.$1,
+          type: entry.key.$2,
           transactions: entry.value,
           total: entry.value.fold<double>(0, (sum, t) {
             final base = t.effectiveBaseAmount;
@@ -96,7 +105,7 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
             Material(
               color: AppColors.transparent,
               child: InkWell(
-                key: ValueKey('category_group_${summary.category.name}'),
+                key: ValueKey('category_group_${summary.id}'),
                 onTap: () => setState(() => _expanded = !_expanded),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
@@ -134,7 +143,7 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
                               ),
                             ),
                             Text(
-                              LanguageManager.formatOperationsCount(
+                              context.l10n.operations_count(
                                 summary.transactions.length,
                               ),
                               style: textTheme.bodySmall?.copyWith(

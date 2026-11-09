@@ -24,17 +24,13 @@ class DayGroupWidget extends StatelessWidget {
     this.onHintShown,
   });
 
-  /// Группирует операции по дням (новые дни сверху), дописывая страницу
-  /// [batch] к уже загруженным [appendTo]. Внутри дня сохраняется порядок
-  /// выборки — новые операции сверху.
+  /// Группирует операции по дням (новые дни сверху). Внутри дня сохраняется
+  /// порядок выборки — новые операции сверху.
   static Map<DateTime, List<Transaction>> groupByDay(
-    List<Transaction> batch, {
-    Map<DateTime, List<Transaction>> appendTo = const {},
-  }) {
-    final grouped = <DateTime, List<Transaction>>{
-      for (final entry in appendTo.entries) entry.key: [...entry.value],
-    };
-    for (final t in batch) {
+    List<Transaction> transactions,
+  ) {
+    final grouped = <DateTime, List<Transaction>>{};
+    for (final t in transactions) {
       grouped.putIfAbsent(DateUtils.dateOnly(t.date), () => []).add(t);
     }
     final days = grouped.keys.toList()..sort((a, b) => b.compareTo(a));

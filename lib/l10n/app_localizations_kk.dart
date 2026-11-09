@@ -33,9 +33,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get select_language => 'Тілді таңдау';
 
   @override
-  String get dark_mode => 'Қараңғы тақырып';
-
-  @override
   String get theme_mode => 'Безендіру тақырыбы';
 
   @override
@@ -48,28 +45,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get theme_dark => 'Қараңғы';
 
   @override
-  String get soon => 'Жақында шығады';
-
-  @override
-  String get notifications => 'Хабарландырулар';
-
-  @override
-  String get limits_and_budgets => 'Лимиттер мен бюджеттер';
-
-  @override
   String get cloud => 'Бұлт';
 
   @override
   String get sync_status => 'Синхрондау күйі';
-
-  @override
-  String get cloud_not_connected => 'Тіркелгіге кіргеннен кейін қолжетімді';
-
-  @override
-  String get guest_mode => 'Қонақ режимі';
-
-  @override
-  String get login_cloud_hint => 'Деректерді бұлтта сақтау үшін кіріңіз';
 
   @override
   String get logout => 'Тіркелгіден шығу';
@@ -84,17 +63,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get local_profile => 'Жергілікті профиль';
 
   @override
-  String get offline_storage_desc => 'Деректер осы құрылғыда сақталады';
-
-  @override
   String get local_storage_warning =>
       'Деректер тек құрылғыңызда сақталады және қолданбаны өшірген кезде жойылады';
 
   @override
   String get cloud_backup_prompt => 'Резервтік көшіруді қосу үшін кіріңіз';
-
-  @override
-  String get user => 'Пайдаланушы';
 
   @override
   String get select_currency => 'Валютаны таңдау';
@@ -138,9 +111,6 @@ class AppLocalizationsKk extends AppLocalizations {
       'Интернетке қосылым жоқ. Желіні тексеріп, әрекетті қайталаңыз.';
 
   @override
-  String get sync_no_internet_alert => 'Синхрондау үшін желіге қосылу қажет';
-
-  @override
   String get sync_error => 'Синхрондау қатесі';
 
   @override
@@ -166,9 +136,6 @@ class AppLocalizationsKk extends AppLocalizations {
       'Бұл валютада жалпы баланс пен бюджеттер есептеледі';
 
   @override
-  String get currency_rate_hint => 'бағамы бойынша';
-
-  @override
   String get continue_btn => 'Жалғастыру';
 
   @override
@@ -184,23 +151,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get no_transactions => 'Осы айда жазбалар жоқ';
 
   @override
-  String get all_months => 'Барлық айлар';
-
-  @override
-  String get swipe_hint_text => 'Операцияны жою үшін оны солға сырғытыңыз';
-
-  @override
-  String get delete_confirm_title => 'Жою';
-
-  @override
-  String get delete_confirm_desc =>
-      'Бұл жазбаны жойғыңыз келетініне сенімдісіз бе?';
-
-  @override
   String get delete_btn => 'Жою';
-
-  @override
-  String get today_prefix => 'Бүгін';
 
   @override
   String get new_transaction => 'Жаңа жазба';
@@ -224,12 +175,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get save_changes_btn => 'Өзгерістерді сақтау';
 
   @override
-  String get alert_valid_amount => 'Дұрыс соманы енгізіңіз';
-
-  @override
-  String get alert_amount_too_large => 'Сома мына валюта үшін тым үлкен:';
-
-  @override
   String get amount_requirement_enter => 'Соманы көрсетіңіз';
 
   @override
@@ -250,57 +195,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get edit_budget_title => 'Лимитті өңдеу';
 
   @override
-  String get budget_amount_hint => 'Лимит сомасы';
-
-  @override
   String get save_btn => 'Сақтау';
 
   @override
   String get budget_exceeded => 'Асып кетті:';
 
   @override
-  String get budget_out_of => 'ішінен';
-
-  @override
-  String get no_budgets_title => 'Бюджеттер орнатылмаған';
-
-  @override
   String get no_budgets_subtitle =>
       'Қаражаттың артық жұмсалуын бақылау үшін санаттар бойынша лимиттерді орнатыңыз.';
-
-  @override
-  String get alert_enter_budget_amount => 'Лимит сомасын енгізіңіз';
-
-  @override
-  String get insights_screen_title => 'Талдау және кеңестер';
-
-  @override
-  String get insights_subtitle => 'Қаржыңыздың ақылды талдауы';
-
-  @override
-  String get insight_advice_title => 'Қаржылық кеңес';
-
-  @override
-  String get insight_advice_desc =>
-      'Қауіпсіздік қорын қалыптастыру үшін кіріс түскен күні оның кем дегенде 10-15%-ын бірден жинақтауға тырысыңыз.';
-
-  @override
-  String get insight_structure_title => 'Бір айдағы шығыстар құрылымы';
-
-  @override
-  String get insight_structure_empty =>
-      'Шығыстарды талдау үшін деректер жеткіліксіз. Жазбаларды қосыңыз.';
-
-  @override
-  String get insight_saving_title => 'Жинақтау деңгейі';
-
-  @override
-  String get insight_saving_desc_positive =>
-      'Керемет нәтиже! Сіз қаражат жинақтап жатырсыз. Ұзақ мерзімді мақсаттарға жету үшін осылай жалғастырыңыз.';
-
-  @override
-  String get insight_saving_desc_negative =>
-      'Бұл айда шығыстарыңыз кірістен асып кетті. Міндетті емес санаттардағы лимиттерді қайта қарауды ұсынамыз.';
 
   @override
   String get insight_login_hint =>
@@ -319,23 +221,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get insights_header_title => 'AI-Талдау';
-
-  @override
-  String get personal_recs_title => 'Жеке ұсыныстар';
-
-  @override
-  String get insights_updated_prefix => 'Жаңартылды';
-
-  @override
-  String get insights_cache_hint =>
-      'Кеңестер жаңа шығыстар қосылғанда автоматты түрде жаңартылады';
-
-  @override
-  String get insights_assistants_busy =>
-      'Біздің ақылды көмекшілеріміз бос емес';
-
-  @override
-  String get insights_assistants_busy_desc => 'Кейінірек кіріп көріңіз';
 
   @override
   String get insights_assistants_busy_msg1 =>
@@ -382,13 +267,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get month_12 => 'Желтоқсан';
 
   @override
-  String get select_period => 'Кезеңді таңдаңыз';
-
-  @override
   String get month_label => 'Ай';
-
-  @override
-  String get year_label => 'Жыл';
 
   @override
   String get no_description => 'Сипаттамасыз';
@@ -397,64 +276,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get today => 'Бүгін';
 
   @override
-  String get welcome_back => 'Қайта оралуыңызбен!';
-
-  @override
-  String get create_account => 'Тіркелгі жасау';
-
-  @override
-  String get login_subtitle => 'Деректерді сервермен синхрондау үшін кіріңіз';
-
-  @override
-  String get register_subtitle => 'Бұлттық қоймаға қол жеткізу үшін тіркеліңіз';
-
-  @override
-  String get name_label => 'Аты';
-
-  @override
-  String get email_label => 'Email';
-
-  @override
-  String get password_label => 'Құпиясөз';
-
-  @override
-  String get login_btn => 'Кіру';
-
-  @override
-  String get register_btn => 'Тіркелу';
-
-  @override
-  String get no_account_prompt => 'Тіркелгіңіз жоқ па? Тіркеліңіз';
-
-  @override
-  String get have_account_prompt => 'Тіркелгіңіз бар ма? Кіріңіз';
-
-  @override
-  String get fill_all_fields => 'Барлық өрістерді толтырыңыз';
-
-  @override
-  String get enter_name_alert => 'Атыңызды енгізіңіз';
-
-  @override
-  String get auth_network_required =>
-      'Кіру немесе тіркелу үшін интернет қосылымы қажет';
-
-  @override
   String get login_error_title => 'Кіру қатесі';
-
-  @override
-  String get register_error_title => 'Тіркелу қатесі';
-
-  @override
-  String get password_validation_error =>
-      'Құпиясөз кемінде бір әріп пен бір санды қамтитын кемінде 6 таңбадан тұруы керек';
-
-  @override
-  String get password_requirements_hint =>
-      'Кемінде 6 таңба (1 әріп және 1 сан)';
-
-  @override
-  String get password_too_long_bytes => 'Құпиясөз тым ұзын (макс. 72 байт)';
 
   @override
   String get sync_login_required => 'Синхрондау үшін тіркелгіге кіріңіз';
@@ -541,7 +363,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get rate_limit_exceeded_title => 'Сұраулар шегінен асып кетті';
 
   @override
-  String get rate_limit_countdown_prefix => 'Қайталау уақыты:';
+  String rate_limit_countdown(int seconds) {
+    return 'Қайталау уақыты: $seconds сек.';
+  }
 
   @override
   String get rate_limit_ready => 'Қазір қайталап көре аласыз';
@@ -603,9 +427,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get budget_deleted => 'Лимит жойылды';
-
-  @override
-  String get sync_network_required => 'Синхрондау үшін желіге қосылым жоқ';
 
   @override
   String get sync_synced => 'Деректер синхрондалды';
@@ -727,9 +548,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get report_period_label => 'Кезең';
 
   @override
-  String get report_period_month => 'Ай';
-
-  @override
   String get report_period_year => 'Жыл';
 
   @override
@@ -737,9 +555,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get report_format_label => 'Формат';
-
-  @override
-  String get report_exporting => 'Есеп дайындалуда...';
 
   @override
   String get report_save_action => 'Есепті жүктеу';
@@ -863,11 +678,6 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String version_label(String version) {
     return 'Нұсқасы $version';
-  }
-
-  @override
-  String debug_tap_hint(int count) {
-    return 'Түзету мәзірін ашу үшін тағы $count рет басыңыз';
   }
 
   @override
@@ -1031,5 +841,10 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String logout_unsynced_warning(int count) {
     return 'Серверге жіберілмеген: $count. Шыққанда бұл өзгерістер құрылғыдан жойылады. Бәрібір шығасыз ба?';
+  }
+
+  @override
+  String operations_count(int count) {
+    return '$count операция';
   }
 }

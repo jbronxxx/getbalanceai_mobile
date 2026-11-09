@@ -87,7 +87,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
 
   Future<void> _finishSetup() async {
     await PreferencesService.instance.saveLanguage(_selectedLanguage.code);
-    CurrencyFormatter.setCurrency(_selectedCurrency);
+    await CurrencyFormatter.setCurrency(_selectedCurrency);
     if (ApiService.instance.isAuthenticated) {
       unawaited(
         ApiService.instance

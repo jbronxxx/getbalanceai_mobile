@@ -77,28 +77,6 @@ void main() {
           [DateTime(2026, 10, 15), DateTime(2026, 10, 14)]);
       expect(grouped[DateTime(2026, 10, 15)], [a, b]);
     });
-
-    test('следующая страница дописывается к уже загруженному дню', () {
-      final first = _tx(
-          id: 1,
-          amount: 10,
-          type: TransactionType.expense,
-          category: Category.food,
-          date: oct15late);
-      final second = _tx(
-          id: 2,
-          amount: 20,
-          type: TransactionType.expense,
-          category: Category.food,
-          date: oct15);
-
-      final page1 = DayGroupWidget.groupByDay([first]);
-      final page2 = DayGroupWidget.groupByDay([second], appendTo: page1);
-
-      expect(page2[DateTime(2026, 10, 15)], [first, second]);
-      // Исходная страница не изменилась
-      expect(page1[DateTime(2026, 10, 15)], [first]);
-    });
   });
 
   group('CategoryMonthSummary.fromTransactions', () {
@@ -167,7 +145,8 @@ void main() {
       expect(find.text('2 операции'), findsOneWidget);
       expect(find.byType(TransactionItemTile), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('category_group_food')));
+      await tester
+          .tap(find.byKey(const ValueKey('category_group_food_expense')));
       await tester.pumpAndSettle();
 
       expect(find.byType(TransactionItemTile), findsNWidgets(2));

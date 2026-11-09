@@ -33,9 +33,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get select_language => 'Select Language';
 
   @override
-  String get dark_mode => 'Dark Mode';
-
-  @override
   String get theme_mode => 'Theme';
 
   @override
@@ -48,28 +45,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theme_dark => 'Dark';
 
   @override
-  String get soon => 'Coming soon';
-
-  @override
-  String get notifications => 'Notifications';
-
-  @override
-  String get limits_and_budgets => 'Limits and budgets';
-
-  @override
   String get cloud => 'Cloud';
 
   @override
   String get sync_status => 'Sync Status';
-
-  @override
-  String get cloud_not_connected => 'Available after signing in';
-
-  @override
-  String get guest_mode => 'Guest Mode';
-
-  @override
-  String get login_cloud_hint => 'Log in to save data to the cloud';
 
   @override
   String get logout => 'Log Out';
@@ -84,17 +63,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get local_profile => 'Local Profile';
 
   @override
-  String get offline_storage_desc => 'Data is stored on this device';
-
-  @override
   String get local_storage_warning =>
       'Data is stored only on your device and is deleted when the app is uninstalled';
 
   @override
   String get cloud_backup_prompt => 'Sign in to enable cloud backup';
-
-  @override
-  String get user => 'User';
 
   @override
   String get select_currency => 'Select Currency';
@@ -137,10 +110,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'No internet connection. Please check your network and try again.';
 
   @override
-  String get sync_no_internet_alert =>
-      'Network connection is required for sync';
-
-  @override
   String get sync_error => 'Sync Error';
 
   @override
@@ -167,9 +136,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Total balance and budgets are calculated in this currency';
 
   @override
-  String get currency_rate_hint => 'at rate';
-
-  @override
   String get continue_btn => 'Continue';
 
   @override
@@ -185,23 +151,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get no_transactions => 'No transactions for this month';
 
   @override
-  String get all_months => 'All Months';
-
-  @override
-  String get swipe_hint_text => 'Swipe left to delete a transaction';
-
-  @override
-  String get delete_confirm_title => 'Delete';
-
-  @override
-  String get delete_confirm_desc =>
-      'Are you sure you want to delete this transaction?';
-
-  @override
   String get delete_btn => 'Delete';
-
-  @override
-  String get today_prefix => 'Today';
 
   @override
   String get new_transaction => 'New Transaction';
@@ -225,12 +175,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get save_changes_btn => 'Save Changes';
 
   @override
-  String get alert_valid_amount => 'Enter a valid amount';
-
-  @override
-  String get alert_amount_too_large => 'Amount is too large for';
-
-  @override
   String get amount_requirement_enter => 'Enter amount';
 
   @override
@@ -251,57 +195,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get edit_budget_title => 'Edit Budget Limit';
 
   @override
-  String get budget_amount_hint => 'Limit Amount';
-
-  @override
   String get save_btn => 'Save';
 
   @override
   String get budget_exceeded => 'Exceeded by';
 
   @override
-  String get budget_out_of => 'out of';
-
-  @override
-  String get no_budgets_title => 'No Budgets Set';
-
-  @override
   String get no_budgets_subtitle =>
       'Set limits by category to avoid overspending.';
-
-  @override
-  String get alert_enter_budget_amount => 'Please enter a limit amount';
-
-  @override
-  String get insights_screen_title => 'Analytics & Advice';
-
-  @override
-  String get insights_subtitle => 'Smart analysis of your finances';
-
-  @override
-  String get insight_advice_title => 'Financial Advice';
-
-  @override
-  String get insight_advice_desc =>
-      'Try to save at least 10-15% of your income on the day you receive it to build an emergency fund.';
-
-  @override
-  String get insight_structure_title => 'Monthly Expense Structure';
-
-  @override
-  String get insight_structure_empty =>
-      'Not enough data for expense analysis. Please add transactions.';
-
-  @override
-  String get insight_saving_title => 'Savings Rate';
-
-  @override
-  String get insight_saving_desc_positive =>
-      'Great job! You are saving money. Keep it up to reach your long-term goals.';
-
-  @override
-  String get insight_saving_desc_negative =>
-      'This month your expenses exceeded your income. We recommend reviewing limits on non-essential categories.';
 
   @override
   String get insight_login_hint =>
@@ -320,23 +221,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insights_header_title => 'AI Analytics';
-
-  @override
-  String get personal_recs_title => 'Personalized Recommendations';
-
-  @override
-  String get insights_updated_prefix => 'Updated';
-
-  @override
-  String get insights_cache_hint =>
-      'Insights update automatically when new expenses are added';
-
-  @override
-  String get insights_assistants_busy => 'Our smart assistants are busy';
-
-  @override
-  String get insights_assistants_busy_desc =>
-      'Please pull down to retry or check back a little later';
 
   @override
   String get insights_assistants_busy_msg1 =>
@@ -383,13 +267,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get month_12 => 'December';
 
   @override
-  String get select_period => 'Select Period';
-
-  @override
   String get month_label => 'Month';
-
-  @override
-  String get year_label => 'Year';
 
   @override
   String get no_description => 'No description';
@@ -398,64 +276,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get today => 'Today';
 
   @override
-  String get welcome_back => 'Welcome back!';
-
-  @override
-  String get create_account => 'Create Account';
-
-  @override
-  String get login_subtitle => 'Log in to sync data with the server';
-
-  @override
-  String get register_subtitle => 'Register for access to cloud storage';
-
-  @override
-  String get name_label => 'Name';
-
-  @override
-  String get email_label => 'Email';
-
-  @override
-  String get password_label => 'Password';
-
-  @override
-  String get login_btn => 'Log In';
-
-  @override
-  String get register_btn => 'Register';
-
-  @override
-  String get no_account_prompt => 'Don\'t have an account? Register';
-
-  @override
-  String get have_account_prompt => 'Already have an account? Log In';
-
-  @override
-  String get fill_all_fields => 'Fill in all fields';
-
-  @override
-  String get enter_name_alert => 'Please enter your name';
-
-  @override
-  String get auth_network_required =>
-      'Internet connection is required to log in or register';
-
-  @override
   String get login_error_title => 'Login Error';
-
-  @override
-  String get register_error_title => 'Registration Error';
-
-  @override
-  String get password_validation_error =>
-      'Password must be at least 6 characters, including at least one letter and one number';
-
-  @override
-  String get password_requirements_hint =>
-      'Min 6 characters (1 letter and 1 number)';
-
-  @override
-  String get password_too_long_bytes => 'Password is too long (max 72 bytes)';
 
   @override
   String get sync_login_required => 'Log in to sync';
@@ -541,7 +362,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rate_limit_exceeded_title => 'Rate Limit Exceeded';
 
   @override
-  String get rate_limit_countdown_prefix => 'Retry in:';
+  String rate_limit_countdown(int seconds) {
+    return 'Retry in: $seconds sec';
+  }
 
   @override
   String get rate_limit_ready => 'You can retry now';
@@ -603,9 +426,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get budget_deleted => 'Budget limit deleted';
-
-  @override
-  String get sync_network_required => 'Network connection is required for sync';
 
   @override
   String get sync_synced => 'Data synced';
@@ -727,9 +547,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get report_period_label => 'Period';
 
   @override
-  String get report_period_month => 'Month';
-
-  @override
   String get report_period_year => 'Year';
 
   @override
@@ -737,9 +554,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get report_format_label => 'Format';
-
-  @override
-  String get report_exporting => 'Preparing report...';
 
   @override
   String get report_save_action => 'Download report';
@@ -863,11 +677,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String version_label(String version) {
     return 'Version $version';
-  }
-
-  @override
-  String debug_tap_hint(int count) {
-    return 'Tap $count more times to open Debug Menu';
   }
 
   @override
@@ -1034,5 +843,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String logout_unsynced_warning(int count) {
     return 'Not uploaded to the server: $count. These changes will be removed from this device when you log out. Log out anyway?';
+  }
+
+  @override
+  String operations_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transactions',
+      one: '1 transaction',
+    );
+    return '$_temp0';
   }
 }

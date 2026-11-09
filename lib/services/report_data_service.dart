@@ -82,16 +82,17 @@ class ReportDataService {
 
     final lines = <ReportBudgetLine>[];
     for (final b in budgets) {
-      final category = Category.fromString(b.dbCategory);
-      final spent = rows
-          .where((r) =>
-              r.type == TransactionType.expense &&
-              r.category == category &&
-              r.date.month == b.month &&
-              r.date.year == b.year)
-          .fold(0.0, (acc, r) => acc + r.baseAmount);
+      // По хранимой категории: неизвестные клиенту категории не сливаются
+      // в «Прочее» и не попадают в траты чужих лимитов.
+      final spent = transactions
+          .where((t) =>
+              t.type == TransactionType.expense &&
+              t.dbCategory == b.dbCategory &&
+              t.date.month == b.month &&
+              t.date.year == b.year)
+          .fold(0.0, (acc, t) => acc + toBase(t));
       lines.add(ReportBudgetLine(
-        category: category,
+        category: b.category,
         month: b.month,
         year: b.year,
         limit: limitInReportCurrency(b),

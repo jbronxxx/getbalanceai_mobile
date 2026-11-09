@@ -72,8 +72,8 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
                   return;
                 }
                 await EnvironmentConfig.setEnvironment(val);
-                setState(() {});
                 if (!context.mounted) return;
+                setState(() {});
                 AppAlerts.success(
                   context,
                   l10n.debug_environment_changed(val.name.toUpperCase()),
@@ -122,7 +122,7 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () async {
-              await ApiService.instance.clearAllUserData();
+              await ApiService.instance.resetSession();
               if (!context.mounted) return;
               AppAlerts.success(context, l10n.debug_cache_cleared);
             },

@@ -61,10 +61,10 @@ void main() {
           _budget(Category.transport, 400),
         ],
         spentByCategory: {
-          Category.food: 600,
-          Category.transport: 200,
+          Category.food.name: 600,
+          Category.transport.name: 200,
           // Траты без лимита в сводку не входят
-          Category.shopping: 5000,
+          Category.shopping.name: 5000,
         },
         period: october,
         now: now,
@@ -82,7 +82,7 @@ void main() {
     test('перерасход: в день — 0, остаток отрицательный', () {
       final summary = MonthBudgetSummary.calculate(
         budgets: [_budget(Category.food, 1000)],
-        spentByCategory: {Category.food: 1300},
+        spentByCategory: {Category.food.name: 1300},
         period: october,
         now: now,
       );
@@ -95,7 +95,7 @@ void main() {
     test('прошлый и будущий месяцы: без расчёта на день', () {
       final past = MonthBudgetSummary.calculate(
         budgets: [_budget(Category.food, 1000, month: 9)],
-        spentByCategory: {Category.food: 400},
+        spentByCategory: {Category.food.name: 400},
         period: const MonthPeriod(2026, 9),
         now: now,
       );
@@ -116,7 +116,7 @@ void main() {
     test('последний день месяца: остался один день', () {
       final summary = MonthBudgetSummary.calculate(
         budgets: [_budget(Category.food, 1000)],
-        spentByCategory: {Category.food: 400},
+        spentByCategory: {Category.food.name: 400},
         period: october,
         now: DateTime(2026, 10, 31, 23),
       );
@@ -128,7 +128,7 @@ void main() {
     test('без лимитов — hasLimits = false', () {
       final summary = MonthBudgetSummary.calculate(
         budgets: const [],
-        spentByCategory: {Category.food: 400},
+        spentByCategory: {Category.food.name: 400},
         period: october,
         now: now,
       );
@@ -160,7 +160,7 @@ void main() {
     testWidgets('текущий месяц: сумма в день и оставшиеся дни', (tester) async {
       final summary = MonthBudgetSummary.calculate(
         budgets: [_budget(Category.food, 2000)],
-        spentByCategory: {Category.food: 400},
+        spentByCategory: {Category.food.name: 400},
         period: october,
         now: now,
       );
@@ -178,7 +178,7 @@ void main() {
         (tester) async {
       final summary = MonthBudgetSummary.calculate(
         budgets: [_budget(Category.food, 1000)],
-        spentByCategory: {Category.food: 1300},
+        spentByCategory: {Category.food.name: 1300},
         period: october,
         now: now,
       );

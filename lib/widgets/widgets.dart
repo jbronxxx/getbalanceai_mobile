@@ -13,7 +13,6 @@ export 'liquid_glass_nav_bar.dart';
 export 'reload_when_visible.dart';
 export 'screen_body_card.dart';
 export 'swipe_hint_wrapper.dart';
-export 'welcome_language_sheet.dart';
 export 'profile/currency_picker_sheet.dart';
 export 'profile/theme_mode_picker_sheet.dart';
 export 'user_avatar.dart';

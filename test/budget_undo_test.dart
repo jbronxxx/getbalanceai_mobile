@@ -190,8 +190,11 @@ void main() {
           .getTransactionsForPeriod(5, 2032)
           .where((t) => !UndoableDeletions.transactions.isPending(t));
 
-      expect(db.getCategoryExpensesForPeriod(5, 2032)[Category.food], 100);
-      expect(db.categoryExpensesFor(visible)[Category.food], 40);
+      expect(
+        db.categoryExpensesFor(db.getTransactionsForPeriod(5, 2032))['food'],
+        100,
+      );
+      expect(db.categoryExpensesFor(visible)['food'], 40);
     });
 
     test('экспорт отчёта не включает скрытую операцию и её трату в лимит', () {

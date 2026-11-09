@@ -194,7 +194,7 @@ class ApiService {
 
   Future<void> onEnvironmentChanged() async {
     updateBaseUrl(ApiConfig.baseUrl);
-    await clearAllUserData();
+    await resetSession();
   }
 
   Future<void> init() async {
@@ -215,6 +215,14 @@ class ApiService {
   Future<void> clearAllUserData() async {
     await _syncService.clearEtags();
     await _authService.clearAllUserData();
+  }
+
+  /// [clearAllUserData] с событием выхода в [authStream] — для отладочного
+  /// меню и смены окружения: без события экраны продолжали бы показывать
+  /// вошедшего пользователя, у которого уже нет токена.
+  Future<void> resetSession() async {
+    await clearAllUserData();
+    _authService.notifyLoggedOut();
   }
 
   /// Стирает с устройства данные пользователя [userId]: операции, лимиты,

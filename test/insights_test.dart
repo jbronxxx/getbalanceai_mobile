@@ -150,9 +150,6 @@ void main() {
 
       LanguageManager.setLanguage(AppLanguage.ru);
       expect(LanguageManager.formatDate(testDate), '2 октября, 14:30');
-      expect(LanguageManager.l10n.insights_updated_prefix, 'Обновлено');
-      expect(LanguageManager.l10n.insights_cache_hint,
-          contains('Советы обновляются автоматически'));
       expect(
           LanguageManager.l10n.insights_assistants_busy_msg1,
           'Наши умные помощники заняты' != ''
@@ -161,17 +158,11 @@ void main() {
 
       LanguageManager.setLanguage(AppLanguage.uz);
       expect(LanguageManager.formatDate(testDate), '2-oktabr, 14:30');
-      expect(LanguageManager.l10n.insights_updated_prefix, 'Yangilangan');
-      expect(LanguageManager.l10n.insights_cache_hint,
-          contains('avtomatik ravishda yangilanadi'));
       expect(LanguageManager.l10n.insights_assistants_busy_msg1,
           contains('aqlli yordamchilarimiz'));
 
       LanguageManager.setLanguage(AppLanguage.en);
       expect(LanguageManager.formatDate(testDate), 'October 2, 14:30');
-      expect(LanguageManager.l10n.insights_updated_prefix, 'Updated');
-      expect(LanguageManager.l10n.insights_cache_hint,
-          contains('Insights update automatically'));
       expect(LanguageManager.l10n.insights_assistants_busy_msg1,
           contains('smart assistants'));
 
@@ -482,7 +473,6 @@ void main() {
 
       // Check removed elements
       expect(find.byKey(const Key('insights_updated_at')), findsNothing);
-      expect(find.text(LanguageManager.l10n.personal_recs_title), findsNothing);
       expect(find.byKey(const Key('insights_cache_hint')), findsNothing);
 
       expect(find.text('Следите за расходами на рестораны'), findsOneWidget);

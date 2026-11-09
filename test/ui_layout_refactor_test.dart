@@ -243,16 +243,6 @@ void main() {
   });
 
   group('Dashboard Widgets Tests', () {
-    testWidgets('GuestModeBanner renders notice correctly', (tester) async {
-      await tester.pumpWidget(
-        _buildTestApp(const GuestModeBanner()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
-      expect(find.textContaining('Гостевой режим'), findsOneWidget);
-    });
-
     testWidgets('TransactionItemTile displays description and formats amount',
         (tester) async {
       final date = DateTime(2026, 5, 10);
@@ -284,21 +274,6 @@ void main() {
 
       await tester.tap(find.text('Обед в кафе'));
       expect(tapped, isTrue);
-    });
-  });
-
-  group('WelcomeLanguageSheet Tests', () {
-    testWidgets('WelcomeLanguageSheet renders options and button',
-        (tester) async {
-      await tester.pumpWidget(
-        _buildTestApp(const WelcomeLanguageSheet()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Русский'), findsOneWidget);
-      expect(find.text('O\'zbekcha'), findsOneWidget);
-      expect(find.text('English'), findsOneWidget);
-      expect(find.byType(ElevatedButton), findsOneWidget);
     });
   });
 

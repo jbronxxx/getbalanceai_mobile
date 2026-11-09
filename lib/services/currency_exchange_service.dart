@@ -203,35 +203,13 @@ class CurrencyExchangeService {
         final rates =
             data['rates'] is Map ? data['rates'] as Map<String, dynamic> : null;
 
-        if (rates != null && rates.isNotEmpty) {
-          bool anyUpdated = false;
-          for (final currency in Currency.values) {
-            final val =
-                rates[currency.code] ?? rates[currency.code.toLowerCase()];
-            if (val != null) {
-              final sanitized = _sanitizeRate(val, currency.code);
-              if (sanitized != null &&
-                  _isRateWithinSanityBounds(sanitized, currency.code)) {
-                _ratesToUsd[currency.code] = sanitized;
-                anyUpdated = true;
-              }
-            }
-          }
-
-          if (anyUpdated) {
-            _lastUpdated = now;
-            await PreferencesService.instance.saveExchangeRates(
-              jsonEncode(_ratesToUsd),
-            );
-            await PreferencesService.instance.saveExchangeRatesUpdated(
-              now.millisecondsSinceEpoch,
-            );
-
-            AppLogger.i(
-              '[CurrencyExchangeService] Exchange rates successfully updated from backend',
-            );
-            return true;
-          }
+        if (rates != null &&
+            await _applyRates(
+              (code) => rates[code] ?? rates[code.toLowerCase()],
+              now,
+              source: 'backend',
+            )) {
+          return true;
         }
       }
     } catch (e) {
@@ -247,34 +225,10 @@ class CurrencyExchangeService {
         final data = response.data as Map<String, dynamic>;
         final rates = data['rates'] as Map<String, dynamic>?;
 
-        if (rates != null && rates.isNotEmpty) {
-          bool anyUpdated = false;
-          for (final currency in Currency.values) {
-            final val = rates[currency.code];
-            if (val != null) {
-              final sanitized = _sanitizeRate(val, currency.code);
-              if (sanitized != null &&
-                  _isRateWithinSanityBounds(sanitized, currency.code)) {
-                _ratesToUsd[currency.code] = sanitized;
-                anyUpdated = true;
-              }
-            }
-          }
-
-          if (anyUpdated) {
-            _lastUpdated = now;
-            await PreferencesService.instance.saveExchangeRates(
-              jsonEncode(_ratesToUsd),
-            );
-            await PreferencesService.instance.saveExchangeRatesUpdated(
-              now.millisecondsSinceEpoch,
-            );
-
-            AppLogger.i(
-              '[CurrencyExchangeService] Exchange rates successfully updated from fallback gateway',
-            );
-            return true;
-          }
+        if (rates != null &&
+            await _applyRates((code) => rates[code], now,
+                source: 'fallback gateway')) {
+          return true;
         }
       }
     } catch (e) {
@@ -285,5 +239,40 @@ class CurrencyExchangeService {
 
     // 3. При недоступности сети используется кэш из PreferencesService или _fallbackRatesToUsd
     return false;
+  }
+
+  /// Применяет котировки, прошедшие проверку, сохраняет их и уведомляет
+  /// экраны: суммы в чужой валюте пересчитываются по новому курсу сразу,
+  /// а не при следующей перезагрузке экрана. [rateOf] — курс к USD по коду
+  /// валюты. Возвращает `false`, если ни одна котировка не подошла.
+  Future<bool> _applyRates(
+    Object? Function(String code) rateOf,
+    DateTime now, {
+    required String source,
+  }) async {
+    var anyUpdated = false;
+    for (final currency in Currency.values) {
+      final val = rateOf(currency.code);
+      if (val == null) continue;
+      final sanitized = _sanitizeRate(val, currency.code);
+      if (sanitized != null &&
+          _isRateWithinSanityBounds(sanitized, currency.code)) {
+        _ratesToUsd[currency.code] = sanitized;
+        anyUpdated = true;
+      }
+    }
+    if (!anyUpdated) return false;
+
+    _lastUpdated = now;
+    await PreferencesService.instance
+        .saveExchangeRates(jsonEncode(_ratesToUsd));
+    await PreferencesService.instance.saveExchangeRatesUpdated(
+      now.millisecondsSinceEpoch,
+    );
+    AppLogger.i(
+      '[CurrencyExchangeService] Exchange rates successfully updated from $source',
+    );
+    CurrencyFormatter.notifyCurrencyChanged();
+    return true;
   }
 }

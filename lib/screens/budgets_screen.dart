@@ -24,10 +24,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
   List<Budget> _budgets = [];
 
   /// Расходы по категориям в базовой валюте — для сводки месяца.
-  Map<Category, double> _categoryExpenses = {};
+  Map<String, double> _categoryExpenses = {};
 
   /// Расходы по категориям в валютах лимитов, отличных от базовой.
-  Map<Currency, Map<Category, double>> _foreignExpenses = {};
+  Map<Currency, Map<String, double>> _foreignExpenses = {};
   bool _shouldShowSwipeHint = false;
 
   /// Удалённые свайпом лимиты ждут здесь отмены.
@@ -95,7 +95,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
         .where((b) => !_deletions.isPending(b))
         .toList();
     final base = CurrencyFormatter.currentCurrency;
-    final foreign = <Currency, Map<Category, double>>{};
+    final foreign = <Currency, Map<String, double>>{};
     for (final currency in budgets.map((b) => b.currency).toSet()) {
       if (currency == base) continue;
       foreign[currency] = db.categoryExpensesFor(transactions, currency);
@@ -110,7 +110,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
   /// Потрачено по лимиту в его валюте.
   double _spentFor(Budget budget) {
     final expenses = _foreignExpenses[budget.currency] ?? _categoryExpenses;
-    return expenses[budget.category] ?? 0;
+    return expenses[budget.dbCategory] ?? 0;
   }
 
   Future<void> _handleRefresh() async {
@@ -132,8 +132,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
     try {
       AppLogger.d('[Budgets] Starting syncAll via pull-to-refresh');
       await ApiService.instance.syncAll();
-      _loadBudgets();
       if (mounted) {
+        _loadBudgets();
         AppAlerts.success(context, context.l10n.sync_success);
       }
     } catch (e) {
