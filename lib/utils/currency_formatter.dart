@@ -94,6 +94,18 @@ class CurrencyFormatter {
 
   static Currency get currentCurrency => _currentCurrency;
 
+  /// Сумма, округлённая до знаков валюты [currency] (по умолчанию — базовой);
+  /// «−0» становится 0.
+  ///
+  /// Сравнивать суммы и выбирать знак — только по округлённому значению:
+  /// погрешность сложения double (100 − 99.99 − 0.01 ≠ 0) иначе даёт
+  /// «Превышен на $0.00» и «−$0.00».
+  static double roundToCurrency(double amount, [Currency? currency]) {
+    final digits = (currency ?? _currentCurrency).defaultDecimalDigits;
+    final rounded = double.parse(amount.toStringAsFixed(digits));
+    return rounded == 0 ? 0 : rounded;
+  }
+
   /// Превращает строку из поля ввода в число.
   /// Удаляет разделители тысяч и нормализует десятичный разделитель.
   static double? parseInput(String input) {
@@ -161,16 +173,14 @@ class CurrencyFormatter {
     final thousandsSeparator = isEn ? ',' : ' ';
     final decimalSeparator = isEn ? '.' : ',';
 
+    // Знак — по сумме, округлённой до показываемых знаков: −0.001 → «0.00».
+    final formatted = amount.abs().toStringAsFixed(digits);
+    final isZero = double.parse(formatted) == 0;
+
     String sign = '';
-
-    // Добавление знака + или - если требуется
-    if (showSign) {
-      if (amount > 0) sign = '+';
-      if (amount < 0) sign = '-';
+    if (showSign && !isZero) {
+      sign = amount > 0 ? '+' : '-';
     }
-
-    final absAmount = amount.abs();
-    final formatted = absAmount.toStringAsFixed(digits);
 
     // Добавление разделителей тысяч (регулярное выражение)
     final parts = formatted.split('.');

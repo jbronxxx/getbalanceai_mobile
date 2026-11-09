@@ -181,17 +181,21 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       return;
     }
 
+    // Категорию лимита при правке не сменить; исходная строка сохраняется,
+    // чтобы неизвестная клиенту категория не стала «Прочим».
+    final dbCategory =
+        widget.budgetToEdit?.dbCategory ?? _selectedCategory.name;
     final spent = LocalDbService.instance.getSpentForCategory(
       widget.selectedMonth,
       widget.selectedYear,
-      _selectedCategory.name,
+      dbCategory,
       currency,
     );
 
     final newBudget = Budget(
       localId: widget.budgetToEdit?.localId ?? 0,
       serverId: widget.budgetToEdit?.serverId,
-      dbCategory: _selectedCategory.name,
+      dbCategory: dbCategory,
       limitAmount: amount,
       currencyCode: currency.code,
       month: widget.selectedMonth,

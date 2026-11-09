@@ -298,7 +298,9 @@ class Transaction {
       'exchange_rate': exchangeRate,
       'base_amount': baseAmount,
       'description': description,
-      'category': category.name,
+      // Как пришло с сервера: неизвестная клиенту категория не превращается
+      // в «Прочее» при отправке правки.
+      'category': dbCategory,
       'type': type.name,
       'date': date.toUtc().toIso8601String(),
     };
@@ -402,7 +404,7 @@ class Budget {
   Map<String, dynamic> toJson({bool isDeleted = false}) {
     return {
       if (serverId != null) 'id': serverId,
-      'category': category.name,
+      'category': dbCategory,
       'limit_amount': limitAmount,
       // Без валюты сервер сохранит валюту существующего лимита
       if (currencyCode != null) 'currency': currencyCode,

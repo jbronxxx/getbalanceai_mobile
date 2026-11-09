@@ -10,7 +10,6 @@ import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/screens/welcome_setup_screen.dart';
-import 'package:getbalanceai_mobile/widgets/welcome_language_sheet.dart';
 import 'package:getbalanceai_mobile/widgets/dashboard/dashboard.dart';
 import 'package:getbalanceai_mobile/widgets/profile/currency_picker_sheet.dart';
 
@@ -131,6 +130,38 @@ void main() {
       final cached = await PreferencesService.instance.getExchangeRates();
       expect(cached, isNotNull);
       expect(cached, contains('13000'));
+    });
+
+    test('LOGIC-08: новые курсы сразу уведомляют экраны, сбой — нет', () async {
+      final service = CurrencyExchangeService.instance;
+      service.resetForTesting();
+      var notified = 0;
+      void listener() => notified++;
+      CurrencyFormatter.currencyNotifier.addListener(listener);
+      addTearDown(
+          () => CurrencyFormatter.currencyNotifier.removeListener(listener));
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        throw DioException(requestOptions: options, error: 'offline');
+      });
+      expect(await service.fetchLatestRates(force: true), isFalse);
+      expect(notified, 0);
+
+      service.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        return ResponseBody.fromString(
+          jsonEncode({
+            'data': {
+              'rates': {'USD': 1.0, 'EUR': 0.9, 'UZS': 13000.0, 'KZT': 500.0},
+            },
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+      expect(await service.fetchLatestRates(force: true), isTrue);
+      expect(notified, 1);
     });
 
     test(
@@ -469,40 +500,6 @@ void main() {
     });
   });
 
-  group('WelcomeLanguageSheet UI Tests', () {
-    testWidgets(
-        'Отображение секций языка и базовой валюты в WelcomeLanguageSheet',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: Locale('ru'),
-          home: Scaffold(
-            body: WelcomeLanguageSheet(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Проверяем наличие секций
-      expect(find.textContaining('Русский'), findsOneWidget);
-      expect(find.textContaining('O\'zbekcha'), findsOneWidget);
-      expect(find.textContaining('English'), findsOneWidget);
-
-      // Проверяем наличие чипов валют
-      expect(find.text('RUB'), findsNothing);
-      expect(find.text('UZS'), findsOneWidget);
-      expect(find.text('USD'), findsOneWidget);
-      expect(find.text('EUR'), findsOneWidget);
-      expect(find.text('KZT'), findsOneWidget);
-
-      // Проверяем наличие кнопки продолжения
-      expect(find.text('Продолжить'), findsOneWidget);
-    });
-  });
-
   group('WelcomeSetupScreen Step Flow Tests', () {
     testWidgets('Пошаговый переход: шаг 1 (язык) -> шаг 2 (валюта)',
         (WidgetTester tester) async {
@@ -605,33 +602,33 @@ void main() {
     });
   });
 
-  group('LanguageManager.formatOperationsCount Tests', () {
+  group('operations_count: склонение числа операций', () {
     test('Русская грамматика для количества операций', () {
       LanguageManager.setLanguage(AppLanguage.ru, save: false);
-      expect(LanguageManager.formatOperationsCount(1), equals('1 операция'));
-      expect(LanguageManager.formatOperationsCount(2), equals('2 операции'));
-      expect(LanguageManager.formatOperationsCount(4), equals('4 операции'));
-      expect(LanguageManager.formatOperationsCount(5), equals('5 операций'));
-      expect(LanguageManager.formatOperationsCount(11), equals('11 операций'));
-      expect(LanguageManager.formatOperationsCount(14), equals('14 операций'));
-      expect(LanguageManager.formatOperationsCount(21), equals('21 операция'));
-      expect(LanguageManager.formatOperationsCount(22), equals('22 операции'));
-      expect(LanguageManager.formatOperationsCount(25), equals('25 операций'));
+      expect(LanguageManager.l10n.operations_count(1), equals('1 операция'));
+      expect(LanguageManager.l10n.operations_count(2), equals('2 операции'));
+      expect(LanguageManager.l10n.operations_count(4), equals('4 операции'));
+      expect(LanguageManager.l10n.operations_count(5), equals('5 операций'));
+      expect(LanguageManager.l10n.operations_count(11), equals('11 операций'));
+      expect(LanguageManager.l10n.operations_count(14), equals('14 операций'));
+      expect(LanguageManager.l10n.operations_count(21), equals('21 операция'));
+      expect(LanguageManager.l10n.operations_count(22), equals('22 операции'));
+      expect(LanguageManager.l10n.operations_count(25), equals('25 операций'));
     });
 
     test('Узбекский язык для количества операций', () {
       LanguageManager.setLanguage(AppLanguage.uz, save: false);
       expect(
-          LanguageManager.formatOperationsCount(1), equals('1 ta operatsiya'));
+          LanguageManager.l10n.operations_count(1), equals('1 ta operatsiya'));
       expect(
-          LanguageManager.formatOperationsCount(5), equals('5 ta operatsiya'));
+          LanguageManager.l10n.operations_count(5), equals('5 ta operatsiya'));
     });
 
     test('Английский язык для количества операций', () {
       LanguageManager.setLanguage(AppLanguage.en, save: false);
-      expect(LanguageManager.formatOperationsCount(1), equals('1 transaction'));
+      expect(LanguageManager.l10n.operations_count(1), equals('1 transaction'));
       expect(
-          LanguageManager.formatOperationsCount(5), equals('5 transactions'));
+          LanguageManager.l10n.operations_count(5), equals('5 transactions'));
     });
   });
 

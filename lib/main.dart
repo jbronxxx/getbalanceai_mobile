@@ -128,6 +128,7 @@ Future<bool> _retryStartup() async {
 void _runFinanceApp() {
   runApp(const FinanceApp());
   AutoSyncService.instance.start();
+  SelectedPeriodService.instance.start();
 }
 
 Future<void> _setPreferredOrientations() async {
@@ -149,8 +150,6 @@ Future<void> _setPreferredOrientations() async {
     ]);
   }
 }
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class FinanceApp extends StatelessWidget {
   const FinanceApp({super.key});

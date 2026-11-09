@@ -139,8 +139,7 @@ void main() {
       SelectedPeriodService.instance.reset();
     });
 
-    testWidgets(
-        'итог — за весь месяц, страницы по 20 подгружаются из того же списка',
+    testWidgets('итог — за весь месяц, день не режется на 20 строк (LOGIC-10)',
         (tester) async {
       final period = SelectedPeriodService.instance.period;
       for (var i = 0; i < 45; i++) {
@@ -166,12 +165,16 @@ void main() {
       ));
       await tester.pump();
 
-      // Итог месяца — по всем 45 операциям, а не по первой странице
+      // Итог месяца — по всем 45 операциям
       expect(find.textContaining('45'), findsWidgets);
-      // Список — от новых к старым: самой старой операции на первой
-      // странице нет
-      expect(find.text('op 44', skipOffstage: false), findsOneWidget);
-      expect(find.text('op 0', skipOffstage: false), findsNothing);
+      // День не обрезан на границе страницы: в группе все 45 операций,
+      // итог дня — по ним всем, а не по первым 20
+      final day = tester.widget<DayGroupWidget>(find.byType(DayGroupWidget));
+      expect(day.transactions, hasLength(45));
+      expect(DayGroupWidget.dayTotal(day.transactions), -45);
+      // Список — от новых к старым
+      expect(day.transactions.first.description, 'op 44');
+      expect(day.transactions.last.description, 'op 0');
 
       await tester.scrollUntilVisible(
         find.text('op 0'),

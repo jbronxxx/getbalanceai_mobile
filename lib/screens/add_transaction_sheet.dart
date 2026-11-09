@@ -211,7 +211,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         localId: t.localId,
         serverId: t.serverId,
         dbType: _type.name,
-        dbCategory: _category.name,
+        // Категория и тип не менялись — сохраняем исходную строку: категория,
+        // неизвестная этой версии клиента, показана как «Прочее», но не
+        // должна им перезаписаться.
+        dbCategory: _category == t.category && _type == t.type
+            ? t.dbCategory
+            : _category.name,
         amount: amount,
         currencyCode: _selectedCurrency.code,
         exchangeRate: rate,

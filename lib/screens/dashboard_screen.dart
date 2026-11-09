@@ -27,7 +27,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   int get _selectedMonth => SelectedPeriodService.instance.period.month;
   int get _selectedYear => SelectedPeriodService.instance.period.year;
 
-  final List<Transaction> _transactions = [];
+  /// Операции месяца без скрытых в ожидании удаления: читаются из базы
+  /// одним запросом на перезагрузку, из них же считаются итоги.
+  ///
+  /// Месяц показывается целиком, без постраничной подгрузки: список дней
+  /// и так строится лениво, а страницы резали день на границе (неполный
+  /// итог дня), не подгружались, если первая страница влезала в экран, и
+  /// сбрасывались при каждой правке.
+  List<Transaction> _transactions = const [];
   Map<DateTime, List<Transaction>> _groupedTransactions = {};
   List<DateTime> _days = const [];
   DashboardViewMode _viewMode = DashboardViewMode.days;
@@ -42,23 +49,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _shouldShowSwipeHint = false;
   Timer? _swipeHintDismissTimer;
 
-  // Параметры пагинации
-  final ScrollController _scrollController = ScrollController();
-  int _offset = 0;
-  final int _pageSize = 20;
-
-  /// Операции месяца без скрытых: читаются из базы один раз на перезагрузку,
-  /// из них же считаются итоги и берутся страницы списка.
-  List<Transaction> _monthTransactions = const [];
-  bool _hasMore = true;
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
     _loadTransactions();
     _checkSwipeHint();
-    _scrollController.addListener(_onScroll);
     CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
     SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
@@ -83,17 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ..removeListener(_onDataChanged)
       ..flush();
     _swipeHintDismissTimer?.cancel();
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        _hasMore &&
-        !_isLoading) {
-      _loadTransactions(isLoadMore: true);
-    }
   }
 
   void _checkSwipeHint() async {
@@ -113,79 +98,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     _loadTransactions();
   }
 
-  /// Режим «По категориям»: итоги категорий за весь месяц, без пагинации —
-  /// иначе итоги считались бы по первой странице.
-  void _loadCategorySummaries() {
+  /// Перечитывает операции месяца и итоги. В режиме «По категориям» —
+  /// итоги категорий, в режиме «По дням» — группы по дням.
+  void _loadTransactions() {
     final all = _visibleMonthTransactions();
     final totals = LocalDbService.instance.totalsFor(all);
+    final byCategories = _viewMode == DashboardViewMode.categories;
+    final grouped = byCategories
+        ? <DateTime, List<Transaction>>{}
+        : DayGroupWidget.groupByDay(all);
     setState(() {
       _totalIncome = totals['income'] ?? 0;
       _totalExpense = totals['expense'] ?? 0;
       _totalBalance = _totalIncome - _totalExpense;
-      _transactions
-        ..clear()
-        ..addAll(all);
-      _categorySummaries = CategoryMonthSummary.fromTransactions(all);
-      _groupedTransactions = {};
-      _days = const [];
-      _hasMore = false;
-      _offset = all.length;
-    });
-  }
-
-  /// Перечитывает транзакции из локальной БД с использованием пагинации
-  /// и фильтрации на уровне базы данных.
-  void _loadTransactions({bool isLoadMore = false}) {
-    if (_isLoading) return;
-
-    if (_viewMode == DashboardViewMode.categories) {
-      if (!isLoadMore) _loadCategorySummaries();
-      return;
-    }
-
-    if (!isLoadMore) {
-      setState(() {
-        _offset = 0;
-        _hasMore = true;
-        _transactions.clear();
-        _groupedTransactions = {};
-        _days = const [];
-      });
-    }
-
-    if (!_hasMore) return;
-
-    setState(() => _isLoading = true);
-
-    if (!isLoadMore) {
-      _monthTransactions = _visibleMonthTransactions();
-      final totals = LocalDbService.instance.totalsFor(_monthTransactions);
-      _totalIncome = totals['income'] ?? 0;
-      _totalExpense = totals['expense'] ?? 0;
-      _totalBalance = _totalIncome - _totalExpense;
-    }
-
-    final visibleBatch = _monthTransactions
-        .skip(_offset)
-        .take(_pageSize)
-        .toList(growable: false);
-
-    if (visibleBatch.length < _pageSize) {
-      _hasMore = false;
-    }
-
-    _offset += visibleBatch.length;
-    _transactions.addAll(visibleBatch);
-
-    final sortedGrouped = DayGroupWidget.groupByDay(
-      visibleBatch,
-      appendTo: isLoadMore ? _groupedTransactions : const {},
-    );
-
-    setState(() {
-      _groupedTransactions = sortedGrouped;
-      _days = sortedGrouped.keys.toList(growable: false);
-      _isLoading = false;
+      _transactions = all;
+      _categorySummaries =
+          byCategories ? CategoryMonthSummary.fromTransactions(all) : const [];
+      _groupedTransactions = grouped;
+      _days = grouped.keys.toList(growable: false);
     });
   }
 
@@ -214,8 +144,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     try {
       AppLogger.d('[Dashboard] Starting syncAll via pull-to-refresh');
       await ApiService.instance.syncAll();
-      _loadTransactions();
       if (mounted) {
+        _loadTransactions();
         AppAlerts.success(context, context.l10n.sync_success);
       }
     } catch (e) {
@@ -314,7 +244,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             child: CustomScrollView(
               key: const PageStorageKey('dashboard_custom_scroll_view'),
-              controller: _scrollController,
               physics: const ClampingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
               ),
@@ -367,8 +296,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         (context, index) {
                           final summary = _categorySummaries[index];
                           return CategoryMonthGroup(
-                            key: ValueKey(
-                                'category_month_${summary.category.name}'),
+                            key: ValueKey('category_month_${summary.id}'),
                             summary: summary,
                             onTransactionTap: _openTransactionDetails,
                             onTransactionDelete: _deleteTransaction,
@@ -412,18 +340,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                           );
                         },
                         childCount: _days.length,
-                      ),
-                    ),
-                  ),
-                if (_isLoading && _transactions.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.of(context).accentText,
-                        ),
                       ),
                     ),
                   ),

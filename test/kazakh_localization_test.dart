@@ -6,7 +6,6 @@ import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/profile/profile.dart';
-import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -116,18 +115,18 @@ void main() {
     });
 
     test(
-        'Форматирование счетчика операций (formatOperationsCount) на казахском языке',
+        'Форматирование счетчика операций (operations_count) на казахском языке',
         () {
       LanguageManager.setLanguage(AppLanguage.kk, save: false);
 
-      expect(LanguageManager.formatOperationsCount(0), equals('0 операция'));
-      expect(LanguageManager.formatOperationsCount(1), equals('1 операция'));
-      expect(LanguageManager.formatOperationsCount(2), equals('2 операция'));
-      expect(LanguageManager.formatOperationsCount(5), equals('5 операция'));
-      expect(LanguageManager.formatOperationsCount(11), equals('11 операция'));
-      expect(LanguageManager.formatOperationsCount(21), equals('21 операция'));
+      expect(LanguageManager.l10n.operations_count(0), equals('0 операция'));
+      expect(LanguageManager.l10n.operations_count(1), equals('1 операция'));
+      expect(LanguageManager.l10n.operations_count(2), equals('2 операция'));
+      expect(LanguageManager.l10n.operations_count(5), equals('5 операция'));
+      expect(LanguageManager.l10n.operations_count(11), equals('11 операция'));
+      expect(LanguageManager.l10n.operations_count(21), equals('21 операция'));
       expect(
-          LanguageManager.formatOperationsCount(100), equals('100 операция'));
+          LanguageManager.l10n.operations_count(100), equals('100 операция'));
     });
 
     test('Сохранение и загрузка казахского языка через PreferencesService',
@@ -219,39 +218,6 @@ void main() {
         ),
         findsOneWidget,
       );
-    });
-  });
-
-  group('WelcomeLanguageSheet Kazakh & Auto KZT Tests', () {
-    testWidgets('В модальной шторке выбор Қазақша автоматически выставляет KZT',
-        (tester) async {
-      await tester.pumpWidget(
-        _buildTestApp(
-          Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () => WelcomeLanguageSheet.show(context),
-                child: const Text('Open Sheet'),
-              );
-            },
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Open Sheet'));
-      await tester.pumpAndSettle();
-
-      // В шторке присутствует пункт Қазақша
-      expect(find.text('Қазақша'), findsOneWidget);
-
-      // Тапаем на Қазақша
-      await tester.tap(find.text('Қазақша'));
-      await tester.pumpAndSettle();
-
-      // KZT выбран
-      expect(LanguageManager.currentLanguage, equals(AppLanguage.kk));
-      expect(find.text('KZT'), findsOneWidget);
     });
   });
 

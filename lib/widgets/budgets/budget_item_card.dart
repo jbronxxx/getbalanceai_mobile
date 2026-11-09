@@ -28,10 +28,13 @@ class BudgetItemCard extends StatelessWidget {
     required this.onHintShown,
   });
 
-  /// Цвет шкалы по доле потраченного: до 75% — основной, 75–100% —
-  /// предупреждение, выше лимита — перерасход.
-  static Color progressColorFor(double ratio, AppColors colors) {
-    if (ratio > 1) return colors.exceeded;
+  /// Цвет шкалы: перерасход, от 75% лимита — предупреждение, иначе основной.
+  static Color progressColorFor(
+    double ratio,
+    AppColors colors, {
+    required bool isExceeded,
+  }) {
+    if (isExceeded) return colors.exceeded;
     if (ratio >= 0.75) return colors.warning;
     return colors.accentText;
   }
@@ -55,11 +58,18 @@ class BudgetItemCard extends StatelessWidget {
     final ratio =
         budget.limitAmount > 0 ? currentSpent / budget.limitAmount : 0.0;
     final progress = ratio.clamp(0.0, 1.0);
-    final isExceeded = currentSpent > budget.limitAmount;
+    // Перерасход — по сумме, округлённой до знаков валюты: погрешность
+    // double не должна давать «Превышен на $0.00».
+    final isExceeded = CurrencyFormatter.roundToCurrency(
+          currentSpent - budget.limitAmount,
+          budget.currency,
+        ) >
+        0;
     final percent = (ratio * 100).round();
 
     final exceededColor = colors.exceeded;
-    final progressColor = progressColorFor(ratio, colors);
+    final progressColor =
+        progressColorFor(ratio, colors, isExceeded: isExceeded);
 
     final background = Container(
       alignment: Alignment.centerRight,

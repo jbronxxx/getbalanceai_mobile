@@ -33,9 +33,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get select_language => 'Tilni tanlash';
 
   @override
-  String get dark_mode => 'Tungi rejim';
-
-  @override
   String get theme_mode => 'Mavzu';
 
   @override
@@ -48,28 +45,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get theme_dark => 'To\'q';
 
   @override
-  String get soon => 'Yaqinda qo\'shiladi';
-
-  @override
-  String get notifications => 'Bildirishnomalar';
-
-  @override
-  String get limits_and_budgets => 'Limit va budjetlar';
-
-  @override
   String get cloud => 'Bulut';
 
   @override
   String get sync_status => 'Sinxronizatsiya holati';
-
-  @override
-  String get cloud_not_connected => 'Hisobga kirgandan so\'ng mavjud';
-
-  @override
-  String get guest_mode => 'Mehmon rejimi';
-
-  @override
-  String get login_cloud_hint => 'Ma\'lumotlarni bulutda saqlash uchun kiring';
 
   @override
   String get logout => 'Hisobdan chiqish';
@@ -84,17 +63,11 @@ class AppLocalizationsUz extends AppLocalizations {
   String get local_profile => 'Mahalliy profil';
 
   @override
-  String get offline_storage_desc => 'Ma\'lumotlar ushbu qurilmada saqlanadi';
-
-  @override
   String get local_storage_warning =>
       'Ma\'lumotlar faqat qurilmangizda saqlanadi va ilova o\'chirilganda o\'chib ketadi';
 
   @override
   String get cloud_backup_prompt => 'Zaxira nusxalashni yoqish uchun kiring';
-
-  @override
-  String get user => 'Foydalanuvchi';
 
   @override
   String get select_currency => 'Valyutani tanlash';
@@ -137,10 +110,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Internetga ulanish yo\'q. Tarmoqni tekshirib, qayta urinib ko\'ring.';
 
   @override
-  String get sync_no_internet_alert =>
-      'Sinxronizatsiya uchun tarmoqqa ulanish zarur';
-
-  @override
   String get sync_error => 'Sinxronizatsiya xatoligi';
 
   @override
@@ -166,9 +135,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Umumiy balans va byudjetlar ushbu valyutada hisoblanadi';
 
   @override
-  String get currency_rate_hint => 'kurs bo\'yicha';
-
-  @override
   String get continue_btn => 'Davom etish';
 
   @override
@@ -184,22 +150,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get no_transactions => 'Bu oyda yozuvlar yo\'q';
 
   @override
-  String get all_months => 'Barcha oylar';
-
-  @override
-  String get swipe_hint_text => 'O\'chirish uchun yozuvni chapga suring';
-
-  @override
-  String get delete_confirm_title => 'O\'chirish';
-
-  @override
-  String get delete_confirm_desc => 'Ushbu yozuvni o\'chirmoqchimisiz?';
-
-  @override
   String get delete_btn => 'O\'chirish';
-
-  @override
-  String get today_prefix => 'Bugun';
 
   @override
   String get new_transaction => 'Yangi yozuv';
@@ -223,12 +174,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get save_changes_btn => 'O\'zgarishlarni saqlash';
 
   @override
-  String get alert_valid_amount => 'To\'g\'ri summani kiriting';
-
-  @override
-  String get alert_amount_too_large => 'Summa juda katta, valyuta:';
-
-  @override
   String get amount_requirement_enter => 'Summani kiriting';
 
   @override
@@ -249,57 +194,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get edit_budget_title => 'Limitni tahrirlash';
 
   @override
-  String get budget_amount_hint => 'Limit summasi';
-
-  @override
   String get save_btn => 'Saqlash';
 
   @override
   String get budget_exceeded => 'Ortiqcha xarajat:';
 
   @override
-  String get budget_out_of => 'dan';
-
-  @override
-  String get no_budgets_title => 'Budjetlar belgilanmagan';
-
-  @override
   String get no_budgets_subtitle =>
       'Mablag\'larni nazorat qilish uchun kategoriyalar bo\'yicha limitlar belgilang.';
-
-  @override
-  String get alert_enter_budget_amount => 'Limit summasi kiriting';
-
-  @override
-  String get insights_screen_title => 'Tahlil va maslahatlar';
-
-  @override
-  String get insights_subtitle => 'Moliyangizning aqlli tahlili';
-
-  @override
-  String get insight_advice_title => 'Moliyaviy maslahat';
-
-  @override
-  String get insight_advice_desc =>
-      'Daromad olgan kuningiz darhol kamida 10-15% qismini xavfsizlik yostig\'i uchun olib qo\'yishga harakat qiling.';
-
-  @override
-  String get insight_structure_title => 'Bir oylik xarajatlar tarkibi';
-
-  @override
-  String get insight_structure_empty =>
-      'Xarajatlar tahlili uchun ma\'lumot yetarli emas. Yozuvlar qo\'shing.';
-
-  @override
-  String get insight_saving_title => 'Jamg\'arma darajasi';
-
-  @override
-  String get insight_saving_desc_positive =>
-      'Ajoyib natija! Siz pul jamg\'armoqdasiz. Uzoq muddatli maqsadlarga erishish uchun shu tarzda davom eting.';
-
-  @override
-  String get insight_saving_desc_negative =>
-      'Ushbu oyda xarajatlaringiz daromaddan oshib ketdi. Ixtiyoriy kategoriyalar limitlarini qayta ko\'rib chiqishni tavsiya etamiz.';
 
   @override
   String get insight_login_hint =>
@@ -318,23 +220,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get insights_header_title => 'AI-Tahlil';
-
-  @override
-  String get personal_recs_title => 'Shaxsiy tavsiyalar';
-
-  @override
-  String get insights_updated_prefix => 'Yangilangan';
-
-  @override
-  String get insights_cache_hint =>
-      'Maslahatlar yangi xarajatlar qo\'shilganda avtomatik ravishda yangilanadi';
-
-  @override
-  String get insights_assistants_busy => 'Aqlli yordamchilarimiz band';
-
-  @override
-  String get insights_assistants_busy_desc =>
-      'Iltimos, qayta urinib ko\'ring yoki birozdan so\'ng kiring';
 
   @override
   String get insights_assistants_busy_msg1 =>
@@ -381,13 +266,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get month_12 => 'Dekabr';
 
   @override
-  String get select_period => 'Davrni tanlang';
-
-  @override
   String get month_label => 'Oy';
-
-  @override
-  String get year_label => 'Yil';
 
   @override
   String get no_description => 'Tavsifsiz';
@@ -396,65 +275,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get today => 'Bugun';
 
   @override
-  String get welcome_back => 'Qaytganingiz bilan!';
-
-  @override
-  String get create_account => 'Hisob yaratish';
-
-  @override
-  String get login_subtitle =>
-      'Ma\'lumotlarni server bilan sinxronlash uchun kiring';
-
-  @override
-  String get register_subtitle =>
-      'Bulutli xotiraga kirish uchun ro\'yxatdan o\'ting';
-
-  @override
-  String get name_label => 'Ism';
-
-  @override
-  String get email_label => 'Email';
-
-  @override
-  String get password_label => 'Parol';
-
-  @override
-  String get login_btn => 'Kirish';
-
-  @override
-  String get register_btn => 'Ro\'yxatdan o\'tish';
-
-  @override
-  String get no_account_prompt => 'Hisobingiz yo\'qmi? Ro\'yxatdan o\'ting';
-
-  @override
-  String get have_account_prompt => 'Sizda hisob bormi? Kiring';
-
-  @override
-  String get fill_all_fields => 'Barcha maydonlarni to\'ldiring';
-
-  @override
-  String get enter_name_alert => 'Ismingizni kiriting';
-
-  @override
-  String get auth_network_required =>
-      'Kirish yoki ro\'yxatdan o\'tish uchun tarmoqqa ulanish zarur';
-
-  @override
   String get login_error_title => 'Kirishda xatolik';
-
-  @override
-  String get register_error_title => 'Ro\'yxatdan o\'tishda xatolik';
-
-  @override
-  String get password_validation_error =>
-      'Parol kamida bitta harf va bitta raqamdan iborat kamida 6 belgidan iborat bo\'lishi kerak';
-
-  @override
-  String get password_requirements_hint => 'Kamida 6 belgi (1 harf va 1 raqam)';
-
-  @override
-  String get password_too_long_bytes => 'Parol juda uzun (maks. 72 bayt)';
 
   @override
   String get sync_login_required => 'Sinxronizatsiya uchun hisobga kiring';
@@ -541,7 +362,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get rate_limit_exceeded_title => 'So‘rovlar chegarasi oshib ketdi';
 
   @override
-  String get rate_limit_countdown_prefix => 'Qayta urinish vaqti:';
+  String rate_limit_countdown(int seconds) {
+    return 'Qayta urinish vaqti: $seconds soniya';
+  }
 
   @override
   String get rate_limit_ready => 'Endi qayta urinib ko‘rishingiz mumkin';
@@ -602,10 +425,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get budget_deleted => 'Limit o\'chirildi';
-
-  @override
-  String get sync_network_required =>
-      'Sinxronizatsiya uchun tarmoqqa ulanish zarur';
 
   @override
   String get sync_synced => 'Ma\'lumotlar sinxronlangan';
@@ -727,9 +546,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get report_period_label => 'Davr';
 
   @override
-  String get report_period_month => 'Oy';
-
-  @override
   String get report_period_year => 'Yil';
 
   @override
@@ -737,9 +553,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get report_format_label => 'Format';
-
-  @override
-  String get report_exporting => 'Hisobot tayyorlanmoqda...';
 
   @override
   String get report_save_action => 'Hisobotni yuklab olish';
@@ -863,11 +676,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String version_label(String version) {
     return 'Versiya $version';
-  }
-
-  @override
-  String debug_tap_hint(int count) {
-    return 'Nosozliklarni tuzatish menyusini ochish uchun yana $count marta bosing';
   }
 
   @override
@@ -1032,5 +840,10 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String logout_unsynced_warning(int count) {
     return 'Serverga yuborilmagan: $count. Chiqishda bu o\'zgarishlar qurilmadan o\'chiriladi. Baribir chiqasizmi?';
+  }
+
+  @override
+  String operations_count(int count) {
+    return '$count ta operatsiya';
   }
 }

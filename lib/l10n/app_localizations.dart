@@ -150,12 +150,6 @@ abstract class AppLocalizations {
   /// **'Select Language'**
   String get select_language;
 
-  /// No description provided for @dark_mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark Mode'**
-  String get dark_mode;
-
   /// No description provided for @theme_mode.
   ///
   /// In en, this message translates to:
@@ -180,24 +174,6 @@ abstract class AppLocalizations {
   /// **'Dark'**
   String get theme_dark;
 
-  /// No description provided for @soon.
-  ///
-  /// In en, this message translates to:
-  /// **'Coming soon'**
-  String get soon;
-
-  /// No description provided for @notifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notifications;
-
-  /// No description provided for @limits_and_budgets.
-  ///
-  /// In en, this message translates to:
-  /// **'Limits and budgets'**
-  String get limits_and_budgets;
-
   /// No description provided for @cloud.
   ///
   /// In en, this message translates to:
@@ -209,24 +185,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync Status'**
   String get sync_status;
-
-  /// No description provided for @cloud_not_connected.
-  ///
-  /// In en, this message translates to:
-  /// **'Available after signing in'**
-  String get cloud_not_connected;
-
-  /// No description provided for @guest_mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Guest Mode'**
-  String get guest_mode;
-
-  /// No description provided for @login_cloud_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Log in to save data to the cloud'**
-  String get login_cloud_hint;
 
   /// No description provided for @logout.
   ///
@@ -252,12 +210,6 @@ abstract class AppLocalizations {
   /// **'Local Profile'**
   String get local_profile;
 
-  /// No description provided for @offline_storage_desc.
-  ///
-  /// In en, this message translates to:
-  /// **'Data is stored on this device'**
-  String get offline_storage_desc;
-
   /// No description provided for @local_storage_warning.
   ///
   /// In en, this message translates to:
@@ -269,12 +221,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in to enable cloud backup'**
   String get cloud_backup_prompt;
-
-  /// No description provided for @user.
-  ///
-  /// In en, this message translates to:
-  /// **'User'**
-  String get user;
 
   /// No description provided for @select_currency.
   ///
@@ -354,12 +300,6 @@ abstract class AppLocalizations {
   /// **'No internet connection. Please check your network and try again.'**
   String get no_internet_connection;
 
-  /// No description provided for @sync_no_internet_alert.
-  ///
-  /// In en, this message translates to:
-  /// **'Network connection is required for sync'**
-  String get sync_no_internet_alert;
-
   /// No description provided for @sync_error.
   ///
   /// In en, this message translates to:
@@ -408,12 +348,6 @@ abstract class AppLocalizations {
   /// **'Total balance and budgets are calculated in this currency'**
   String get welcome_currency_subtitle;
 
-  /// No description provided for @currency_rate_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'at rate'**
-  String get currency_rate_hint;
-
   /// No description provided for @continue_btn.
   ///
   /// In en, this message translates to:
@@ -444,41 +378,11 @@ abstract class AppLocalizations {
   /// **'No transactions for this month'**
   String get no_transactions;
 
-  /// No description provided for @all_months.
-  ///
-  /// In en, this message translates to:
-  /// **'All Months'**
-  String get all_months;
-
-  /// No description provided for @swipe_hint_text.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe left to delete a transaction'**
-  String get swipe_hint_text;
-
-  /// No description provided for @delete_confirm_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get delete_confirm_title;
-
-  /// No description provided for @delete_confirm_desc.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete this transaction?'**
-  String get delete_confirm_desc;
-
   /// No description provided for @delete_btn.
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get delete_btn;
-
-  /// No description provided for @today_prefix.
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get today_prefix;
 
   /// No description provided for @new_transaction.
   ///
@@ -522,18 +426,6 @@ abstract class AppLocalizations {
   /// **'Save Changes'**
   String get save_changes_btn;
 
-  /// No description provided for @alert_valid_amount.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid amount'**
-  String get alert_valid_amount;
-
-  /// No description provided for @alert_amount_too_large.
-  ///
-  /// In en, this message translates to:
-  /// **'Amount is too large for'**
-  String get alert_amount_too_large;
-
   /// No description provided for @amount_requirement_enter.
   ///
   /// In en, this message translates to:
@@ -570,12 +462,6 @@ abstract class AppLocalizations {
   /// **'Edit Budget Limit'**
   String get edit_budget_title;
 
-  /// No description provided for @budget_amount_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Limit Amount'**
-  String get budget_amount_hint;
-
   /// No description provided for @save_btn.
   ///
   /// In en, this message translates to:
@@ -588,83 +474,11 @@ abstract class AppLocalizations {
   /// **'Exceeded by'**
   String get budget_exceeded;
 
-  /// No description provided for @budget_out_of.
-  ///
-  /// In en, this message translates to:
-  /// **'out of'**
-  String get budget_out_of;
-
-  /// No description provided for @no_budgets_title.
-  ///
-  /// In en, this message translates to:
-  /// **'No Budgets Set'**
-  String get no_budgets_title;
-
   /// No description provided for @no_budgets_subtitle.
   ///
   /// In en, this message translates to:
   /// **'Set limits by category to avoid overspending.'**
   String get no_budgets_subtitle;
-
-  /// No description provided for @alert_enter_budget_amount.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a limit amount'**
-  String get alert_enter_budget_amount;
-
-  /// No description provided for @insights_screen_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Analytics & Advice'**
-  String get insights_screen_title;
-
-  /// No description provided for @insights_subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Smart analysis of your finances'**
-  String get insights_subtitle;
-
-  /// No description provided for @insight_advice_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Financial Advice'**
-  String get insight_advice_title;
-
-  /// No description provided for @insight_advice_desc.
-  ///
-  /// In en, this message translates to:
-  /// **'Try to save at least 10-15% of your income on the day you receive it to build an emergency fund.'**
-  String get insight_advice_desc;
-
-  /// No description provided for @insight_structure_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Monthly Expense Structure'**
-  String get insight_structure_title;
-
-  /// No description provided for @insight_structure_empty.
-  ///
-  /// In en, this message translates to:
-  /// **'Not enough data for expense analysis. Please add transactions.'**
-  String get insight_structure_empty;
-
-  /// No description provided for @insight_saving_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Savings Rate'**
-  String get insight_saving_title;
-
-  /// No description provided for @insight_saving_desc_positive.
-  ///
-  /// In en, this message translates to:
-  /// **'Great job! You are saving money. Keep it up to reach your long-term goals.'**
-  String get insight_saving_desc_positive;
-
-  /// No description provided for @insight_saving_desc_negative.
-  ///
-  /// In en, this message translates to:
-  /// **'This month your expenses exceeded your income. We recommend reviewing limits on non-essential categories.'**
-  String get insight_saving_desc_negative;
 
   /// No description provided for @insight_login_hint.
   ///
@@ -695,36 +509,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Analytics'**
   String get insights_header_title;
-
-  /// No description provided for @personal_recs_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Personalized Recommendations'**
-  String get personal_recs_title;
-
-  /// No description provided for @insights_updated_prefix.
-  ///
-  /// In en, this message translates to:
-  /// **'Updated'**
-  String get insights_updated_prefix;
-
-  /// No description provided for @insights_cache_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Insights update automatically when new expenses are added'**
-  String get insights_cache_hint;
-
-  /// No description provided for @insights_assistants_busy.
-  ///
-  /// In en, this message translates to:
-  /// **'Our smart assistants are busy'**
-  String get insights_assistants_busy;
-
-  /// No description provided for @insights_assistants_busy_desc.
-  ///
-  /// In en, this message translates to:
-  /// **'Please pull down to retry or check back a little later'**
-  String get insights_assistants_busy_desc;
 
   /// No description provided for @insights_assistants_busy_msg1.
   ///
@@ -810,23 +594,11 @@ abstract class AppLocalizations {
   /// **'December'**
   String get month_12;
 
-  /// No description provided for @select_period.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Period'**
-  String get select_period;
-
   /// No description provided for @month_label.
   ///
   /// In en, this message translates to:
   /// **'Month'**
   String get month_label;
-
-  /// No description provided for @year_label.
-  ///
-  /// In en, this message translates to:
-  /// **'Year'**
-  String get year_label;
 
   /// No description provided for @no_description.
   ///
@@ -840,119 +612,11 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get today;
 
-  /// No description provided for @welcome_back.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome back!'**
-  String get welcome_back;
-
-  /// No description provided for @create_account.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Account'**
-  String get create_account;
-
-  /// No description provided for @login_subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Log in to sync data with the server'**
-  String get login_subtitle;
-
-  /// No description provided for @register_subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Register for access to cloud storage'**
-  String get register_subtitle;
-
-  /// No description provided for @name_label.
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get name_label;
-
-  /// No description provided for @email_label.
-  ///
-  /// In en, this message translates to:
-  /// **'Email'**
-  String get email_label;
-
-  /// No description provided for @password_label.
-  ///
-  /// In en, this message translates to:
-  /// **'Password'**
-  String get password_label;
-
-  /// No description provided for @login_btn.
-  ///
-  /// In en, this message translates to:
-  /// **'Log In'**
-  String get login_btn;
-
-  /// No description provided for @register_btn.
-  ///
-  /// In en, this message translates to:
-  /// **'Register'**
-  String get register_btn;
-
-  /// No description provided for @no_account_prompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Don\'t have an account? Register'**
-  String get no_account_prompt;
-
-  /// No description provided for @have_account_prompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Already have an account? Log In'**
-  String get have_account_prompt;
-
-  /// No description provided for @fill_all_fields.
-  ///
-  /// In en, this message translates to:
-  /// **'Fill in all fields'**
-  String get fill_all_fields;
-
-  /// No description provided for @enter_name_alert.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter your name'**
-  String get enter_name_alert;
-
-  /// No description provided for @auth_network_required.
-  ///
-  /// In en, this message translates to:
-  /// **'Internet connection is required to log in or register'**
-  String get auth_network_required;
-
   /// No description provided for @login_error_title.
   ///
   /// In en, this message translates to:
   /// **'Login Error'**
   String get login_error_title;
-
-  /// No description provided for @register_error_title.
-  ///
-  /// In en, this message translates to:
-  /// **'Registration Error'**
-  String get register_error_title;
-
-  /// No description provided for @password_validation_error.
-  ///
-  /// In en, this message translates to:
-  /// **'Password must be at least 6 characters, including at least one letter and one number'**
-  String get password_validation_error;
-
-  /// No description provided for @password_requirements_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Min 6 characters (1 letter and 1 number)'**
-  String get password_requirements_hint;
-
-  /// No description provided for @password_too_long_bytes.
-  ///
-  /// In en, this message translates to:
-  /// **'Password is too long (max 72 bytes)'**
-  String get password_too_long_bytes;
 
   /// No description provided for @sync_login_required.
   ///
@@ -1116,11 +780,11 @@ abstract class AppLocalizations {
   /// **'Rate Limit Exceeded'**
   String get rate_limit_exceeded_title;
 
-  /// No description provided for @rate_limit_countdown_prefix.
+  /// No description provided for @rate_limit_countdown.
   ///
   /// In en, this message translates to:
-  /// **'Retry in:'**
-  String get rate_limit_countdown_prefix;
+  /// **'Retry in: {seconds} sec'**
+  String rate_limit_countdown(int seconds);
 
   /// No description provided for @rate_limit_ready.
   ///
@@ -1235,12 +899,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Budget limit deleted'**
   String get budget_deleted;
-
-  /// No description provided for @sync_network_required.
-  ///
-  /// In en, this message translates to:
-  /// **'Network connection is required for sync'**
-  String get sync_network_required;
 
   /// No description provided for @sync_synced.
   ///
@@ -1470,12 +1128,6 @@ abstract class AppLocalizations {
   /// **'Period'**
   String get report_period_label;
 
-  /// No description provided for @report_period_month.
-  ///
-  /// In en, this message translates to:
-  /// **'Month'**
-  String get report_period_month;
-
   /// No description provided for @report_period_year.
   ///
   /// In en, this message translates to:
@@ -1493,12 +1145,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Format'**
   String get report_format_label;
-
-  /// No description provided for @report_exporting.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing report...'**
-  String get report_exporting;
 
   /// No description provided for @report_save_action.
   ///
@@ -1721,12 +1367,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Version {version}'**
   String version_label(String version);
-
-  /// No description provided for @debug_tap_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap {count} more times to open Debug Menu'**
-  String debug_tap_hint(int count);
 
   /// No description provided for @yesterday.
   ///
@@ -2003,6 +1643,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not uploaded to the server: {count}. These changes will be removed from this device when you log out. Log out anyway?'**
   String logout_unsynced_warning(int count);
+
+  /// Number of transactions in a category group
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 transaction} other{{count} transactions}}'**
+  String operations_count(int count);
 }
 
 class _AppLocalizationsDelegate

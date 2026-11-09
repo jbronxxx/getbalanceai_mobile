@@ -184,31 +184,6 @@ class LanguageManager {
     }
     return formatDayMonth(date);
   }
-
-  /// Форматирует количество операций с грамматически корректным склонением для текущего языка.
-  static String formatOperationsCount(int count) {
-    switch (_currentLanguage) {
-      case AppLanguage.ru:
-        final mod10 = count % 10;
-        final mod100 = count % 100;
-        if (mod100 >= 11 && mod100 <= 14) {
-          return '$count операций';
-        }
-        if (mod10 == 1) {
-          return '$count операция';
-        }
-        if (mod10 >= 2 && mod10 <= 4) {
-          return '$count операции';
-        }
-        return '$count операций';
-      case AppLanguage.uz:
-        return '$count ta operatsiya';
-      case AppLanguage.kk:
-        return '$count операция';
-      case AppLanguage.en:
-        return count == 1 ? '1 transaction' : '$count transactions';
-    }
-  }
 }
 
 /// Удобный доступ к строкам локализации через контекст.

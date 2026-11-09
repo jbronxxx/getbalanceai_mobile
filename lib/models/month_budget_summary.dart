@@ -1,3 +1,4 @@
+import '../utils/utils.dart';
 import 'local_db_models.dart';
 import 'month_period.dart';
 
@@ -24,11 +25,12 @@ class MonthBudgetSummary {
     required this.daysLeft,
   });
 
-  /// [spentByCategory] — расходы месяца по категориям; учитываются только
-  /// категории, на которые задан лимит.
+  /// [spentByCategory] — расходы месяца по категориям (ключ —
+  /// [Budget.dbCategory]); учитываются только категории, на которые задан
+  /// лимит.
   factory MonthBudgetSummary.calculate({
     required List<Budget> budgets,
-    required Map<Category, double> spentByCategory,
+    required Map<String, double> spentByCategory,
     required MonthPeriod period,
     DateTime? now,
   }) {
@@ -44,7 +46,7 @@ class MonthBudgetSummary {
     var totalSpent = 0.0;
     for (final b in budgets) {
       totalLimit += b.limitInBaseCurrency;
-      totalSpent += spentByCategory[b.category] ?? 0;
+      totalSpent += spentByCategory[b.dbCategory] ?? 0;
     }
 
     final daysInMonth = DateTime(period.year, period.month + 1, 0).day;
@@ -64,7 +66,9 @@ class MonthBudgetSummary {
   /// Остаток по лимитам; отрицательный — перерасход.
   double get remaining => totalLimit - totalSpent;
 
-  bool get isExceeded => totalSpent > totalLimit;
+  /// Перерасход — по остатку, округлённому до знаков базовой валюты:
+  /// погрешность сложения double не должна давать «Перерасход 0.00».
+  bool get isExceeded => CurrencyFormatter.roundToCurrency(remaining) < 0;
 
   /// Доля потраченного (0..∞), для индикатора.
   double get spentRatio => totalLimit > 0 ? totalSpent / totalLimit : 0;

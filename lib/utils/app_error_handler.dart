@@ -7,7 +7,6 @@ import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import '../config/api_config.dart';
-import '../main.dart';
 
 /// Централизованный обработчик ошибок приложения.
 ///

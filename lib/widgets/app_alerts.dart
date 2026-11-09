@@ -770,7 +770,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
                 const SizedBox(width: 8),
                 Text(
                   _secondsLeft > 0
-                      ? '${context.l10n.rate_limit_countdown_prefix} $_secondsLeft ${context.l10n.uzs_symbol == 'сум' ? 'сек.' : 'sec'}'
+                      ? context.l10n.rate_limit_countdown(_secondsLeft)
                       : context.l10n.rate_limit_ready,
                   style: TextStyle(
                     fontSize: AppFontSize.hint,

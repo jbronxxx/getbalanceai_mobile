@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/selected_period_service.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
 
@@ -21,10 +22,13 @@ class TransactionDateSelector extends StatelessWidget {
   });
 
   Future<void> _pickDate(BuildContext context, DateTime today) async {
+    final first = SelectedPeriodService.instance.firstDate;
     final picked = await showDatePicker(
       context: context,
       initialDate: date.isAfter(today) ? today : date,
-      firstDate: DateTime(2000),
+      // Операция старше диапазона (например, пришла с сервера) всё равно
+      // открывается в календаре на своей дате.
+      firstDate: date.isBefore(first) ? DateUtils.dateOnly(date) : first,
       lastDate: today,
     );
     if (picked != null) onChanged(DateUtils.dateOnly(picked));

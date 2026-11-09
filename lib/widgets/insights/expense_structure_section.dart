@@ -62,7 +62,12 @@ class _ExpenseStructureSectionState extends State<ExpenseStructureSection>
     final totals = db.totalsFor(transactions);
     _income = totals['income'] ?? 0;
     _expense = totals['expense'] ?? 0;
-    _byCategory = db.categoryExpensesFor(transactions);
+    // Неизвестные клиенту категории на диаграмме — в «Прочем»
+    _byCategory = {};
+    for (final e in db.categoryExpensesFor(transactions).entries) {
+      final category = Category.fromString(e.key);
+      _byCategory[category] = (_byCategory[category] ?? 0) + e.value;
+    }
   }
 
   @override

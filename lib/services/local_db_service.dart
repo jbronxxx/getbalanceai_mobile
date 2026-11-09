@@ -139,10 +139,11 @@ class LocalDbService {
 
   // --- Транзакции ---
 
-  /// Возвращает транзакции за определенный месяц и год с поддержкой пагинации.
+  /// Возвращает транзакции за месяц от новых к старым; [limit] — не больше
+  /// стольких записей (например, 1 — «есть ли операции»).
   /// Фильтрация происходит на уровне БД через диапазон миллисекунд.
   List<Transaction> getTransactionsForPeriod(int month, int year,
-      {int? limit, int offset = 0}) {
+      {int? limit}) {
     final startOfMonth = DateTime(year, month, 1).millisecondsSinceEpoch;
     final endOfMonth = DateTime(year, month + 1, 1)
         .subtract(const Duration(milliseconds: 1))
@@ -153,10 +154,7 @@ class LocalDbService {
     )..order(Transaction_.dateMilliseconds, flags: Order.descending);
 
     final q = query.build();
-    if (limit != null) {
-      q.limit = limit;
-      q.offset = offset;
-    }
+    if (limit != null) q.limit = limit;
 
     final results = q.find();
     q.close();
@@ -242,28 +240,26 @@ class LocalDbService {
     return {'income': income, 'expense': expense};
   }
 
-  /// Считает расходы по всем категориям за выбранный месяц с динамической
-  /// конвертацией в текущую валюту аккаунта.
-  Map<Category, double> getCategoryExpensesForPeriod(int month, int year,
-          [Currency? targetCurrency]) =>
-      categoryExpensesFor(
-          getTransactionsForPeriod(month, year), targetCurrency);
-
   /// Расходы по категориям по готовому списку операций — например, без
   /// скрытых в ожидании удаления.
-  Map<Category, double> categoryExpensesFor(Iterable<Transaction> transactions,
+  ///
+  /// Ключ — категория как она хранится ([Transaction.dbCategory]): категории,
+  /// которых клиент ещё не знает, не сливаются в «Прочее», и лимит на каждую
+  /// из них не получает траты всех остальных. Для показа по [Category] —
+  /// [Category.fromString].
+  Map<String, double> categoryExpensesFor(Iterable<Transaction> transactions,
       [Currency? targetCurrency]) {
     final currency = targetCurrency ?? CurrencyFormatter.currentCurrency;
     final exchange = CurrencyExchangeService.instance;
 
-    final Map<Category, double> result = {};
+    final Map<String, double> result = {};
 
     for (final t in transactions) {
       if (t.type == TransactionType.expense) {
         final converted = t.currency == currency
             ? t.amount
             : exchange.convert(t.amount, from: t.currency, to: currency);
-        result[t.category] = (result[t.category] ?? 0.0) + converted;
+        result[t.dbCategory] = (result[t.dbCategory] ?? 0.0) + converted;
       }
     }
 
