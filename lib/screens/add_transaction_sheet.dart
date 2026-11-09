@@ -369,28 +369,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: SizedBox(
+                child: SheetPrimaryButton(
                   key: const ValueKey('add_transaction_submit'),
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
-                    onPressed: _save,
-                    child: Text(
-                      isEditing
-                          ? context.l10n.save_changes_btn
-                          : context.l10n.add_btn,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
+                  label: isEditing
+                      ? context.l10n.save_changes_btn
+                      : context.l10n.add_btn,
+                  onPressed: _save,
                 ),
               ),
             ],

@@ -4,6 +4,7 @@ import '../../config/legal_links.dart';
 import '../../utils/utils.dart';
 import '../app_alerts.dart';
 import '../../theme/app_colors.dart';
+import '../whole_words_text.dart';
 
 /// Открывает URL во внешнем браузере; возвращает `false`, если открыть не удалось.
 Future<bool> openExternalUrl(Uri uri) =>
@@ -59,14 +60,14 @@ class ProfileDataCard extends StatelessWidget {
         child: ListTile(
           leading: Icon(Icons.privacy_tip_outlined,
               color: AppColors.of(context).accentText),
-          title: Text(
+          title: WholeWordsText(
             l10n.delete_account_info_title,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
               color: colorScheme.onSurface,
             ),
           ),
-          subtitle: Text(
+          subtitle: WholeWordsText(
             l10n.delete_account_info_subtitle,
             style: textTheme.bodySmall?.copyWith(color: colorScheme.outline),
           ),

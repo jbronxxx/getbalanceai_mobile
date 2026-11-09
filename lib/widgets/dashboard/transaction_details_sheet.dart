@@ -3,7 +3,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
 import '../app_sheet.dart';
-import '../one_line_label.dart';
+import '../sheet_buttons.dart';
 import '../../theme/app_colors.dart';
 
 /// Действие, выбранное в карточке операции.
@@ -20,8 +20,6 @@ class TransactionDetailsSheet extends StatelessWidget {
   /// Поля кнопок уже стандартных (16 + 24 у кнопки с иконкой): в половине
   /// ширины телефона 360 dp иначе «Редактировать» не помещается в полный
   /// размер.
-  static const _actionPadding = EdgeInsets.symmetric(horizontal: 8);
-
   /// Открывает карточку; возвращает выбранное действие или `null`.
   static Future<TransactionDetailsAction?> show(
     BuildContext context,
@@ -145,40 +143,22 @@ class TransactionDetailsSheet extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: SheetOutlinedButton(
                       key: const ValueKey('transaction_details_delete'),
+                      label: context.l10n.delete_btn,
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      color: colorScheme.error,
                       onPressed: () => Navigator.pop(
                           context, TransactionDetailsAction.delete),
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      label: OneLineLabel(context.l10n.delete_btn),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colorScheme.error,
-                        side: BorderSide(
-                          color: colorScheme.error.withValues(alpha: 0.5),
-                        ),
-                        minimumSize: const Size.fromHeight(52),
-                        padding: _actionPadding,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton.icon(
+                    child: SheetPrimaryButton(
                       key: const ValueKey('transaction_details_edit'),
+                      label: context.l10n.edit_btn,
                       onPressed: () =>
                           Navigator.pop(context, TransactionDetailsAction.edit),
-                      icon: const Icon(Icons.edit_rounded),
-                      label: OneLineLabel(context.l10n.edit_btn),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                        padding: _actionPadding,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
                     ),
                   ),
                 ],

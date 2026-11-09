@@ -448,11 +448,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sync_reject_invalid_currency =>
-      'Сервер не смог получить курс валюты';
+      'Сервер не поддерживает эту валюту или не смог получить её курс';
 
   @override
   String get sync_reject_invalid_amount =>
       'Сумма в основной валюте слишком большая';
+
+  @override
+  String get sync_reject_invalid_category =>
+      'Сервер не знает эту категорию — выберите другую или обновите приложение';
+
+  @override
+  String get sync_reject_invalid_amount_range =>
+      'Сумма вне допустимого диапазона';
 
   @override
   String get sync_reject_unknown => 'Сервер не принял эту запись';

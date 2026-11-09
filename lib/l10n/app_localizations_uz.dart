@@ -447,11 +447,20 @@ class AppLocalizationsUz extends AppLocalizations {
       'Tuzatish uchun yozuvni bosing. Saqlangandan keyin u qayta yuboriladi.';
 
   @override
-  String get sync_reject_invalid_currency => 'Server valyuta kursini ololmadi';
+  String get sync_reject_invalid_currency =>
+      'Server bu valyutani qo\'llamaydi yoki uning kursini ololmadi';
 
   @override
   String get sync_reject_invalid_amount =>
       'Asosiy valyutadagi summa juda katta';
+
+  @override
+  String get sync_reject_invalid_category =>
+      'Server bu kategoriyani bilmaydi — boshqasini tanlang yoki ilovani yangilang';
+
+  @override
+  String get sync_reject_invalid_amount_range =>
+      'Summa ruxsat etilgan oraliqdan tashqarida';
 
   @override
   String get sync_reject_unknown => 'Server bu yozuvni qabul qilmadi';

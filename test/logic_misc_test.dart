@@ -200,7 +200,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.file_download_outlined));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.date_range));
+      await tester.tap(find.byIcon(Icons.calendar_today_rounded));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

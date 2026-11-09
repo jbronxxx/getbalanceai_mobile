@@ -258,38 +258,19 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    centerPrimaryText,
-                    style: textTheme.titleLarge?.copyWith(
-                      color: AppColors.onBrandBase,
-                      fontWeight: FontWeight.bold,
-                      fontSize: AppFontSize.headline,
-                      height: 1.1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    centerSubText,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: AppColors.onBrandBase.withValues(alpha: 0.78),
-                      fontSize: AppFontSize.micro,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
+          _DonutCenter(
+            primary: centerPrimaryText,
+            secondary: centerSubText,
+            primaryStyle: textTheme.titleLarge?.copyWith(
+              color: AppColors.onBrandBase,
+              fontWeight: FontWeight.bold,
+              fontSize: AppFontSize.headline,
+              height: 1.1,
+            ),
+            secondaryStyle: textTheme.labelSmall?.copyWith(
+              color: AppColors.onBrandBase.withValues(alpha: 0.78),
+              fontSize: AppFontSize.micro,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -376,6 +357,73 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
             percentage: ((remainingSum / widget.totalExpense) * 100).round(),
           ),
       ],
+    );
+  }
+}
+
+/// Процент и подпись в центре кольца. Блок целиком вписывается в отверстие
+/// кольца (по диагонали): при крупном шрифте «всего трат» не залезает на
+/// кольцо, а весь блок немного уменьшается; при обычном — без изменений.
+class _DonutCenter extends StatelessWidget {
+  /// Диаметр отверстия: кольцо 100 с толщиной 10, минус зазор.
+  static const _holeDiameter = 100 - 2 * 10 - 4;
+  static const _gap = 2.0;
+
+  final String primary;
+  final String secondary;
+  final TextStyle? primaryStyle;
+  final TextStyle? secondaryStyle;
+
+  const _DonutCenter({
+    required this.primary,
+    required this.secondary,
+    required this.primaryStyle,
+    required this.secondaryStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    Size measure(String text, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final size = painter.size;
+      painter.dispose();
+      return size;
+    }
+
+    final top = measure(primary, primaryStyle);
+    final bottom = measure(secondary, secondaryStyle);
+    final width = math.max(top.width, bottom.width);
+    final height = top.height + _gap + bottom.height;
+    final diagonal = math.sqrt(width * width + height * height);
+    final scale = math.min(1.0, _holeDiameter / diagonal);
+
+    return SizedBox(
+      key: const ValueKey('donut_center'),
+      width: width * scale,
+      height: height * scale,
+      child: FittedBox(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(primary, maxLines: 1, softWrap: false, style: primaryStyle),
+            const SizedBox(height: _gap),
+            Text(
+              secondary,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: secondaryStyle,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

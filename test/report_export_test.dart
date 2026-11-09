@@ -11,6 +11,7 @@ import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/insights/report_export_action.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -607,13 +608,19 @@ void main() {
       final share =
           tester.getSize(find.byKey(const ValueKey('report_share_button')));
       expect(download.width, greaterThan(share.width * 3));
+      // Кнопки и оформление — как у шторок операции и лимита
+      expect(download.height, SheetButtons.height);
+      expect(share, const Size.square(SheetButtons.height));
+      expect(find.byType(SheetHandle), findsOneWidget);
+      expect(find.byType(SegmentedButton<ReportFormat>), findsNothing);
 
+      AppChoiceChip formatChip(ReportFormat f) => tester.widget<AppChoiceChip>(
+          find.byKey(ValueKey('report_format_${f.name}')));
+      expect(formatChip(ReportFormat.pdf).selected, isTrue);
       await tester.tap(find.text('CSV'));
       await tester.pump();
-      final segmented = tester.widget<SegmentedButton<ReportFormat>>(
-        find.byType(SegmentedButton<ReportFormat>),
-      );
-      expect(segmented.selected, {ReportFormat.csv});
+      expect(formatChip(ReportFormat.csv).selected, isTrue);
+      expect(formatChip(ReportFormat.pdf).selected, isFalse);
     });
   });
 }

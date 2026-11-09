@@ -1,11 +1,13 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
-import 'package:getbalanceai_mobile/theme/app_colors.dart';
+import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
+import 'support/app_fonts.dart';
 
 void main() {
   setUp(() {
@@ -215,5 +217,76 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('80%'), findsWidgets);
+  });
+
+  group('UX-16: подпись в центре кольца', () {
+    setUpAll(loadAppFonts);
+
+    /// Карточка на телефоне 360 dp с масштабом шрифта [scale].
+    Future<void> pumpCard(WidgetTester tester, AppLanguage language,
+        double scale, double income) async {
+      LanguageManager.setLanguage(language, save: false);
+      tester.view
+        ..physicalSize = const Size(360, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale(language.name),
+        theme: AppTheme.lightTheme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(scale)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: BudgetExpenseRatioCard(
+              totalIncome: income,
+              totalExpense: 35000,
+              categoryExpenses: const {Category.food: 35000},
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    for (final scale in [1.0, 1.15, 1.3, 1.5, 2.0]) {
+      testWidgets('блок вписан в отверстие кольца, шрифт ×$scale',
+          (tester) async {
+        final outside = <String>[];
+        for (final language in AppLanguage.values) {
+          // Без дохода — «всего трат», с доходом — «от дохода»
+          for (final income in [0.0, 100000.0]) {
+            await pumpCard(tester, language, scale, income);
+            final donut = tester.getCenter(find.byType(CustomPaint).last);
+            final box =
+                tester.getRect(find.byKey(const ValueKey('donut_center')));
+            // Отверстие — круг радиусом 40 (кольцо 100, толщина 10)
+            final farthest = [
+              box.topLeft,
+              box.topRight,
+              box.bottomLeft,
+              box.bottomRight
+            ].map((p) => (p - donut).distance).reduce(math.max);
+            if (farthest > 40) {
+              outside.add('${language.name}, доход $income: '
+                  '${farthest.toStringAsFixed(1)}');
+            }
+          }
+        }
+        expect(outside, isEmpty);
+      });
+    }
+
+    testWidgets('при обычном шрифте подписи не уменьшаются', (tester) async {
+      await pumpCard(tester, AppLanguage.ru, 1.0, 0);
+      final center = find.byKey(const ValueKey('donut_center'));
+      final content =
+          find.descendant(of: center, matching: find.byType(Column));
+      expect(tester.getSize(center), tester.getSize(content));
+    });
   });
 }

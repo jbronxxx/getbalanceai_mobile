@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Короткая подпись (кнопка, переключатель, строка настроек) в одну строку.
@@ -17,6 +18,35 @@ class OneLineLabel extends StatelessWidget {
     this.style,
     this.alignment = Alignment.center,
   });
+
+  /// Ширина [text] в одну строку с учётом масштаба шрифта — сколько места
+  /// нужно подписи, чтобы не уменьшаться.
+  static double widthOf(BuildContext context, String text, TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width.ceilToDouble() + 1;
+    painter.dispose();
+    return width;
+  }
+
+  /// Место для суммы рядом с названием в строке шириной [available]:
+  /// название получает свою ширину, сумма — остальное, но не меньше
+  /// [minShare] строки (тогда уменьшается и название).
+  static double spaceBeside(
+    BuildContext context, {
+    required double available,
+    required String title,
+    TextStyle? titleStyle,
+    double minShare = 0.4,
+  }) =>
+      math.max(
+        available - widthOf(context, title, titleStyle),
+        available * minShare,
+      );
 
   @override
   Widget build(BuildContext context) {

@@ -5,7 +5,7 @@ import '../../services/services.dart';
 import '../../utils/utils.dart';
 import '../app_sheet.dart';
 import '../keyboard_inset_padding.dart';
-import '../one_line_label.dart';
+import '../sheet_buttons.dart';
 import '../profile/currency_picker_sheet.dart';
 import '../transaction/transaction.dart';
 import '../../theme/app_colors.dart';
@@ -340,43 +340,20 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   children: [
                     if (canDelete) ...[
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: SheetOutlinedButton(
                           key: const ValueKey('budget_sheet_delete'),
-                          onPressed: _deleteBudget,
+                          label: context.l10n.delete_btn,
                           icon: const Icon(Icons.delete_outline_rounded),
-                          label: OneLineLabel(context.l10n.delete_btn),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colorScheme.error,
-                            side: BorderSide(
-                              color: colorScheme.error.withValues(alpha: 0.5),
-                            ),
-                            minimumSize: const Size.fromHeight(54),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
+                          color: colorScheme.error,
+                          onPressed: _deleteBudget,
                         ),
                       ),
                       const SizedBox(width: 12),
                     ],
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          minimumSize: const Size.fromHeight(54),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
+                      child: SheetPrimaryButton(
+                        label: context.l10n.save_btn,
                         onPressed: hasCategories ? _saveBudget : null,
-                        child: OneLineLabel(
-                          context.l10n.save_btn,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimary,
-                          ),
-                        ),
                       ),
                     ),
                   ],
