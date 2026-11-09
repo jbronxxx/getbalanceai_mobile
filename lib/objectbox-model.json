@@ -66,7 +66,7 @@
     },
     {
       "id": "2:4394803372386859630",
-      "lastPropertyId": "12:7791215221864576812",
+      "lastPropertyId": "13:7068928046643594284",
       "name": "Transaction",
       "properties": [
         {
@@ -133,6 +133,11 @@
           "id": "12:7791215221864576812",
           "name": "baseAmount",
           "type": 8
+        },
+        {
+          "id": "13:7068928046643594284",
+          "name": "syncRejectCode",
+          "type": 9
         }
       ],
       "relations": []

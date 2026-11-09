@@ -4,7 +4,8 @@ part of 'profile_cubit.dart';
 enum SyncStatus { idle, syncing, success, error, noInternet }
 
 /// Состояние экрана профиля: статус синхронизации, последняя ошибка
-/// синхронизации и число изменений, ещё не отправленных на сервер.
+/// синхронизации, число изменений, ещё не отправленных на сервер, и сколько
+/// из них сервер отклонил.
 @immutable
 class ProfileState {
   final SyncStatus syncStatus;
@@ -12,6 +13,10 @@ class ProfileState {
 
   /// Операции, лимиты и удаления, которые ещё не дошли до сервера.
   final int pendingSyncCount;
+
+  /// Операции, которые сервер не принял при последней выгрузке (входят
+  /// в [pendingSyncCount]).
+  final int rejectedSyncCount;
 
   /// Номер нажатия «Синхронизировать». Повторная попытка без сети даёт тот
   /// же статус `noInternet` — по номеру экран понимает, что это новая
@@ -22,6 +27,7 @@ class ProfileState {
     this.syncStatus = SyncStatus.idle,
     this.syncError,
     this.pendingSyncCount = 0,
+    this.rejectedSyncCount = 0,
     this.syncAttempt = 0,
   });
 
@@ -30,12 +36,14 @@ class ProfileState {
     SyncStatus? syncStatus,
     Object? syncError,
     int? pendingSyncCount,
+    int? rejectedSyncCount,
     int? syncAttempt,
   }) {
     return ProfileState(
       syncStatus: syncStatus ?? this.syncStatus,
       syncError: syncError,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
+      rejectedSyncCount: rejectedSyncCount ?? this.rejectedSyncCount,
       syncAttempt: syncAttempt ?? this.syncAttempt,
     );
   }

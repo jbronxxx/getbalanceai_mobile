@@ -194,6 +194,15 @@ class Transaction {
   double exchangeRate;
   double baseAmount;
 
+  /// Код причины, по которой сервер не принял эту версию операции при
+  /// выгрузке (`rejected` в ответе `/sync/`); `null` — не отклонена.
+  /// Сбрасывается, когда сервер принимает запись, и при правке пользователем
+  /// (форма сохраняет новый объект). На сервер не отправляется.
+  String? syncRejectCode;
+
+  /// Сервер не прислал код причины (бэкенд без поля `code`).
+  static const unknownRejectCode = 'UNKNOWN';
+
   Transaction({
     this.localId = 0,
     this.serverId,
@@ -207,6 +216,7 @@ class Transaction {
     this.currencyCode = 'USD',
     this.exchangeRate = 1.0,
     this.baseAmount = 0.0,
+    this.syncRejectCode,
   });
 
   @Transient()

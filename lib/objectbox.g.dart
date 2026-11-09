@@ -93,7 +93,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(2, 4394803372386859630),
     name: 'Transaction',
-    lastPropertyId: const obx_int.IdUid(12, 7791215221864576812),
+    lastPropertyId: const obx_int.IdUid(13, 7068928046643594284),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -168,6 +168,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(12, 7791215221864576812),
         name: 'baseAmount',
         type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 7068928046643594284),
+        name: 'syncRejectCode',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -342,7 +348,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         final dbTypeOffset = fbb.writeString(object.dbType);
         final currencyCodeOffset = fbb.writeString(object.currencyCode);
-        fbb.startTable(13);
+        final syncRejectCodeOffset = object.syncRejectCode == null
+            ? null
+            : fbb.writeString(object.syncRejectCode!);
+        fbb.startTable(14);
         fbb.addInt64(0, object.localId);
         fbb.addOffset(1, serverIdOffset);
         fbb.addFloat64(2, object.amount);
@@ -355,6 +364,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(9, currencyCodeOffset);
         fbb.addFloat64(10, object.exchangeRate);
         fbb.addFloat64(11, object.baseAmount);
+        fbb.addOffset(12, syncRejectCodeOffset);
         fbb.finish(fbb.endTable());
         return object.localId;
       },
@@ -418,6 +428,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           26,
           0,
         );
+        final syncRejectCodeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 28);
         final object = Transaction(
           localId: localIdParam,
           serverId: serverIdParam,
@@ -431,6 +444,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           currencyCode: currencyCodeParam,
           exchangeRate: exchangeRateParam,
           baseAmount: baseAmountParam,
+          syncRejectCode: syncRejectCodeParam,
         );
 
         return object;
@@ -554,5 +568,10 @@ class Transaction_ {
   /// See [Transaction.baseAmount].
   static final baseAmount = obx.QueryDoubleProperty<Transaction>(
     _entities[1].properties[11],
+  );
+
+  /// See [Transaction.syncRejectCode].
+  static final syncRejectCode = obx.QueryStringProperty<Transaction>(
+    _entities[1].properties[12],
   );
 }

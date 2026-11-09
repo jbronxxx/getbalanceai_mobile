@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,6 +18,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 
 class _MockApiService extends Mock implements ApiService {}
+
+class _MockConnectivity extends Mock implements Connectivity {}
 
 /// Сеть для [SyncService]: обработчик решает, что ответить на запрос, и
 /// может придержать ответ, чтобы проверить, что происходит «во время»
@@ -607,6 +610,143 @@ void main() {
       final stored = db().getTransaction(tx.localId)!;
       expect(stored.serverId, sentId);
       expect(stored.isModified, isTrue);
+      expect(stored.syncRejectCode, Transaction.unknownRejectCode);
+    });
+
+    /// Ответ `/sync/`, отклоняющий все отправленные операции с [code].
+    ResponseBody rejectAll(RequestOptions options, String code) {
+      final sent = ((options.data as Map)['transactions'] as List).cast<Map>();
+      return _json({
+        'status': 'success',
+        'data': {
+          'synced_transactions': [],
+          'synced_budgets': [],
+          'rejected': [
+            for (final t in sent)
+              {'id': t['id'], 'code': code, 'reason': 'текст для журнала'},
+          ],
+        },
+      });
+    }
+
+    test('код отказа сохраняется у операции и виден в Профиле', () async {
+      final cubit = ProfileCubit(api: _MockApiService());
+      addTearDown(cubit.close);
+      final rejected = addTransaction();
+      final accepted = addTransaction();
+      adapter.handler = (options) async {
+        final sent =
+            ((options.data as Map)['transactions'] as List).cast<Map>();
+        final rejectedId = sent
+            .firstWhere((t) => t['date'] == rejected.toJson()['date'])['id'];
+        return _json({
+          'status': 'success',
+          'data': {
+            'synced_transactions': [
+              for (final t in sent)
+                if (t['id'] != rejectedId) {...t, 'created_at': t['date']}
+            ],
+            'synced_budgets': [],
+            'rejected': [
+              {
+                'id': rejectedId,
+                'code': 'INVALID_CURRENCY',
+                'reason': 'Неподдерживаемая валюта транзакции',
+              },
+            ],
+          },
+        });
+      };
+
+      await sync.syncLocalDataToBackend();
+
+      expect(db().getTransaction(rejected.localId)!.syncRejectCode,
+          'INVALID_CURRENCY');
+      expect(db().getTransaction(accepted.localId)!.syncRejectCode, isNull);
+      expect(db().rejectedTransactionsCount, 1);
+      expect(db().getRejectedTransactions().single.localId, rejected.localId);
+      expect(cubit.state.rejectedSyncCount, 1);
+      expect(cubit.state.pendingSyncCount, 1);
+    });
+
+    test('правка пользователя снимает отметку, принятая запись — тоже',
+        () async {
+      final cubit = ProfileCubit(api: _MockApiService());
+      addTearDown(cubit.close);
+      final tx = addTransaction();
+      adapter.handler =
+          (options) async => rejectAll(options, 'INVALID_TRANSACTION_AMOUNT');
+      await sync.syncLocalDataToBackend();
+      expect(cubit.state.rejectedSyncCount, 1);
+
+      editAmount(tx.localId, 100);
+      expect(db().getTransaction(tx.localId)!.syncRejectCode, isNull);
+      expect(cubit.state.rejectedSyncCount, 0);
+
+      await sync.syncLocalDataToBackend();
+      expect(cubit.state.rejectedSyncCount, 1);
+
+      adapter.handler = (options) async => _acceptAll(options);
+      await sync.syncLocalDataToBackend();
+
+      final stored = db().getTransaction(tx.localId)!;
+      expect(stored.syncRejectCode, isNull);
+      expect(stored.isModified, isFalse);
+      expect(cubit.state.rejectedSyncCount, 0);
+      expect(cubit.state.pendingSyncCount, 0);
+    });
+
+    test('синк с отказом завершается успехом с числом отклонённых', () async {
+      final api = _MockApiService();
+      final connectivity = _MockConnectivity();
+      when(() => connectivity.checkConnectivity())
+          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+      when(() => api.syncAll()).thenAnswer((_) => sync.syncAll());
+      final cubit = ProfileCubit(api: api, connectivity: connectivity);
+      addTearDown(cubit.close);
+      addTransaction();
+      adapter.handler = (options) async {
+        if (options.path == '/sync/changes') return _changes(const []);
+        if (options.path == '/sync/') {
+          return rejectAll(options, 'INVALID_CURRENCY');
+        }
+        return _json({'status': 'success', 'data': []});
+      };
+
+      await cubit.startSync();
+
+      expect(cubit.state.syncStatus, SyncStatus.success);
+      expect(cubit.state.rejectedSyncCount, 1);
+    });
+
+    test('отказ версии, изменённой во время выгрузки, не отмечается', () async {
+      final tx = addTransaction(amount: 100);
+      adapter.handler = (options) async {
+        editAmount(tx.localId, 250);
+        return rejectAll(options, 'INVALID_TRANSACTION_AMOUNT');
+      };
+
+      await sync.syncLocalDataToBackend();
+
+      final stored = db().getTransaction(tx.localId)!;
+      expect(stored.amount, 250);
+      expect(stored.isModified, isTrue);
+      expect(stored.syncRejectCode, isNull);
+    });
+
+    test('конфликт ID распознаётся по коду без русского текста', () async {
+      final tx = addTransaction();
+      adapter.handler = (options) async => rejectAll(options, 'ID_CONFLICT');
+
+      await sync.syncLocalDataToBackend();
+      final firstId =
+          ((syncRequests().single.data as Map)['transactions'] as List)
+              .single['id'];
+
+      final stored = db().getTransaction(tx.localId)!;
+      expect(stored.serverId, isNot(firstId));
+      expect(stored.isModified, isTrue);
+      expect(stored.syncRejectCode, isNull);
     });
   });
 

@@ -12,8 +12,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ApiService _api;
   final Connectivity _connectivity;
 
-  /// Всё, что меняет число неотправленных изменений: правки пользователя,
-  /// подтверждения сервера и очередь удалений.
+  /// Всё, что меняет число неотправленных и отклонённых изменений: правки
+  /// пользователя, ответы сервера и очередь удалений.
   final Listenable _pendingSources = Listenable.merge([
     LocalDbService.transactionsChanged,
     LocalDbService.budgetsChanged,
@@ -24,7 +24,10 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit({ApiService? api, Connectivity? connectivity})
       : _api = api ?? ApiService.instance,
         _connectivity = connectivity ?? Connectivity(),
-        super(ProfileState(pendingSyncCount: _countPendingSync())) {
+        super(ProfileState(
+          pendingSyncCount: _countPendingSync(),
+          rejectedSyncCount: _countRejectedSync(),
+        )) {
     _pendingSources.addListener(_refreshPendingSyncCount);
   }
 
@@ -35,11 +38,23 @@ class ProfileCubit extends Cubit<ProfileState> {
     return local + PendingDeletionsStore.instance.count;
   }
 
+  static int _countRejectedSync() => LocalDbService.isInitialized
+      ? LocalDbService.instance.rejectedTransactionsCount
+      : 0;
+
   void _refreshPendingSyncCount() {
     if (isClosed) return;
     final count = _countPendingSync();
-    if (count == state.pendingSyncCount) return;
-    emit(state.copyWith(pendingSyncCount: count, syncError: state.syncError));
+    final rejected = _countRejectedSync();
+    if (count == state.pendingSyncCount &&
+        rejected == state.rejectedSyncCount) {
+      return;
+    }
+    emit(state.copyWith(
+      pendingSyncCount: count,
+      rejectedSyncCount: rejected,
+      syncError: state.syncError,
+    ));
   }
 
   @override
@@ -68,7 +83,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     try {
       await _api.syncAll();
       if (isClosed) return;
-      emit(state.copyWith(syncStatus: SyncStatus.success));
+      emit(state.copyWith(
+        syncStatus: SyncStatus.success,
+        rejectedSyncCount: _countRejectedSync(),
+      ));
     } catch (e) {
       if (isClosed) return;
       emit(state.copyWith(syncStatus: SyncStatus.error, syncError: e));

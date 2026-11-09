@@ -14,12 +14,19 @@ class ProfileSyncCard extends StatelessWidget {
   /// пишет «синхронизировано».
   final int pendingCount;
 
+  /// Записи, которые сервер не принял: пока они есть, под статусом видна
+  /// строка, открывающая их список ([onRejectedPressed]).
+  final int rejectedCount;
+  final VoidCallback? onRejectedPressed;
+
   const ProfileSyncCard({
     super.key,
     required this.isAuthenticated,
     required this.status,
     required this.onSyncPressed,
     this.pendingCount = 0,
+    this.rejectedCount = 0,
+    this.onRejectedPressed,
   });
 
   @override
@@ -134,6 +141,11 @@ class ProfileSyncCard extends StatelessWidget {
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if (isAuthenticated && rejectedCount > 0)
+                        _RejectedLink(
+                          count: rejectedCount,
+                          onPressed: onRejectedPressed,
+                        ),
                     ],
                   ),
                 ),
@@ -145,6 +157,49 @@ class ProfileSyncCard extends StatelessWidget {
                       color: colorScheme.outline, size: 20),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Строка «Сервер не принял: N ›» под статусом синхронизации. Свой
+/// обработчик нажатия: тап по ней открывает список, а не запускает синк.
+class _RejectedLink extends StatelessWidget {
+  final int count;
+  final VoidCallback? onPressed;
+
+  const _RejectedLink({required this.count, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.error;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: InkWell(
+        key: const ValueKey('sync_rejected_link'),
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Icon(Icons.error_outline_rounded, size: 16, color: color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  context.l10n.sync_rejected_count(count),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, size: 18, color: color),
+            ],
           ),
         ),
       ),

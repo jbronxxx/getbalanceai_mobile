@@ -337,7 +337,7 @@ class SyncService {
 
       if (rejected.isNotEmpty) {
         AppLogger.w('[SyncService] Rejected by server: ${rejected.length} '
-            '(${rejected.map((r) => r['reason']).toSet().join('; ')})');
+            '(${rejected.map(_rejectCode).toSet().join(', ')})');
       }
       AppLogger.i('[SyncService] Sync local -> backend success: '
           'T($syncedTransactions/${localTransactions.length}), '
@@ -585,19 +585,29 @@ class SyncService {
     LocalDbService.instance.putTransactions(fresh);
   }
 
-  /// Причина отказа сервера по ID записи — `null`, если запись не отклонена.
-  Map<String, String?> _rejectedReasons(List<Map<String, dynamic>> rejected) {
+  /// Код причины отказа по ID записи: `code` из `rejected`, а если сервер
+  /// его не прислал — [Transaction.unknownRejectCode] или [_idConflictCode],
+  /// распознанный по тексту `reason`.
+  Map<String, String> _rejectedCodes(List<Map<String, dynamic>> rejected) {
     return {
       for (final json in rejected)
-        if (json['id'] is String)
-          json['id'] as String: json['reason'] as String?,
+        if (json['id'] is String) json['id'] as String: _rejectCode(json),
     };
   }
 
-  /// Сервер отклонил запись, потому что её ID принадлежит чужой записи.
-  /// Повтор с тем же ID отклонялся бы вечно — запись нужно перевыпустить.
-  static bool _isIdConflict(String? reason) =>
-      reason != null && reason.contains('конфликт идентификатора');
+  /// ID записи принадлежит чужой записи на сервере: повтор с тем же ID
+  /// отклонялся бы вечно, поэтому запись перевыпускается.
+  static const _idConflictCode = 'ID_CONFLICT';
+
+  static String _rejectCode(Map<String, dynamic> json) {
+    final code = json['code'];
+    if (code is String && code.isNotEmpty) return code;
+    final reason = json['reason'];
+    if (reason is String && reason.contains('конфликт идентификатора')) {
+      return _idConflictCode;
+    }
+    return Transaction.unknownRejectCode;
+  }
 
   /// Фиксирует в базе ответ `/sync/` для отправленных транзакций.
   ///
@@ -609,7 +619,9 @@ class SyncService {
   ///   отправки — иначе правка остаётся в очереди невыгруженных;
   /// - удалённая за время запроса строка не возвращается в базу;
   /// - запись, отклонённая из-за конфликта ID, получает новый UUID и уйдёт
-  ///   при следующей выгрузке; прочие отказы остаются в очереди.
+  ///   при следующей выгрузке; прочие отказы остаются в очереди с кодом
+  ///   причины в [Transaction.syncRejectCode], если запись не меняли после
+  ///   отправки.
   ///
   /// Возвращает число подтверждённых записей.
   int _confirmTransactions(
@@ -622,7 +634,7 @@ class SyncService {
         .map((json) => json['id'])
         .whereType<String>()
         .toSet();
-    final rejectedReasons = _rejectedReasons(rejected);
+    final rejectedCodes = _rejectedCodes(rejected);
 
     final localIds = sent.keys.toList();
     final stored = LocalDbService.instance.getTransactionsByLocalIds(localIds);
@@ -635,16 +647,23 @@ class SyncService {
       final sentId = snapshot['id'];
       if (row == null || sentId is! String || row.serverId != sentId) continue;
 
+      final unchanged = mapEquals(row.toJson(), snapshot);
       if (confirmedIds.contains(sentId)) {
         confirmed++;
-        if (row.isModified && mapEquals(row.toJson(), snapshot)) {
-          row.isModified = false;
+        if ((row.isModified && unchanged) || row.syncRejectCode != null) {
+          if (unchanged) row.isModified = false;
+          row.syncRejectCode = null;
           toPut.add(row);
         }
-      } else if (_isIdConflict(rejectedReasons[sentId])) {
+      } else if (rejectedCodes[sentId] == _idConflictCode) {
         row
           ..serverId = _uuid.v4()
-          ..isModified = true;
+          ..isModified = true
+          ..syncRejectCode = null;
+        toPut.add(row);
+      } else if (rejectedCodes[sentId] case final code?
+          when unchanged && row.syncRejectCode != code) {
+        row.syncRejectCode = code;
         toPut.add(row);
       }
     }
@@ -674,7 +693,7 @@ class SyncService {
       if (id is String) byId[id] = json;
       byKey[_budgetKey(json)] = json;
     }
-    final rejectedReasons = _rejectedReasons(rejected);
+    final rejectedCodes = _rejectedCodes(rejected);
 
     final localIds = sent.keys.toList();
     final stored = LocalDbService.instance.getBudgetsByLocalIds(localIds);
@@ -688,7 +707,7 @@ class SyncService {
       if (row == null || row.serverId != sentId) continue;
 
       final match = (sentId != null ? byId[sentId] : null) ??
-          (rejectedReasons.containsKey(sentId)
+          (rejectedCodes.containsKey(sentId)
               ? null
               : byKey[_budgetKey(snapshot)]);
       final confirmedId = match?['id'];
@@ -702,7 +721,7 @@ class SyncService {
           if (unchanged) row.isModified = false;
           toPut.add(row);
         }
-      } else if (_isIdConflict(rejectedReasons[sentId])) {
+      } else if (rejectedCodes[sentId] == _idConflictCode) {
         // Без ID сервер найдёт или создаст лимит по ключу.
         row
           ..serverId = null

@@ -435,6 +435,35 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String sync_rejected_count(int count) {
+    return 'Сервер не принял: $count';
+  }
+
+  @override
+  String get sync_rejected_title => 'Не принято сервером';
+
+  @override
+  String get sync_rejected_hint =>
+      'Нажмите на запись, чтобы исправить её. После сохранения она отправится снова.';
+
+  @override
+  String sync_reject_invalid_currency(String currency) {
+    return 'Сервер не поддерживает валюту $currency';
+  }
+
+  @override
+  String get sync_reject_invalid_amount =>
+      'Сумма в основной валюте слишком большая';
+
+  @override
+  String get sync_reject_unknown => 'Сервер не принял эту запись';
+
+  @override
+  String sync_done_with_rejected(int count) {
+    return 'Синхронизировано, но сервер не принял: $count';
+  }
+
+  @override
   String get enter_amount => 'Введите сумму';
 
   @override
