@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,5 +78,18 @@ void main() {
     final long = tileSize(tester, LanguageManager.l10n.expense_title);
 
     expect(long.height, short.height);
+  });
+
+  testWidgets('подписи «Доход» и «Расход» при ×2 не обрезаются «…»',
+      (tester) async {
+    await pumpTiles(tester, income: 0, expense: 36191556, scale: 2.0);
+
+    for (final label in [
+      LanguageManager.l10n.income_title,
+      LanguageManager.l10n.expense_title,
+    ]) {
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+      expect(paragraph.didExceedMaxLines, isFalse, reason: label);
+    }
   });
 }

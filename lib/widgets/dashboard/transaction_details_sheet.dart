@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../whole_words_text.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
@@ -102,7 +103,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
+                      child: WholeWordsText(
                         t.category.getLocalizedName(context),
                         style: textTheme.bodyMedium,
                       ),
@@ -190,7 +191,7 @@ class _DetailRow extends StatelessWidget {
         builder: (context, constraints) => Row(
           children: [
             Expanded(
-              child: Text(
+              child: WholeWordsText(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.outline,

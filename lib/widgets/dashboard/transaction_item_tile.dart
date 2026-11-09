@@ -137,41 +137,47 @@ class TransactionItemTile extends StatelessWidget {
                 maxWidth: _amountMaxWidth(
                     context, constraints.maxWidth, title, titleStyle),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  CurrencyFormatter.formatText(
-                    isExpense ? -transaction.amount : transaction.amount,
-                    currency: transaction.currency,
-                    textAlign: TextAlign.end,
-                    showSign: true,
-                    showSymbol: true,
-                    useFittedBox: true,
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isExpense
-                          ? colorScheme.onSurface
-                          : AppColors.of(context).accentText,
-                    ),
-                  ),
-                  if (transaction.currency !=
-                      CurrencyFormatter.currentCurrency) ...[
-                    const SizedBox(height: 2),
+              // Сумма и «≈ в основной валюте» при крупном шрифте могут не
+              // поместиться и по высоте строки — тогда обе слегка уменьшаются
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerEnd,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     CurrencyFormatter.formatText(
-                      isExpense
-                          ? -transaction.effectiveBaseAmount
-                          : transaction.effectiveBaseAmount,
-                      prefix: '≈ ',
+                      isExpense ? -transaction.amount : transaction.amount,
+                      currency: transaction.currency,
                       textAlign: TextAlign.end,
+                      showSign: true,
+                      showSymbol: true,
                       useFittedBox: true,
-                      style: textTheme.labelSmall?.copyWith(
-                        color: colorScheme.outline,
-                        fontSize: AppFontSize.micro,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isExpense
+                            ? colorScheme.onSurface
+                            : AppColors.of(context).accentText,
                       ),
                     ),
+                    if (transaction.currency !=
+                        CurrencyFormatter.currentCurrency) ...[
+                      const SizedBox(height: 2),
+                      CurrencyFormatter.formatText(
+                        isExpense
+                            ? -transaction.effectiveBaseAmount
+                            : transaction.effectiveBaseAmount,
+                        prefix: '≈ ',
+                        textAlign: TextAlign.end,
+                        useFittedBox: true,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.outline,
+                          fontSize: AppFontSize.micro,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

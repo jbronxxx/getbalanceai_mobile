@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
 import '../one_line_label.dart';
+import '../whole_words_text.dart';
 import '../swipe_to_delete.dart';
 import '../../theme/app_colors.dart';
 
@@ -138,12 +139,11 @@ class BudgetItemCard extends StatelessWidget {
                         children: [
                           // Подпись «Осталось» / «Превышен на» — мелко над
                           // суммой: в одной строке с суммой она ужимала её.
-                          Text(
+                          OneLineLabel(
                             isExceeded
                                 ? context.l10n.budget_exceeded
                                 : context.l10n.budget_remaining,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            alignment: AlignmentDirectional.centerEnd,
                             style: textTheme.labelSmall?.copyWith(
                               color: isExceeded
                                   ? exceededColor
@@ -182,14 +182,13 @@ class BudgetItemCard extends StatelessWidget {
                   Expanded(
                     // Потраченное и лимит — без переносов внутри суммы;
                     // длинная строка (сотни миллионов сумов) переходит на
-                    // вторую строку целиком перед «из …».
-                    child: Text(
+                    // вторую строку целиком перед «из …»; при крупном шрифте
+                    // — и на третью, без «…».
+                    child: WholeWordsText(
                       context.l10n.budget_spent_of(
                         _unbreakable(_display(currentSpent, showSymbol: false)),
                         _unbreakable(_display(budget.limitAmount)),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.outline,
                         fontFeatures: const [FontFeature.tabularFigures()],

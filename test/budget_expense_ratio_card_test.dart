@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -223,11 +224,12 @@ void main() {
     setUpAll(loadAppFonts);
 
     /// Карточка на телефоне 360 dp с масштабом шрифта [scale].
-    Future<void> pumpCard(WidgetTester tester, AppLanguage language,
-        double scale, double income) async {
+    Future<void> pumpCard(
+        WidgetTester tester, AppLanguage language, double scale, double income,
+        {double expense = 35000, double width = 360}) async {
       LanguageManager.setLanguage(language, save: false);
       tester.view
-        ..physicalSize = const Size(360, 900)
+        ..physicalSize = Size(width, 900)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(MaterialApp(
@@ -244,8 +246,8 @@ void main() {
           body: SingleChildScrollView(
             child: BudgetExpenseRatioCard(
               totalIncome: income,
-              totalExpense: 35000,
-              categoryExpenses: const {Category.food: 35000},
+              totalExpense: expense,
+              categoryExpenses: {Category.food: expense},
             ),
           ),
         ),
@@ -280,6 +282,23 @@ void main() {
         expect(outside, isEmpty);
       });
     }
+
+    testWidgets(
+        '×2, узкий экран, десятки миллионов сумов: ни один текст не обрезан «…»',
+        (tester) async {
+      await CurrencyFormatter.setCurrency(Currency.uzs);
+      addTearDown(() => CurrencyFormatter.setCurrency(Currency.usd));
+      final cut = <String>[];
+      for (final language in AppLanguage.values) {
+        await pumpCard(tester, language, 2.0, 0, expense: 35983616, width: 320);
+        for (final p in tester.allRenderObjects.whereType<RenderParagraph>()) {
+          if (p.didExceedMaxLines) {
+            cut.add('${language.name}: «${p.text.toPlainText()}»');
+          }
+        }
+      }
+      expect(cut, isEmpty);
+    });
 
     testWidgets('при обычном шрифте подписи не уменьшаются', (tester) async {
       await pumpCard(tester, AppLanguage.ru, 1.0, 0);

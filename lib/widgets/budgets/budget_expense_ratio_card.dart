@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../whole_words_text.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
@@ -177,10 +178,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Text(
+          child: WholeWordsText(
             context.l10n.structure_title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: textTheme.titleSmall?.copyWith(
               color: AppColors.onBrandBase.withValues(alpha: 0.82),
               letterSpacing: 0.3,
@@ -487,10 +486,11 @@ class _CategoryLegendRow extends StatelessWidget {
           const SizedBox(height: 1.5),
           Padding(
             padding: const EdgeInsets.only(left: 13.0),
-            child: Text(
+            // Длинная сумма в сумах при крупном шрифте слегка уменьшается,
+            // а не обрезается «…»
+            child: OneLineLabel(
               CurrencyFormatter.format(amount, showSymbol: true),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              alignment: AlignmentDirectional.centerStart,
               style: textTheme.labelSmall?.copyWith(
                 color: AppColors.onBrandBase.withValues(alpha: 0.78),
                 fontSize: AppFontSize.legend,

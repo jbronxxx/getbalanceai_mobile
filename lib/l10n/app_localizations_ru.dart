@@ -209,7 +209,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get insight_no_data =>
-      'Пока недостаточно данных для анализа. Продолжайте записывать расходы!';
+      'Пока недостаточно данных для анализа. Продолжайте записывать расходы.';
 
   @override
   String get no_network_title => 'Нет подключения к сети';

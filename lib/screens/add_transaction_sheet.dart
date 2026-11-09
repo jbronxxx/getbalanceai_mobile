@@ -304,7 +304,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         const Center(
                           child: SheetHandle(),
                         ),
-                        Text(
+                        WholeWordsText(
                           isEditing
                               ? context.l10n.edit_transaction
                               : context.l10n.new_transaction,
