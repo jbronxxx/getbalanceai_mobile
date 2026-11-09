@@ -409,5 +409,13 @@
         "type": "int"
       }
     }
+  },
+  "category_group_expand_hint": "show transactions",
+  "@category_group_expand_hint": {
+    "description": "TalkBack/VoiceOver tap hint on a collapsed category group (Double tap to ...)"
+  },
+  "category_group_collapse_hint": "hide transactions",
+  "@category_group_collapse_hint": {
+    "description": "TalkBack/VoiceOver tap hint on an expanded category group (Double tap to ...)"
   }
 }

@@ -164,6 +164,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
       budgetToEdit: budgetToEdit,
       limitedCategories: {for (final b in _budgets) b.category},
       onSaved: _loadBudgets,
+      onDelete: budgetToEdit == null ? null : () => _deleteBudget(budgetToEdit),
     );
   }
 

@@ -890,4 +890,10 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get category_group_expand_hint => 'показать операции';
+
+  @override
+  String get category_group_collapse_hint => 'скрыть операции';
 }

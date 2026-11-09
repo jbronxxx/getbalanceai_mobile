@@ -337,5 +337,7 @@
   "insights_outdated_refresh": "Hisobotni yangilash",
   "insights_outdated_tomorrow": "Yangi hisobot ertaga mavjud bo'ladi: kunlik yangilash limiti tugadi.",
   "logout_unsynced_warning": "Serverga yuborilmagan: {count}. Chiqishda bu o'zgarishlar qurilmadan o'chiriladi. Baribir chiqasizmi?",
-  "operations_count": "{count} ta operatsiya"
+  "operations_count": "{count} ta operatsiya",
+  "category_group_expand_hint": "operatsiyalarni ko'rsatish",
+  "category_group_collapse_hint": "operatsiyalarni yashirish"
 }

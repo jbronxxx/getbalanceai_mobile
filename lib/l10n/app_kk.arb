@@ -337,5 +337,7 @@
   "insights_outdated_refresh": "Есепті жаңарту",
   "insights_outdated_tomorrow": "Жаңа есеп ертең қолжетімді болады: күндік жаңарту шегі таусылды.",
   "logout_unsynced_warning": "Серверге жіберілмеген: {count}. Шыққанда бұл өзгерістер құрылғыдан жойылады. Бәрібір шығасыз ба?",
-  "operations_count": "{count} операция"
+  "operations_count": "{count} операция",
+  "category_group_expand_hint": "операцияларды көрсету",
+  "category_group_collapse_hint": "операцияларды жасыру"
 }

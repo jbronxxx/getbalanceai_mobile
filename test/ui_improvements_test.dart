@@ -629,6 +629,55 @@ void main() {
       expect(LocalDbService.instance.getAllBudgets().length, 1);
     });
 
+    testWidgets(
+        'A11Y-01: «Удалить» в шторке лимита скрывает его с отменой, '
+        'как свайп', (tester) async {
+      tester.view
+        ..physicalSize = const Size(800, 1600)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SelectedPeriodService.instance.reset();
+      final period = SelectedPeriodService.instance.period;
+      LocalDbService.instance.saveBudget(Budget(
+        dbCategory: Category.food.name,
+        limitAmount: 50000,
+        spent: 0,
+        remaining: 50000,
+        month: period.month,
+        year: period.year,
+      ));
+
+      await tester.pumpWidget(_buildTestApp(const BudgetsScreen()));
+      await tester.pumpAndSettle();
+      final cards = find.byType(BudgetItemCard);
+      final delete = find.byKey(const ValueKey('budget_sheet_delete'));
+      expect(cards, findsOneWidget);
+
+      Future<void> deleteFromSheet() async {
+        await tester.tap(cards);
+        await tester.pumpAndSettle();
+        expect(find.byType(AddBudgetSheet), findsOneWidget);
+        await tester.tap(delete);
+        await tester.pumpAndSettle();
+        expect(find.byType(AddBudgetSheet), findsNothing);
+      }
+
+      await deleteFromSheet();
+      expect(cards, findsNothing);
+      expect(find.text(LanguageManager.l10n.budget_deleted), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('toast_action')));
+      await tester.pumpAndSettle();
+      expect(cards, findsOneWidget);
+      await tester.pump(const Duration(seconds: 6));
+      expect(LocalDbService.instance.getAllBudgets().length, 1);
+
+      await deleteFromSheet();
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+      expect(cards, findsNothing);
+      expect(LocalDbService.instance.getAllBudgets(), isEmpty);
+    });
+
     testWidgets('Обычный тост сохраняет крестик закрытия', (tester) async {
       await tester.pumpWidget(_buildTestApp(Builder(
         builder: (context) => TextButton(

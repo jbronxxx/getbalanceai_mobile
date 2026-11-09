@@ -337,5 +337,7 @@
   "insights_outdated_refresh": "Обновить отчёт",
   "insights_outdated_tomorrow": "Новый отчёт будет доступен завтра: дневной лимит обновлений исчерпан.",
   "logout_unsynced_warning": "Не отправлено на сервер: {count}. При выходе эти изменения будут удалены с устройства. Всё равно выйти?",
-  "operations_count": "{count, plural, one{{count} операция} few{{count} операции} many{{count} операций} other{{count} операции}}"
+  "operations_count": "{count, plural, one{{count} операция} few{{count} операции} many{{count} операций} other{{count} операции}}",
+  "category_group_expand_hint": "показать операции",
+  "category_group_collapse_hint": "скрыть операции"
 }

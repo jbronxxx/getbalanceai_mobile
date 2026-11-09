@@ -876,4 +876,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String operations_count(int count) {
     return '$count операция';
   }
+
+  @override
+  String get category_group_expand_hint => 'операцияларды көрсету';
+
+  @override
+  String get category_group_collapse_hint => 'операцияларды жасыру';
 }
