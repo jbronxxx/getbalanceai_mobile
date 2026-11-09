@@ -435,6 +435,33 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String sync_rejected_count(int count) {
+    return 'Server qabul qilmadi: $count';
+  }
+
+  @override
+  String get sync_rejected_title => 'Server qabul qilmagan';
+
+  @override
+  String get sync_rejected_hint =>
+      'Tuzatish uchun yozuvni bosing. Saqlangandan keyin u qayta yuboriladi.';
+
+  @override
+  String get sync_reject_invalid_currency => 'Server valyuta kursini ololmadi';
+
+  @override
+  String get sync_reject_invalid_amount =>
+      'Asosiy valyutadagi summa juda katta';
+
+  @override
+  String get sync_reject_unknown => 'Server bu yozuvni qabul qilmadi';
+
+  @override
+  String sync_done_with_rejected(int count) {
+    return 'Sinxronlandi, lekin server qabul qilmadi: $count';
+  }
+
+  @override
   String get enter_amount => 'Summani kiriting';
 
   @override

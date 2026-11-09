@@ -159,6 +159,44 @@
       }
     }
   },
+  "sync_rejected_count": "Not accepted by server: {count}",
+  "@sync_rejected_count": {
+    "description": "Profile sync card: records the server rejected, opens their list",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sync_rejected_title": "Not accepted by server",
+  "@sync_rejected_title": {
+    "description": "Title of the sheet with records the server rejected"
+  },
+  "sync_rejected_hint": "Tap a record to fix it. It will be uploaded again after you save it.",
+  "@sync_rejected_hint": {
+    "description": "Hint under the title of the rejected records sheet"
+  },
+  "sync_reject_invalid_currency": "The server could not get the exchange rate",
+  "@sync_reject_invalid_currency": {
+    "description": "Rejection reason: the server could not get the exchange rate for the record currency"
+  },
+  "sync_reject_invalid_amount": "The amount in the main currency is too large",
+  "@sync_reject_invalid_amount": {
+    "description": "Rejection reason: amount converted to the main currency is too large"
+  },
+  "sync_reject_unknown": "The server did not accept this record",
+  "@sync_reject_unknown": {
+    "description": "Rejection reason the app does not recognize"
+  },
+  "sync_done_with_rejected": "Synced, but the server did not accept: {count}",
+  "@sync_done_with_rejected": {
+    "description": "Toast after a sync in which the server rejected some records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Enter amount",
   "invalid_amount": "Invalid amount",
   "max_amount_prefix": "Max amount",

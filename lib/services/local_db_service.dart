@@ -427,6 +427,26 @@ class LocalDbService {
     return results;
   }
 
+  /// Операции, которые сервер не принял при последней выгрузке
+  /// ([Transaction.syncRejectCode]), — новые по дате сверху.
+  List<Transaction> getRejectedTransactions() {
+    final query = (_transactionBox.query(Transaction_.syncRejectCode.notNull())
+          ..order(Transaction_.dateMilliseconds, flags: Order.descending))
+        .build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  /// Число операций, которые сервер не принял, — без загрузки строк.
+  int get rejectedTransactionsCount {
+    final query =
+        _transactionBox.query(Transaction_.syncRejectCode.notNull()).build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
   /// Приводит локальные транзакции в соответствие с состоянием сервера.
   ///
   /// [remote] — ПОЛНЫЙ список транзакций пользователя с сервера (по всем

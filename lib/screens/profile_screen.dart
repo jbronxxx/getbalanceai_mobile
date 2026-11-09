@@ -7,6 +7,7 @@ import '../utils/utils.dart';
 import '../widgets/profile/profile.dart';
 import '../widgets/widgets.dart';
 import '../theme/theme.dart';
+import 'add_transaction_sheet.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatelessWidget {
@@ -70,11 +71,30 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   void _handleSyncState(BuildContext context, ProfileState state) {
     if (state.syncStatus == SyncStatus.noInternet) {
       AppAlerts.noInternet(context);
+    } else if (state.syncStatus == SyncStatus.success &&
+        state.rejectedSyncCount > 0) {
+      AppAlerts.warning(
+        context,
+        context.l10n.sync_done_with_rejected(state.rejectedSyncCount),
+      );
     } else if (state.syncStatus == SyncStatus.success) {
       AppAlerts.success(context, context.l10n.sync_success);
     } else if (state.syncStatus == SyncStatus.error) {
       AppErrorHandler.show(context, state.syncError, title: context.l10n.cloud);
     }
+  }
+
+  /// Список операций, которые не принял сервер; выбранная открывается
+  /// в форме правки.
+  Future<void> _openRejected() async {
+    final transaction = await SyncRejectedSheet.show(context);
+    if (!mounted || transaction == null) return;
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.transparent,
+      builder: (_) => AddTransactionSheet(transactionToEdit: transaction),
+    );
   }
 
   void _showLoadingDialog(String message) {
@@ -290,7 +310,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       isAuthenticated: isAuthenticated,
                       status: state.syncStatus,
                       pendingCount: state.pendingSyncCount,
+                      rejectedCount: state.rejectedSyncCount,
                       onSyncPressed: context.read<ProfileCubit>().startSync,
+                      onRejectedPressed: _openRejected,
                     ),
                     const SizedBox(height: 24),
                     _buildSectionHeader(context.l10n.interface),

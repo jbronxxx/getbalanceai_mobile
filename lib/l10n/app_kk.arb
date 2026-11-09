@@ -151,6 +151,27 @@
       }
     }
   },
+  "sync_rejected_count": "Сервер қабылдамады: {count}",
+  "@sync_rejected_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sync_rejected_title": "Сервер қабылдамаған",
+  "sync_rejected_hint": "Түзету үшін жазбаны басыңыз. Сақтағаннан кейін ол қайта жіберіледі.",
+  "sync_reject_invalid_currency": "Сервер валюта бағамын ала алмады",
+  "sync_reject_invalid_amount": "Негізгі валютадағы сома тым үлкен",
+  "sync_reject_unknown": "Сервер бұл жазбаны қабылдамады",
+  "sync_done_with_rejected": "Синхрондалды, бірақ сервер қабылдамады: {count}",
+  "@sync_done_with_rejected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Соманы енгізіңіз",
   "invalid_amount": "Қате сома",
   "max_amount_prefix": "Ең көп сома",

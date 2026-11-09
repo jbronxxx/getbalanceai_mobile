@@ -436,6 +436,34 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sync_rejected_count(int count) {
+    return 'Not accepted by server: $count';
+  }
+
+  @override
+  String get sync_rejected_title => 'Not accepted by server';
+
+  @override
+  String get sync_rejected_hint =>
+      'Tap a record to fix it. It will be uploaded again after you save it.';
+
+  @override
+  String get sync_reject_invalid_currency =>
+      'The server could not get the exchange rate';
+
+  @override
+  String get sync_reject_invalid_amount =>
+      'The amount in the main currency is too large';
+
+  @override
+  String get sync_reject_unknown => 'The server did not accept this record';
+
+  @override
+  String sync_done_with_rejected(int count) {
+    return 'Synced, but the server did not accept: $count';
+  }
+
+  @override
   String get enter_amount => 'Enter amount';
 
   @override

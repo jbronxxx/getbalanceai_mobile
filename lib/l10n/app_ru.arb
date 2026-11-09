@@ -151,6 +151,27 @@
       }
     }
   },
+  "sync_rejected_count": "Сервер не принял: {count}",
+  "@sync_rejected_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sync_rejected_title": "Не принято сервером",
+  "sync_rejected_hint": "Нажмите на запись, чтобы исправить её. После сохранения она отправится снова.",
+  "sync_reject_invalid_currency": "Сервер не смог получить курс валюты",
+  "sync_reject_invalid_amount": "Сумма в основной валюте слишком большая",
+  "sync_reject_unknown": "Сервер не принял эту запись",
+  "sync_done_with_rejected": "Синхронизировано, но сервер не принял: {count}",
+  "@sync_done_with_rejected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enter_amount": "Введите сумму",
   "invalid_amount": "Некорректная сумма",
   "max_amount_prefix": "Макс. сумма",

@@ -437,6 +437,32 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String sync_rejected_count(int count) {
+    return 'Сервер қабылдамады: $count';
+  }
+
+  @override
+  String get sync_rejected_title => 'Сервер қабылдамаған';
+
+  @override
+  String get sync_rejected_hint =>
+      'Түзету үшін жазбаны басыңыз. Сақтағаннан кейін ол қайта жіберіледі.';
+
+  @override
+  String get sync_reject_invalid_currency => 'Сервер валюта бағамын ала алмады';
+
+  @override
+  String get sync_reject_invalid_amount => 'Негізгі валютадағы сома тым үлкен';
+
+  @override
+  String get sync_reject_unknown => 'Сервер бұл жазбаны қабылдамады';
+
+  @override
+  String sync_done_with_rejected(int count) {
+    return 'Синхрондалды, бірақ сервер қабылдамады: $count';
+  }
+
+  @override
   String get enter_amount => 'Соманы енгізіңіз';
 
   @override

@@ -912,6 +912,48 @@ abstract class AppLocalizations {
   /// **'Not uploaded: {count}. Tap to upload'**
   String sync_pending(int count);
 
+  /// Profile sync card: records the server rejected, opens their list
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted by server: {count}'**
+  String sync_rejected_count(int count);
+
+  /// Title of the sheet with records the server rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted by server'**
+  String get sync_rejected_title;
+
+  /// Hint under the title of the rejected records sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a record to fix it. It will be uploaded again after you save it.'**
+  String get sync_rejected_hint;
+
+  /// Rejection reason: the server could not get the exchange rate for the record currency
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not get the exchange rate'**
+  String get sync_reject_invalid_currency;
+
+  /// Rejection reason: amount converted to the main currency is too large
+  ///
+  /// In en, this message translates to:
+  /// **'The amount in the main currency is too large'**
+  String get sync_reject_invalid_amount;
+
+  /// Rejection reason the app does not recognize
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not accept this record'**
+  String get sync_reject_unknown;
+
+  /// Toast after a sync in which the server rejected some records
+  ///
+  /// In en, this message translates to:
+  /// **'Synced, but the server did not accept: {count}'**
+  String sync_done_with_rejected(int count);
+
   /// No description provided for @enter_amount.
   ///
   /// In en, this message translates to:
