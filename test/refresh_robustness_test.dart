@@ -261,9 +261,11 @@ void main() {
         return _json({
           'status': 'success',
           'data': {
-            'items': [item('tx-$page')],
+            'transactions': [item('tx-$page')],
+            'deleted_transaction_ids': <Object>[],
             'has_more': page < 3,
             'next_cursor': '${page + 1}',
+            'server_time': '2026-11-06T10:00:00.000Z',
           },
         });
       });

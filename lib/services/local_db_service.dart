@@ -340,12 +340,9 @@ class LocalDbService {
   /// Без этого шага `put` вставил бы новую строку с тем же `serverId`, а он
   /// помечен `@Unique()` со стратегией по умолчанию `ConflictStrategy.fail` —
   /// то есть вставка не «перезаписала бы тихо», а бросила
-  /// `UniqueViolationException` и оборвала синхронизацию.
-  /// [claimed] — локальные `localId`, уже занятые другими записями в рамках
-  /// одного прохода сверки; нужен, чтобы две серверные записи не «прилипли»
-  /// к одной локальной строке.
-  int? _linkToExistingTransaction(Transaction transaction,
-      {Set<int>? claimed}) {
+  /// `UniqueViolationException` и оборвала синхронизацию. Для пачки записей
+  /// с сервера — [_linkRemoteTransactions].
+  int? _linkToExistingTransaction(Transaction transaction) {
     final serverId = transaction.serverId;
     if (serverId == null) return null;
 
@@ -356,7 +353,6 @@ class LocalDbService {
 
     if (existing != null) {
       transaction.localId = existing.localId;
-      claimed?.add(existing.localId);
       return existing.localId;
     }
 
@@ -366,11 +362,10 @@ class LocalDbService {
     // serverId (ответ `/sync/` вернулся неполным). Без этой проверки она
     // осталась бы в базе рядом с приехавшей копией — получился бы дубль, и
     // он же уехал бы на сервер при следующей выгрузке.
-    final twin = _findUnsyncedTransactionTwin(transaction, claimed);
+    final twin = _findUnsyncedTransactionTwin(transaction);
 
     if (twin != null) {
       transaction.localId = twin.localId;
-      claimed?.add(twin.localId);
       return twin.localId;
     }
 
@@ -382,10 +377,7 @@ class LocalDbService {
   ///
   /// Сумму сравниваем в Dart, а не в запросе: ObjectBox не умеет
   /// сопоставлять double на точное равенство.
-  Transaction? _findUnsyncedTransactionTwin(
-    Transaction remote,
-    Set<int>? claimed,
-  ) {
+  Transaction? _findUnsyncedTransactionTwin(Transaction remote) {
     final query = _transactionBox
         .query(Transaction_.serverId
             .isNull()
@@ -397,9 +389,7 @@ class LocalDbService {
     query.close();
 
     for (final candidate in candidates) {
-      final isClaimed = claimed?.contains(candidate.localId) ?? false;
-
-      if (!isClaimed && candidate.amount == remote.amount) return candidate;
+      if (candidate.amount == remote.amount) return candidate;
     }
 
     return null;
@@ -467,21 +457,7 @@ class LocalDbService {
   int reconcileTransactions(List<Transaction> remote,
       {bool removeStale = true}) {
     return _store.runInTransaction(TxMode.write, () {
-      final claimed = <int>{};
-      final toPut = <Transaction>[];
-
-      for (final transaction in remote) {
-        final localId =
-            _linkToExistingTransaction(transaction, claimed: claimed);
-        if (localId != null) {
-          final existing = _transactionBox.get(localId);
-          if (existing != null && existing.isModified) {
-            continue;
-          }
-        }
-        toPut.add(transaction);
-      }
-      _transactionBox.putMany(toPut);
+      _transactionBox.putMany(_linkRemoteTransactions(remote));
 
       if (!removeStale) {
         return 0;
@@ -511,6 +487,100 @@ class LocalDbService {
   /// Вставляет или обновляет транзакции с сервера без удаления отсутствующих записей.
   void upsertRemoteTransactions(List<Transaction> remote) {
     reconcileTransactions(remote, removeStale: false);
+  }
+
+  /// Применяет изменения с сервера с прошлой синхронизации: [changed] —
+  /// созданные или изменённые там записи, [deletedServerIds] — удалённые.
+  ///
+  /// Правила те же, что у [reconcileTransactions]: не выгруженная локальная
+  /// правка (`isModified`) не перезаписывается и не удаляется — она уйдёт на
+  /// сервер при следующей выгрузке. Одна транзакция записи.
+  ///
+  /// Возвращает число удалённых записей.
+  int applyRemoteTransactionChanges(
+    List<Transaction> changed,
+    List<String> deletedServerIds,
+  ) {
+    return _store.runInTransaction(TxMode.write, () {
+      _transactionBox.putMany(_linkRemoteTransactions(changed));
+      if (deletedServerIds.isEmpty) return 0;
+
+      final query = _transactionBox
+          .query(Transaction_.serverId
+              .oneOf(deletedServerIds)
+              .and(Transaction_.isModified.equals(false)))
+          .build();
+      final ids = query.findIds();
+      query.close();
+      _transactionBox.removeMany(ids);
+      return ids.length;
+    });
+  }
+
+  /// Сопоставляет записи с сервера с локальными строками и возвращает те,
+  /// что нужно записать (с проставленным `localId`).
+  ///
+  /// Локальные строки читаются двумя запросами на всю пачку — по `serverId`
+  /// и ещё не выгруженные (без `serverId`), — а не запросом на каждую
+  /// запись: на тысячах операций сверка шла секундами на UI-изоляте.
+  /// Правила сопоставления — как у [_linkToExistingTransaction]; локально
+  /// изменённые строки (`isModified`) пропускаются.
+  List<Transaction> _linkRemoteTransactions(List<Transaction> remote) {
+    final serverIds =
+        remote.map((t) => t.serverId).whereType<String>().toList();
+    final byServerId = <String, Transaction>{};
+    if (serverIds.isNotEmpty) {
+      final query =
+          _transactionBox.query(Transaction_.serverId.oneOf(serverIds)).build();
+      for (final local in query.find()) {
+        byServerId[local.serverId!] = local;
+      }
+      query.close();
+    }
+
+    List<Transaction>? unsynced;
+    final claimed = <int>{};
+    final toPut = <Transaction>[];
+    for (final transaction in remote) {
+      var existing = byServerId[transaction.serverId];
+      if (existing == null) {
+        unsynced ??= _unsyncedTransactionsWithoutServerId();
+        existing = _takeUnsyncedTwin(transaction, unsynced, claimed);
+      }
+      if (existing != null) {
+        claimed.add(existing.localId);
+        if (existing.isModified) continue;
+        transaction.localId = existing.localId;
+      }
+      toPut.add(transaction);
+    }
+    return toPut;
+  }
+
+  List<Transaction> _unsyncedTransactionsWithoutServerId() {
+    final query = _transactionBox.query(Transaction_.serverId.isNull()).build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  /// Ещё не выгруженная строка с тем же содержимым, что у [remote] (см.
+  /// [_findUnsyncedTransactionTwin]), из заранее прочитанного списка.
+  Transaction? _takeUnsyncedTwin(
+    Transaction remote,
+    List<Transaction> unsynced,
+    Set<int> claimed,
+  ) {
+    for (final candidate in unsynced) {
+      if (!claimed.contains(candidate.localId) &&
+          candidate.dateMilliseconds == remote.dateMilliseconds &&
+          candidate.dbCategory == remote.dbCategory &&
+          candidate.dbType == remote.dbType &&
+          candidate.amount == remote.amount) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   // --- Бюджеты ---

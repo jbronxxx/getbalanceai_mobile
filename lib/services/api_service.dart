@@ -56,8 +56,6 @@ class ApiService {
       authOptions: _authService.authOptions,
       tokenProvider: () => _authService.token,
       userIdProvider: () => _authService.userId,
-      transactionApiService: _transactionApiService,
-      budgetApiService: _budgetApiService,
     );
 
     EnvironmentConfig.addEnvironmentListener((_) async {

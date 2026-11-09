@@ -64,7 +64,7 @@ void main() {
   late _FakeAdapter adapter;
   const storage = FlutterSecureStorage();
 
-  /// Операции «на сервере» по пользователям — их отдаёт GET /transactions/.
+  /// Операции «на сервере» по пользователям — их отдаёт GET /sync/changes.
   final remote = <String, List<Map<String, dynamic>>>{};
   String? currentUser;
 
@@ -125,15 +125,20 @@ void main() {
             'rejected': [],
           },
         });
-      case ApiConfig.transactions:
-        final etag = '"etag-$currentUser"';
-        if (options.headers['If-None-Match'] == etag) {
-          return ResponseBody.fromString('', 304);
-        }
+      case ApiConfig.syncChanges:
+        // С отметкой прошлой синхронизации сервер отдаёт только изменения —
+        // в этих тестах их нет.
+        final since = options.queryParameters['since'];
         return _json({
           'status': 'success',
-          'data': {'items': remote[currentUser!], 'has_more': false},
-        }, 200, etag);
+          'data': {
+            'transactions': since == null ? remote[currentUser!] : [],
+            'deleted_transaction_ids': [],
+            'has_more': false,
+            'next_cursor': null,
+            'server_time': '2026-11-06T10:00:00.000Z',
+          },
+        });
       case ApiConfig.budgets:
         return _json({'status': 'success', 'data': []});
       case ApiConfig.logout:
@@ -219,7 +224,9 @@ void main() {
       expect(localDescriptions(), ['гость: кофе']);
     });
 
-    test('A → выход → B → выход → A: у A нет 304 по старому ETag', () async {
+    test(
+        'A → выход → B → выход → A: у A полная загрузка, а не по старой отметке',
+        () async {
       await login('A');
       addTransaction('A: обед');
       await ApiService.instance.syncAll();
@@ -229,16 +236,16 @@ void main() {
       await ApiService.instance.syncAll();
       await ApiService.instance.logout();
 
-      // Локальная запись есть — значит, If-None-Match отправился бы, если бы
-      // ETag A пережил выход.
+      // Локальная запись есть — значит, since отправился бы, если бы
+      // отметка A пережила выход, и A не получил бы свои операции.
       addTransaction('гость: кофе');
       adapter.requests.clear();
       await login('A');
       await ApiService.instance.syncAll();
 
       final pull =
-          adapter.requests.firstWhere((r) => r.path == ApiConfig.transactions);
-      expect(pull.headers.containsKey('If-None-Match'), isFalse);
+          adapter.requests.firstWhere((r) => r.path == ApiConfig.syncChanges);
+      expect(pull.queryParameters.containsKey('since'), isFalse);
       expect(localDescriptions(), containsAll(['A: обед', 'гость: кофе']));
     });
 
@@ -279,7 +286,7 @@ void main() {
 
       final release = Completer<void>();
       adapter.handler = (options) async {
-        if (options.path == ApiConfig.transactions) await release.future;
+        if (options.path == ApiConfig.syncChanges) await release.future;
         return server(options);
       };
 
