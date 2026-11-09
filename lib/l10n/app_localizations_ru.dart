@@ -827,6 +827,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String get add_limit_cta => 'Добавить лимит';
 
   @override
+  String copy_limits_cta(String month) {
+    String _temp0 = intl.Intl.selectLogic(
+      month,
+      {
+        'm1': 'Скопировать из января',
+        'm2': 'Скопировать из февраля',
+        'm3': 'Скопировать из марта',
+        'm4': 'Скопировать из апреля',
+        'm5': 'Скопировать из мая',
+        'm6': 'Скопировать из июня',
+        'm7': 'Скопировать из июля',
+        'm8': 'Скопировать из августа',
+        'm9': 'Скопировать из сентября',
+        'm10': 'Скопировать из октября',
+        'm11': 'Скопировать из ноября',
+        'm12': 'Скопировать из декабря',
+        'other': 'Скопировать из прошлого месяца',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String budget_spent_of(String spent, String limit) {
     return 'Потрачено: $spent из $limit';
   }

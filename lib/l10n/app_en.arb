@@ -364,6 +364,15 @@
   "budget_planned": "Planned limits",
   "budget_all_categories_limited": "All categories already have a limit this month",
   "add_limit_cta": "Add a limit",
+  "copy_limits_cta": "{month, select, m1{Copy from January} m2{Copy from February} m3{Copy from March} m4{Copy from April} m5{Copy from May} m6{Copy from June} m7{Copy from July} m8{Copy from August} m9{Copy from September} m10{Copy from October} m11{Copy from November} m12{Copy from December} other{Copy from last month}}",
+  "@copy_limits_cta": {
+    "description": "Button on the empty budget card: copy the previous month's limits (\"Copy from <month>\"). month is m1..m12 (the source month number with an m prefix).",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "budget_spent_of": "Spent: {spent} of {limit}",
   "@budget_spent_of": {
     "placeholders": {

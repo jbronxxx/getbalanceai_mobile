@@ -325,6 +325,7 @@
   "budget_planned": "Rejalashtirilgan",
   "budget_all_categories_limited": "Bu oyda barcha toifalarga limit qo'yilgan",
   "add_limit_cta": "Limit qo'shish",
+  "copy_limits_cta": "{month, select, m1{Yanvardan nusxalash} m2{Fevraldan nusxalash} m3{Martdan nusxalash} m4{Apreldan nusxalash} m5{Maydan nusxalash} m6{Iyundan nusxalash} m7{Iyuldan nusxalash} m8{Avgustdan nusxalash} m9{Sentabrdan nusxalash} m10{Oktabrdan nusxalash} m11{Noyabrdan nusxalash} m12{Dekabrdan nusxalash} other{O'tgan oydan nusxalash}}",
   "budget_spent_of": "Sarflandi: {limit} dan {spent}",
   "structure_title": "Xarajatlar tarkibi",
   "structure_of_income": "daromaddan",

@@ -827,6 +827,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get add_limit_cta => 'Add a limit';
 
   @override
+  String copy_limits_cta(String month) {
+    String _temp0 = intl.Intl.selectLogic(
+      month,
+      {
+        'm1': 'Copy from January',
+        'm2': 'Copy from February',
+        'm3': 'Copy from March',
+        'm4': 'Copy from April',
+        'm5': 'Copy from May',
+        'm6': 'Copy from June',
+        'm7': 'Copy from July',
+        'm8': 'Copy from August',
+        'm9': 'Copy from September',
+        'm10': 'Copy from October',
+        'm11': 'Copy from November',
+        'm12': 'Copy from December',
+        'other': 'Copy from last month',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String budget_spent_of(String spent, String limit) {
     return 'Spent: $spent of $limit';
   }

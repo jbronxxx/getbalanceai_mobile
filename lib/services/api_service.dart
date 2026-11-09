@@ -295,6 +295,19 @@ class ApiService {
   Future<Map<String, dynamic>> syncLocalDataToBackend() =>
       _syncService.syncLocalDataToBackend();
 
+  /// Отправляет локальные правки на сервер в фоне, если пользователь вошёл.
+  /// Ошибка только пишется в журнал: правки остаются помеченными и уйдут
+  /// со следующей синхронизацией.
+  void pushLocalChangesInBackground() {
+    if (!isAuthenticated) return;
+    unawaited(
+      syncLocalDataToBackend().catchError((Object e, StackTrace s) {
+        AppLogger.w('[Sync] Background push failed', e, s);
+        return <String, dynamic>{};
+      }),
+    );
+  }
+
   Future<Map<String, dynamic>> syncAll() => _syncService.syncAll();
 
   // Insights
