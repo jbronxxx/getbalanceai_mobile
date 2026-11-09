@@ -5,6 +5,7 @@ import '../../services/services.dart';
 import '../../utils/utils.dart';
 import '../app_sheet.dart';
 import '../keyboard_inset_padding.dart';
+import '../one_line_label.dart';
 import '../profile/currency_picker_sheet.dart';
 import '../transaction/transaction.dart';
 import '../../theme/app_colors.dart';
@@ -336,7 +337,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                           key: const ValueKey('budget_sheet_delete'),
                           onPressed: _deleteBudget,
                           icon: const Icon(Icons.delete_outline_rounded),
-                          label: Text(context.l10n.delete_btn),
+                          label: OneLineLabel(context.l10n.delete_btn),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colorScheme.error,
                             side: BorderSide(
@@ -362,7 +363,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                           ),
                         ),
                         onPressed: hasCategories ? _saveBudget : null,
-                        child: Text(
+                        child: OneLineLabel(
                           context.l10n.save_btn,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,

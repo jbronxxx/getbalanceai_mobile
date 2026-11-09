@@ -25,6 +25,9 @@ Budget _budget(Category category, double limit, {int month = 10}) => Budget(
       remaining: limit,
     );
 
+/// Сумма с неразрывными пробелами — как в строке «X из Y» карточки лимита.
+String _nbsp(String amount) => amount.replaceAll(' ', '\u00A0');
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -171,7 +174,12 @@ void main() {
       expect(find.text(LanguageManager.l10n.daily_allowance), findsOneWidget);
       expect(find.text(CurrencyFormatter.format(100)), findsOneWidget);
       expect(find.text(LanguageManager.l10n.days_left(16)), findsOneWidget);
-      expect(find.text(LanguageManager.l10n.budget_remaining), findsOneWidget);
+      expect(
+          find.byKey(const ValueKey('month_budget_progress')), findsOneWidget);
+      // Плашек «Лимиты / Траты / Осталось» нет: крупные суммы в них
+      // ужимались до мелкого текста
+      expect(find.text(LanguageManager.l10n.budget_remaining), findsNothing);
+      expect(find.text(CurrencyFormatter.format(2000)), findsNothing);
     });
 
     testWidgets('перерасход в текущем месяце показывает сумму перерасхода',
@@ -186,7 +194,7 @@ void main() {
         MonthBudgetCard(summary: summary, onAddLimit: () {}),
       ));
 
-      // «Перерасход» — только в заголовке, плашка его не повторяет (UX-06)
+      // «Перерасход» — только в заголовке (UX-06)
       expect(find.text(LanguageManager.l10n.budget_overspent), findsOneWidget);
       expect(find.text(LanguageManager.l10n.daily_allowance), findsNothing);
       expect(find.text(CurrencyFormatter.format(300)), findsOneWidget);
@@ -224,11 +232,12 @@ void main() {
         tester.getTopLeft(remainingLabel).dy,
         lessThan(tester.getTopLeft(remainingAmount).dy),
       );
-      // Потраченное — с подписью и валютой один раз, у лимита
+      // Потраченное и лимит без подписи «Потрачено», валюта — один раз, у
+      // лимита; суммы не переносятся посередине
       expect(
         find.text(LanguageManager.l10n.budget_spent_of(
-          CurrencyFormatter.format(300, showSymbol: false),
-          CurrencyFormatter.format(1000),
+          _nbsp(CurrencyFormatter.format(300, showSymbol: false)),
+          _nbsp(CurrencyFormatter.format(1000)),
         )),
         findsOneWidget,
       );
@@ -249,11 +258,13 @@ void main() {
         (tester) async {
       await pumpCard(tester, 1250);
 
+      // «Превышен на» — мелкой подписью над суммой, как «Осталось»
+      final label = find.text(LanguageManager.l10n.budget_exceeded);
+      final amount = find.text(CurrencyFormatter.format(250));
+      expect(label, findsOneWidget);
+      expect(amount, findsOneWidget);
       expect(
-        find.text('${LanguageManager.l10n.budget_exceeded} '
-            '${CurrencyFormatter.format(250)}'),
-        findsOneWidget,
-      );
+          tester.getTopLeft(label).dy, lessThan(tester.getTopLeft(amount).dy));
       expect(find.text('125%'), findsOneWidget);
       expect(find.text(LanguageManager.l10n.budget_remaining), findsNothing);
     });
@@ -281,8 +292,8 @@ void main() {
       expect(find.text(eur(700)), findsOneWidget);
       expect(
         find.text(LanguageManager.l10n.budget_spent_of(
-          eur(300, symbol: false),
-          eur(1000),
+          _nbsp(eur(300, symbol: false)),
+          _nbsp(eur(1000)),
         )),
         findsOneWidget,
       );

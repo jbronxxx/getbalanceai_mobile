@@ -39,6 +39,10 @@ class BudgetItemCard extends StatelessWidget {
     return colors.accentText;
   }
 
+  /// Сумма, которая не переносится посередине: пробелы между разрядами и
+  /// перед символом валюты — неразрывные.
+  static String _unbreakable(String amount) => amount.replaceAll(' ', '\u00A0');
+
   /// Суммы карточки — в валюте лимита.
   String _display(double amount, {bool showSymbol = true}) =>
       CurrencyFormatter.format(
@@ -94,59 +98,67 @@ class BudgetItemCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    CategoryStyle.icon(budget.category),
-                    size: 20,
-                    color: CategoryStyle.color(budget.category),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      budget.category.getLocalizedName(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+              LayoutBuilder(
+                builder: (context, constraints) => Row(
+                  children: [
+                    Icon(
+                      CategoryStyle.icon(budget.category),
+                      size: 20,
+                      color: CategoryStyle.color(budget.category),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        budget.category.getLocalizedName(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Подпись отличает остаток от потраченного под шкалой
-                        if (!isExceeded)
+                    const SizedBox(width: 12),
+                    // Сумме — приоритет (до 60% строки), название категории
+                    // обрезается раньше, чем сумма уменьшается.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth * 0.6,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          // Подпись «Осталось» / «Превышен на» — мелко над
+                          // суммой: в одной строке с суммой она ужимала её.
                           Text(
-                            context.l10n.budget_remaining,
+                            isExceeded
+                                ? context.l10n.budget_exceeded
+                                : context.l10n.budget_remaining,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.labelSmall?.copyWith(
-                              color: colorScheme.outline,
+                              color: isExceeded
+                                  ? exceededColor
+                                  : colorScheme.outline,
                             ),
                           ),
-                        CurrencyFormatter.formatText(
-                          (budget.limitAmount - currentSpent).abs(),
-                          currency: budget.currency,
-                          prefix: isExceeded
-                              ? '${context.l10n.budget_exceeded} '
-                              : '',
-                          useFittedBox: true,
-                          textAlign: TextAlign.end,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isExceeded
-                                ? exceededColor
-                                : colorScheme.onSurface,
+                          CurrencyFormatter.formatText(
+                            (budget.limitAmount - currentSpent).abs(),
+                            currency: budget.currency,
+                            useFittedBox: true,
+                            textAlign: TextAlign.end,
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isExceeded
+                                  ? exceededColor
+                                  : colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               LinearProgressIndicator(
@@ -160,12 +172,15 @@ class BudgetItemCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
+                    // Потраченное и лимит — без переносов внутри суммы;
+                    // длинная строка (сотни миллионов сумов) переходит на
+                    // вторую строку целиком перед «из …».
                     child: Text(
                       context.l10n.budget_spent_of(
-                        _display(currentSpent, showSymbol: false),
-                        _display(budget.limitAmount),
+                        _unbreakable(_display(currentSpent, showSymbol: false)),
+                        _unbreakable(_display(budget.limitAmount)),
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.outline,

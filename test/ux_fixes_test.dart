@@ -267,12 +267,16 @@ void main() {
       );
     });
 
-    testWidgets('текущий месяц в пределах лимита: три плашки', (tester) async {
+    testWidgets(
+        'текущий месяц: сумма в день и шкала, без плашек «Лимиты / Траты / '
+        'Осталось»', (tester) async {
       await pump(tester, const MonthPeriod(2026, 11), 400);
+      expect(find.text(LanguageManager.l10n.daily_allowance), findsOneWidget);
       expect(
-          find.text(LanguageManager.l10n.budget_limits_total), findsOneWidget);
-      expect(find.text(LanguageManager.l10n.budget_spent), findsOneWidget);
-      expect(find.text(LanguageManager.l10n.budget_remaining), findsOneWidget);
+          find.byKey(const ValueKey('month_budget_progress')), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.budget_remaining), findsNothing);
+      expect(find.text(CurrencyFormatter.format(1000)), findsNothing);
+      expect(find.text(CurrencyFormatter.format(400)), findsNothing);
     });
   });
 

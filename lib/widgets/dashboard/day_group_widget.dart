@@ -14,6 +14,10 @@ class DayGroupWidget extends StatelessWidget {
   final void Function(Transaction) onTransactionDelete;
   final VoidCallback? onHintShown;
 
+  /// Показывать год в заголовке, если он не текущий, — для списков за
+  /// несколько лет (поиск); в ленте месяца год и так виден в шапке.
+  final bool showYear;
+
   const DayGroupWidget({
     super.key,
     required this.date,
@@ -22,6 +26,7 @@ class DayGroupWidget extends StatelessWidget {
     required this.onTransactionTap,
     required this.onTransactionDelete,
     this.onHintShown,
+    this.showYear = false,
   });
 
   /// Группирует операции по дням (новые дни сверху). Внутри дня сохраняется
@@ -52,7 +57,9 @@ class DayGroupWidget extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final formattedDate = LanguageManager.formatDayMonth(date);
+    final formattedDate = showYear
+        ? LanguageManager.formatDayMonthYear(date)
+        : LanguageManager.formatDayMonth(date);
     final isToday = DateUtils.isSameDay(date, DateTime.now());
     final headerStyle = textTheme.labelMedium?.copyWith(
       fontWeight: FontWeight.bold,

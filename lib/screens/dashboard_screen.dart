@@ -9,6 +9,7 @@ import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
+import 'transaction_search_screen.dart';
 import '../theme/theme.dart';
 
 /// Главный экран: баланс за выбранный период и список операций.
@@ -220,6 +221,12 @@ class _DashboardScreenState extends State<DashboardScreen>
           style: AppTypography.screenTitle(context),
         ),
         centerTitle: true,
+        leading: IconButton(
+          key: const ValueKey('dashboard_search'),
+          tooltip: context.l10n.transaction_search_title,
+          icon: const Icon(Icons.search_rounded),
+          onPressed: () => TransactionSearchScreen.open(context),
+        ),
         actions: [
           DashboardAccountAction(
             onLogin: _openAuthScreen,

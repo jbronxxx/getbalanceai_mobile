@@ -734,7 +734,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get category_search_hint => 'Find a category';
 
   @override
-  String get category_search_empty => 'Nothing found';
+  String get search_nothing_found => 'Nothing found';
+
+  @override
+  String get transaction_search_title => 'Search';
+
+  @override
+  String get transaction_search_hint => 'Description or category';
+
+  @override
+  String get search_clear => 'Clear';
+
+  @override
+  String get filter_all => 'All';
+
+  @override
+  String get filter_expenses => 'Expenses';
+
+  @override
+  String get filter_incomes => 'Income';
 
   @override
   String get previous_month => 'Previous month';
@@ -802,12 +820,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get budget_limits_total => 'Limits';
-
-  @override
-  String get budget_spent => 'Spent';
-
-  @override
   String get budget_remaining => 'Left';
 
   @override
@@ -851,7 +863,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String budget_spent_of(String spent, String limit) {
-    return 'Spent: $spent of $limit';
+    return '$spent of $limit';
   }
 
   @override

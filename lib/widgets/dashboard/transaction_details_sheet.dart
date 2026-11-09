@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
 import '../app_sheet.dart';
+import '../one_line_label.dart';
 import '../../theme/app_colors.dart';
 
 /// Действие, выбранное в карточке операции.
@@ -15,6 +16,11 @@ class TransactionDetailsSheet extends StatelessWidget {
   final Transaction transaction;
 
   const TransactionDetailsSheet({super.key, required this.transaction});
+
+  /// Поля кнопок уже стандартных (16 + 24 у кнопки с иконкой): в половине
+  /// ширины телефона 360 dp иначе «Редактировать» не помещается в полный
+  /// размер.
+  static const _actionPadding = EdgeInsets.symmetric(horizontal: 8);
 
   /// Открывает карточку; возвращает выбранное действие или `null`.
   static Future<TransactionDetailsAction?> show(
@@ -140,13 +146,14 @@ class TransactionDetailsSheet extends StatelessWidget {
                       onPressed: () => Navigator.pop(
                           context, TransactionDetailsAction.delete),
                       icon: const Icon(Icons.delete_outline_rounded),
-                      label: Text(context.l10n.delete_btn),
+                      label: OneLineLabel(context.l10n.delete_btn),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colorScheme.error,
                         side: BorderSide(
                           color: colorScheme.error.withValues(alpha: 0.5),
                         ),
                         minimumSize: const Size.fromHeight(52),
+                        padding: _actionPadding,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -160,9 +167,10 @@ class TransactionDetailsSheet extends StatelessWidget {
                       onPressed: () =>
                           Navigator.pop(context, TransactionDetailsAction.edit),
                       icon: const Icon(Icons.edit_rounded),
-                      label: Text(context.l10n.edit_btn),
+                      label: OneLineLabel(context.l10n.edit_btn),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(52),
+                        padding: _actionPadding,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),

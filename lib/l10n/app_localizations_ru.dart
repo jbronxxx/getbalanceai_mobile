@@ -732,7 +732,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get category_search_hint => 'Найти категорию';
 
   @override
-  String get category_search_empty => 'Ничего не найдено';
+  String get search_nothing_found => 'Ничего не найдено';
+
+  @override
+  String get transaction_search_title => 'Поиск';
+
+  @override
+  String get transaction_search_hint => 'Описание или категория';
+
+  @override
+  String get search_clear => 'Очистить';
+
+  @override
+  String get filter_all => 'Все';
+
+  @override
+  String get filter_expenses => 'Расходы';
+
+  @override
+  String get filter_incomes => 'Доходы';
 
   @override
   String get previous_month => 'Предыдущий месяц';
@@ -802,12 +820,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get budget_limits_total => 'Лимиты';
-
-  @override
-  String get budget_spent => 'Траты';
-
-  @override
   String get budget_remaining => 'Осталось';
 
   @override
@@ -851,7 +863,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String budget_spent_of(String spent, String limit) {
-    return 'Потрачено: $spent из $limit';
+    return '$spent из $limit';
   }
 
   @override
