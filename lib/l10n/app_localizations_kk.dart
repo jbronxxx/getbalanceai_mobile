@@ -824,6 +824,29 @@ class AppLocalizationsKk extends AppLocalizations {
   String get add_limit_cta => 'Лимит қосу';
 
   @override
+  String copy_limits_cta(String month) {
+    String _temp0 = intl.Intl.selectLogic(
+      month,
+      {
+        'm1': 'Қаңтардан көшіру',
+        'm2': 'Ақпаннан көшіру',
+        'm3': 'Наурыздан көшіру',
+        'm4': 'Сәуірден көшіру',
+        'm5': 'Мамырдан көшіру',
+        'm6': 'Маусымнан көшіру',
+        'm7': 'Шілдеден көшіру',
+        'm8': 'Тамыздан көшіру',
+        'm9': 'Қыркүйектен көшіру',
+        'm10': 'Қазаннан көшіру',
+        'm11': 'Қарашадан көшіру',
+        'm12': 'Желтоқсаннан көшіру',
+        'other': 'Өткен айдан көшіру',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String budget_spent_of(String spent, String limit) {
     return 'Жұмсалды: $limit ішінен $spent';
   }

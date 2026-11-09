@@ -824,6 +824,29 @@ class AppLocalizationsUz extends AppLocalizations {
   String get add_limit_cta => 'Limit qo\'shish';
 
   @override
+  String copy_limits_cta(String month) {
+    String _temp0 = intl.Intl.selectLogic(
+      month,
+      {
+        'm1': 'Yanvardan nusxalash',
+        'm2': 'Fevraldan nusxalash',
+        'm3': 'Martdan nusxalash',
+        'm4': 'Apreldan nusxalash',
+        'm5': 'Maydan nusxalash',
+        'm6': 'Iyundan nusxalash',
+        'm7': 'Iyuldan nusxalash',
+        'm8': 'Avgustdan nusxalash',
+        'm9': 'Sentabrdan nusxalash',
+        'm10': 'Oktabrdan nusxalash',
+        'm11': 'Noyabrdan nusxalash',
+        'm12': 'Dekabrdan nusxalash',
+        'other': 'O\'tgan oydan nusxalash',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String budget_spent_of(String spent, String limit) {
     return 'Sarflandi: $limit dan $spent';
   }

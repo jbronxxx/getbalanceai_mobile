@@ -23,6 +23,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
 
   List<Budget> _budgets = [];
 
+  /// Лимиты прошлого месяца — источник копирования, пока в выбранном
+  /// месяце лимитов нет.
+  List<Budget> _previousBudgets = const [];
+
   /// Расходы по категориям в базовой валюте — для сводки месяца.
   Map<String, double> _categoryExpenses = {};
 
@@ -94,6 +98,13 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
         .getBudgetsForPeriod(_selectedMonth, _selectedYear)
         .where((b) => !_deletions.isPending(b))
         .toList();
+    final previous = SelectedPeriodService.instance.period.previous;
+    final previousBudgets = budgets.isEmpty
+        ? db
+            .getBudgetsForPeriod(previous.month, previous.year)
+            .where((b) => !_deletions.isPending(b))
+            .toList(growable: false)
+        : const <Budget>[];
     final base = CurrencyFormatter.currentCurrency;
     final foreign = <Currency, Map<String, double>>{};
     for (final currency in budgets.map((b) => b.currency).toSet()) {
@@ -102,6 +113,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
     }
     setState(() {
       _budgets = budgets;
+      _previousBudgets = previousBudgets;
       _categoryExpenses = catExpenses;
       _foreignExpenses = foreign;
     });
@@ -154,6 +166,25 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
       actionLabel: context.l10n.undo_action,
       onAction: () => _deletions.undo(budget),
     );
+  }
+
+  /// Копирует лимиты прошлого месяца в пустой выбранный месяц.
+  void _copyPreviousLimits() {
+    final period = SelectedPeriodService.instance.period;
+    // Источник берётся до отмены удалений: отмена перезагружает экран, и
+    // месяц с вернувшимся лимитом уже не пустой — список источника пуст.
+    final source = _previousBudgets;
+    final categories = {for (final b in source) b.dbCategory};
+    // Удалённые свайпом лимиты этого месяца ещё ждут отмены, а копия ляжет
+    // в их строки: удаление отменяется, иначе через несколько секунд оно
+    // стёрло бы копию вместе с серверной записью.
+    _deletions.undoWhere((b) =>
+        b.month == period.month &&
+        b.year == period.year &&
+        categories.contains(b.dbCategory));
+    LocalDbService.instance.copyBudgets(source, period);
+    ApiService.instance.pushLocalChangesInBackground();
+    _loadBudgets();
   }
 
   void _openAddBudgetSheet([Budget? budgetToEdit]) {
@@ -212,6 +243,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
                           period: SelectedPeriodService.instance.period,
                         ),
                         onAddLimit: () => _openAddBudgetSheet(),
+                        copyLimitsFrom: _previousBudgets.isEmpty
+                            ? null
+                            : SelectedPeriodService.instance.period.previous,
+                        onCopyLimits: _previousBudgets.isEmpty
+                            ? null
+                            : _copyPreviousLimits,
                       ),
                       if (_budgets.isNotEmpty)
                         BudgetsSectionHeader(

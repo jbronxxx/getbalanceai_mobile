@@ -262,17 +262,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       LocalDbService.instance.saveTransaction(newTransaction);
     }
 
-    if (ApiService.instance.isAuthenticated == true) {
-      unawaited(
-        ApiService.instance.syncLocalDataToBackend().catchError((
-          Object e,
-          StackTrace s,
-        ) {
-          AppLogger.w('[Sync] Background push failed', e, s);
-          return <String, dynamic>{};
-        }),
-      );
-    }
+    ApiService.instance.pushLocalChangesInBackground();
 
     Navigator.pop(context, true);
   }

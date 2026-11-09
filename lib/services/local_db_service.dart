@@ -632,6 +632,27 @@ class LocalDbService {
     budgetsChanged.value++;
   }
 
+  /// Копирует лимиты [source] в месяц [to]: категория, сумма и валюта,
+  /// потраченное — по операциям [to]. Копии новые (без `serverId`) и уйдут
+  /// на сервер при следующей синхронизации. Лимит той же категории в [to]
+  /// обновляется, а не дублируется (см. [saveBudget]).
+  void copyBudgets(List<Budget> source, MonthPeriod to) {
+    for (final b in source) {
+      final currency = b.currency;
+      final spent =
+          getSpentForCategory(to.month, to.year, b.dbCategory, currency);
+      saveBudget(Budget(
+        dbCategory: b.dbCategory,
+        limitAmount: b.limitAmount,
+        currencyCode: currency.code,
+        month: to.month,
+        year: to.year,
+        spent: spent,
+        remaining: b.limitAmount - spent,
+      ));
+    }
+  }
+
   /// Лимит по локальному ID или `null`, если строки нет.
   Budget? getBudget(int localId) =>
       localId > 0 ? _budgetBox.get(localId) : null;

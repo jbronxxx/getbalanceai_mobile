@@ -1620,6 +1620,12 @@ abstract class AppLocalizations {
   /// **'Add a limit'**
   String get add_limit_cta;
 
+  /// Button on the empty budget card: copy the previous month's limits ("Copy from <month>"). month is m1..m12 (the source month number with an m prefix).
+  ///
+  /// In en, this message translates to:
+  /// **'{month, select, m1{Copy from January} m2{Copy from February} m3{Copy from March} m4{Copy from April} m5{Copy from May} m6{Copy from June} m7{Copy from July} m8{Copy from August} m9{Copy from September} m10{Copy from October} m11{Copy from November} m12{Copy from December} other{Copy from last month}}'**
+  String copy_limits_cta(String month);
+
   /// No description provided for @budget_spent_of.
   ///
   /// In en, this message translates to:

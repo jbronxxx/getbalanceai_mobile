@@ -219,17 +219,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
         b.month == newBudget.month &&
         b.year == newBudget.year);
     LocalDbService.instance.saveBudget(newBudget);
-    if (ApiService.instance.isAuthenticated == true) {
-      unawaited(
-        ApiService.instance.syncLocalDataToBackend().catchError((
-          Object e,
-          StackTrace s,
-        ) {
-          AppLogger.w('[Sync] Background push failed', e, s);
-          return <String, dynamic>{};
-        }),
-      );
-    }
+    ApiService.instance.pushLocalChangesInBackground();
     Navigator.pop(context);
     widget.onSaved();
   }

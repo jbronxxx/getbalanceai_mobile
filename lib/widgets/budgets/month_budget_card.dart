@@ -7,16 +7,23 @@ import '../../theme/app_colors.dart';
 ///
 /// Текущий месяц — сколько можно тратить в день до конца месяца; прошлый —
 /// итог по лимитам; будущий — запланированная сумма. Без лимитов — призыв
-/// задать первый лимит.
+/// задать первый лимит и, если в прошлом месяце лимиты были, скопировать их.
 class MonthBudgetCard extends StatelessWidget {
   final MonthBudgetSummary summary;
   final VoidCallback onAddLimit;
+
+  /// Месяц, из которого можно скопировать лимиты в пустой месяц; `null` —
+  /// кнопки копирования нет.
+  final MonthPeriod? copyLimitsFrom;
+  final VoidCallback? onCopyLimits;
 
   const MonthBudgetCard({
     super.key,
     required this.summary,
     required this.onAddLimit,
-  });
+    this.copyLimitsFrom,
+    this.onCopyLimits,
+  }) : assert((copyLimitsFrom == null) == (onCopyLimits == null));
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +52,11 @@ class MonthBudgetCard extends StatelessWidget {
       ),
       child: summary.hasLimits
           ? _SummaryContent(summary: summary)
-          : _EmptyContent(onAddLimit: onAddLimit),
+          : _EmptyContent(
+              onAddLimit: onAddLimit,
+              copyLimitsFrom: copyLimitsFrom,
+              onCopyLimits: onCopyLimits,
+            ),
     );
   }
 }
@@ -216,12 +227,22 @@ class _Figure extends StatelessWidget {
 
 class _EmptyContent extends StatelessWidget {
   final VoidCallback onAddLimit;
+  final MonthPeriod? copyLimitsFrom;
+  final VoidCallback? onCopyLimits;
 
-  const _EmptyContent({required this.onAddLimit});
+  const _EmptyContent({
+    required this.onAddLimit,
+    this.copyLimitsFrom,
+    this.onCopyLimits,
+  });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final buttonTextStyle = textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.bold,
+    );
+    final copyFrom = copyLimitsFrom;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -253,11 +274,28 @@ class _EmptyContent extends StatelessWidget {
             foregroundColor: AppColors.of(context).brandGradientStart,
             minimumSize: const Size(0, 46),
             shape: const StadiumBorder(),
-            textStyle: textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            textStyle: buttonTextStyle,
           ),
         ),
+        if (copyFrom != null) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            key: const ValueKey('month_budget_copy_limits'),
+            onPressed: onCopyLimits,
+            icon: const Icon(Icons.content_copy_rounded, size: 20),
+            label: Text(context.l10n.copy_limits_cta('m${copyFrom.month}')),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.onBrandBase,
+              side: BorderSide(
+                color: AppColors.onBrandBase.withValues(alpha: 0.7),
+                width: 1.2,
+              ),
+              minimumSize: const Size(0, 46),
+              shape: const StadiumBorder(),
+              textStyle: buttonTextStyle,
+            ),
+          ),
+        ],
       ],
     );
   }
