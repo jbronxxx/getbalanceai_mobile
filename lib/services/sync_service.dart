@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show mapEquals;
+import 'package:flutter/foundation.dart' show mapEquals, visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
@@ -12,8 +12,6 @@ import '../utils/app_logger.dart';
 import '../utils/language_manager.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
-import 'transaction_api_service.dart';
-import 'budget_api_service.dart';
 
 /// Коды ошибок синхронизации.
 enum SyncErrorCode {
@@ -50,17 +48,23 @@ class SyncException implements Exception {
   String toString() => getLocalizedMessage();
 }
 
-class _RemoteTransactionsFetchResult {
-  final List<Transaction>? transactions;
-  final bool isNotModified;
-  final bool isComplete;
-  final String? newEtag;
+/// Изменения операций с сервера (`GET /sync/changes`).
+class _TransactionChanges {
+  final List<Transaction> transactions;
+  final List<String> deletedServerIds;
 
-  const _RemoteTransactionsFetchResult({
-    this.transactions,
-    this.isNotModified = false,
-    this.isComplete = true,
-    this.newEtag,
+  /// Получены все страницы: только тогда [serverTime] можно сохранить как
+  /// отметку следующей синхронизации.
+  final bool isComplete;
+
+  /// Время сервера на момент первой страницы.
+  final DateTime serverTime;
+
+  const _TransactionChanges({
+    required this.transactions,
+    required this.deletedServerIds,
+    required this.isComplete,
+    required this.serverTime,
   });
 }
 
@@ -82,8 +86,6 @@ class SyncService {
   final Options Function([String? token]) _authOptions;
   final String? Function() _tokenProvider;
   final String? Function()? _userIdProvider;
-  final TransactionApiService _transactionApiService;
-  final BudgetApiService _budgetApiService;
 
   static const _uuid = Uuid();
 
@@ -94,8 +96,14 @@ class SyncService {
   /// держит тело запроса небольшим на медленной сети.
   static const syncBatchSize = 200;
 
-  String? _transactionsEtag;
+  /// Размер страницы `GET /sync/changes` (максимум сервера).
+  static const _changesPageSize = 500;
+
   String? _budgetsEtag;
+
+  /// `server_time` прошлой полной загрузки изменений: с него сервер отдаёт
+  /// только изменённые и удалённые операции. `null` — загрузить всё.
+  DateTime? _changesSince;
 
   /// Хвост очереди синхронизации: каждая новая операция ждёт предыдущую.
   Future<void> _queueTail = Future.value();
@@ -105,19 +113,15 @@ class SyncService {
     required Options Function([String? token]) authOptions,
     required String? Function() tokenProvider,
     String? Function()? userIdProvider,
-    required TransactionApiService transactionApiService,
-    required BudgetApiService budgetApiService,
     FlutterSecureStorage storage = appSecureStorage,
   })  : _dio = dio,
         _authOptions = authOptions,
         _tokenProvider = tokenProvider,
         _userIdProvider = userIdProvider,
-        _transactionApiService = transactionApiService,
-        _budgetApiService = budgetApiService,
         _storage = storage;
 
-  String get _transactionsEtagKey => _etagKey('transactions');
   String get _budgetsEtagKey => _etagKey('budgets');
+  String get _changesSinceKey => _etagKey('transactions_since');
 
   String _etagKey(String entity, [String? userId]) {
     final owner = userId ?? _userIdProvider?.call() ?? 'anon';
@@ -125,7 +129,9 @@ class SyncService {
     return '${entity}_etag_${owner}_$env';
   }
 
-  String? get transactionsEtag => _transactionsEtag;
+  /// Отметка прошлой синхронизации операций (для тестов).
+  @visibleForTesting
+  DateTime? get changesSince => _changesSince;
 
   /// userId аккаунта, которому принадлежат операции и лимиты на устройстве.
   /// `null` — владельца нет: гостевые данные или база очищена при выходе.
@@ -136,20 +142,23 @@ class SyncService {
   /// (см. `AuthApiService.init`); без него хранилище читается здесь.
   Future<void> init([Map<String, String>? stored]) async {
     stored ??= await _storage.readAll();
-    _transactionsEtag = stored[_transactionsEtagKey];
+    _changesSince = DateTime.tryParse(stored[_changesSinceKey] ?? '');
     _budgetsEtag = stored[_budgetsEtagKey];
     _localDataOwner = stored[_localDataOwnerKey];
   }
 
-  /// Сбрасывает ETag пользователя [userId] (по умолчанию — текущего).
-  /// Ключи привязаны к userId, поэтому при выходе его нужно передать явно
-  /// или вызвать до очистки сессии.
+  /// Сбрасывает ETag лимитов и отметку прошлой синхронизации операций
+  /// пользователя [userId] (по умолчанию — текущего): следующая загрузка
+  /// будет полной. Ключи привязаны к userId, поэтому при выходе его нужно
+  /// передать явно или вызвать до очистки сессии.
   Future<void> clearEtags({String? userId}) async {
-    _transactionsEtag = null;
+    _changesSince = null;
     _budgetsEtag = null;
     try {
-      await _storage.delete(key: _etagKey('transactions', userId));
+      await _storage.delete(key: _etagKey('transactions_since', userId));
       await _storage.delete(key: _etagKey('budgets', userId));
+      // Прежние ключи: ETag списка операций до перехода на /sync/changes
+      await _storage.delete(key: _etagKey('transactions', userId));
       await _storage.delete(key: 'transactions_etag');
       await _storage.delete(key: 'budgets_etag');
     } catch (_) {}
@@ -225,30 +234,30 @@ class SyncService {
 
   /// Загружает транзакции и бюджеты пользователя с сервера в локальную базу.
   Future<Map<String, dynamic>> syncBackendDataToLocal({
-    void Function(int count, int page)? onTransactionProgress,
     int maxPages = 100,
   }) async {
     _requireSession();
     return _enqueue(() {
       _requireSession();
-      return _pull(onTransactionProgress, maxPages);
+      return _pull(maxPages);
     });
   }
 
   /// Полная двусторонняя синхронизация — одна задача в очереди: между
   /// выгрузкой и загрузкой не вклинится другой запрос.
+  ///
+  /// Удаления из очереди уходят в той же выгрузке (`deleted_*_ids` в
+  /// `/sync/`), без отдельного DELETE на каждую запись.
   Future<Map<String, dynamic>> syncAll({
-    void Function(int count, int page)? onTransactionProgress,
     int maxPages = 100,
   }) async {
     _requireSession();
     return _enqueue(() async {
       _requireSession();
-      final deleted = await _flushPendingDeletions();
       final pushed = await _push();
-      final pulled = await _pull(onTransactionProgress, maxPages);
+      final pulled = await _pull(maxPages);
 
-      return {'deleted': deleted, 'pushed': pushed, 'pulled': pulled};
+      return {'pushed': pushed, 'pulled': pulled};
     });
   }
 
@@ -369,66 +378,68 @@ class SyncService {
     );
   }
 
-  Future<Map<String, dynamic>> _pull(
-    void Function(int count, int page)? onTransactionProgress,
-    int maxPages,
-  ) async {
+  Future<Map<String, dynamic>> _pull(int maxPages) async {
     try {
-      final remoteTransactionsResult = await _fetchRemoteTransactions(
-        onProgress: onTransactionProgress,
+      final db = LocalDbService.instance;
+      // Без отметки или с пустой базой — полная загрузка со сверкой: записи,
+      // которых нет на сервере, удаляются локально.
+      final since = db.hasTransactions ? _changesSince : null;
+      final changes = await _fetchTransactionChanges(
+        since: since,
         maxPages: maxPages,
       );
       final remoteBudgetsResult = await _fetchRemoteBudgets();
       final remoteBudgets = remoteBudgetsResult.budgets;
 
-      // ETag сохраняется только после того, как данные легли в базу: если
-      // загрузка или сверка оборвётся раньше, следующий синк не получит 304
-      // и не пропустит изменения с сервера.
-      int removedTransactions = 0;
-      int transLength = 0;
-      if (remoteTransactionsResult.transactions != null) {
-        if (remoteTransactionsResult.isComplete) {
-          removedTransactions = LocalDbService.instance
-              .reconcileTransactions(remoteTransactionsResult.transactions!);
-        } else {
-          LocalDbService.instance
-              .upsertRemoteTransactions(remoteTransactionsResult.transactions!);
-          removedTransactions = 0;
-        }
-        transLength = remoteTransactionsResult.transactions!.length;
-        await _saveTransactionsEtag(remoteTransactionsResult.newEtag);
+      // Отметка и ETag сохраняются только после того, как данные легли в
+      // базу: если загрузка или сверка оборвётся раньше, следующий синк
+      // запросит те же изменения снова.
+      final int removedTransactions;
+      if (since != null) {
+        removedTransactions = db.applyRemoteTransactionChanges(
+          changes.transactions,
+          changes.deletedServerIds,
+        );
+      } else if (changes.isComplete) {
+        removedTransactions = db.reconcileTransactions(changes.transactions);
       } else {
-        AppLogger.i(
-            '[SyncService] Transactions not modified (304). Skipping reconciliation.');
-        transLength = LocalDbService.instance.transactionsCount;
+        db.upsertRemoteTransactions(changes.transactions);
+        removedTransactions = 0;
+      }
+      if (changes.isComplete) {
+        await _saveChangesSince(changes.serverTime);
       }
 
       int removedBudgets = 0;
       int budgetsLength = 0;
       if (remoteBudgets != null) {
-        removedBudgets =
-            LocalDbService.instance.reconcileBudgets(remoteBudgets);
+        removedBudgets = db.reconcileBudgets(remoteBudgets);
         budgetsLength = remoteBudgets.length;
         await _saveBudgetsEtag(remoteBudgetsResult.newEtag);
       } else {
         AppLogger.i(
             '[SyncService] Budgets not modified (304). Skipping reconciliation.');
-        budgetsLength = LocalDbService.instance.budgetsCount;
+        budgetsLength = db.budgetsCount;
       }
 
-      AppLogger.i('[SyncService] Sync backend -> local: '
-          'T($transLength), B($budgetsLength); '
+      final transactionsChanged = changes.transactions.isNotEmpty ||
+          changes.deletedServerIds.isNotEmpty ||
+          removedTransactions > 0;
+      AppLogger.i('[SyncService] Sync backend -> local '
+          '(${since == null ? 'full' : 'changes'}): '
+          'T(${changes.transactions.length}, '
+          'deleted ${changes.deletedServerIds.length}), B($budgetsLength); '
           'Removed: T($removedTransactions), B($removedBudgets)');
 
-      // Один сигнал на загрузку, и только если сервер прислал изменения
-      // (не 304): экраны перечитают данные, но не на каждой записи в базу.
-      if (remoteTransactionsResult.transactions != null ||
-          remoteBudgets != null) {
+      // Один сигнал на загрузку, и только если с сервера пришли изменения:
+      // экраны перечитают данные, но не на каждой записи в базу.
+      if (transactionsChanged || remoteBudgets != null) {
         LocalDbService.transactionsChanged.value++;
       }
 
       return {
-        'transactions': transLength,
+        'transactions': changes.transactions.length,
+        'deleted_transactions': changes.deletedServerIds.length,
         'budgets': budgetsLength,
         'removed_transactions': removedTransactions,
         'removed_budgets': removedBudgets,
@@ -443,10 +454,12 @@ class SyncService {
     }
   }
 
-  Future<void> _saveTransactionsEtag(String? etag) async {
-    if (etag == null) return;
-    _transactionsEtag = etag;
-    await _storage.write(key: _transactionsEtagKey, value: etag);
+  Future<void> _saveChangesSince(DateTime serverTime) async {
+    _changesSince = serverTime;
+    await _storage.write(
+      key: _changesSinceKey,
+      value: serverTime.toUtc().toIso8601String(),
+    );
   }
 
   Future<void> _saveBudgetsEtag(String? etag) async {
@@ -455,164 +468,69 @@ class SyncService {
     await _storage.write(key: _budgetsEtagKey, value: etag);
   }
 
-  Future<int> _flushPendingDeletions() async {
-    final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
-    final pendingBudgets = PendingDeletionsStore.instance.budgetIds;
-
-    if (pendingTransactions.isEmpty && pendingBudgets.isEmpty) return 0;
-
-    int totalDone = 0;
-
-    if (pendingTransactions.isNotEmpty) {
-      final done = <String>[];
-      for (final serverId in pendingTransactions) {
-        try {
-          await _transactionApiService.deleteTransaction(serverId);
-          done.add(serverId);
-        } on DioException catch (e) {
-          if (e.response?.statusCode == 404) {
-            done.add(serverId);
-          } else {
-            AppLogger.w(
-                '[SyncService] Flush delete transaction $serverId failed: ${e.response?.statusCode}');
-          }
-        } catch (e) {
-          AppLogger.w(
-              '[SyncService] Flush delete transaction $serverId failed: $e');
-        }
-      }
-      await PendingDeletionsStore.instance.removeTransactions(done);
-      totalDone += done.length;
-    }
-
-    if (pendingBudgets.isNotEmpty) {
-      final done = <String>[];
-      for (final serverId in pendingBudgets) {
-        try {
-          await _budgetApiService.deleteBudget(serverId);
-          done.add(serverId);
-        } on DioException catch (e) {
-          if (e.response?.statusCode == 404) {
-            done.add(serverId);
-          } else {
-            AppLogger.w(
-                '[SyncService] Flush delete budget $serverId failed: ${e.response?.statusCode}');
-          }
-        } catch (e) {
-          AppLogger.w('[SyncService] Flush delete budget $serverId failed: $e');
-        }
-      }
-      await PendingDeletionsStore.instance.removeBudgets(done);
-      totalDone += done.length;
-    }
-
-    if (totalDone > 0) {
-      AppLogger.i('[SyncService] Flushed pending deletions: $totalDone');
-    }
-
-    return totalDone;
-  }
-
-  Future<_RemoteTransactionsFetchResult> _fetchRemoteTransactions({
-    DateTime? since,
-    void Function(int count, int page)? onProgress,
-    int maxPages = 100,
+  /// Забирает изменения операций с [since] (без него — все операции)
+  /// страницами по [_changesPageSize], не больше [maxPages] страниц.
+  ///
+  /// Ответ не той формы — ошибка: пустой список при сверке удалил бы все
+  /// выгруженные операции.
+  Future<_TransactionChanges> _fetchTransactionChanges({
+    required DateTime? since,
+    required int maxPages,
   }) async {
-    final options = _authOptions();
-    options.validateStatus = (status) =>
-        status != null && ((status >= 200 && status < 300) || status == 304);
+    final transactions = <Transaction>[];
+    final deleted = <String>[];
+    DateTime? serverTime;
+    String? cursor;
+    var hasMore = true;
+    var page = 0;
 
-    final hasLocal =
-        LocalDbService.isInitialized && LocalDbService.instance.hasTransactions;
-    if (!hasLocal) {
-      _transactionsEtag = null;
-    } else {
-      _transactionsEtag ??= await _storage.read(key: _transactionsEtagKey);
-      if (_transactionsEtag != null) {
-        options.headers?['If-None-Match'] = _transactionsEtag;
-      }
-    }
-
-    const pageSize = 100;
-    String? currentCursor;
-    final allTransactions = <Transaction>[];
-
-    final firstResponse = await _dio.get(
-      ApiConfig.transactions,
-      queryParameters: {
-        'limit': pageSize,
-        if (since != null) 'since': since.toUtc().toIso8601String(),
-      },
-      options: options,
-    );
-
-    if (firstResponse.statusCode == 304) {
-      return const _RemoteTransactionsFetchResult(
-        isNotModified: true,
-        isComplete: true,
+    while (hasMore && page < maxPages) {
+      page++;
+      final response = await _dio.get(
+        ApiConfig.syncChanges,
+        queryParameters: {
+          'limit': _changesPageSize,
+          if (since != null) 'since': since.toUtc().toIso8601String(),
+          if (cursor != null) 'cursor': cursor,
+        },
+        options: _authOptions(),
       );
-    }
 
-    final newEtag = firstResponse.headers.value('etag');
-    final firstData =
-        firstResponse.data is Map ? firstResponse.data['data'] : null;
-    final firstItems = _requireJsonList(firstData, 'transactions');
-    allTransactions.addAll(firstItems.map(Transaction.fromJson));
-    onProgress?.call(allTransactions.length, 1);
-
-    bool isComplete = true;
-
-    if (firstData is Map) {
-      bool hasMore = firstData['has_more'] == true;
-      currentCursor = firstData['next_cursor'] as String?;
-      int page = 1;
-
-      while (hasMore && currentCursor != null && page < maxPages) {
-        page++;
-        final nextResponse = await _dio.get(
-          ApiConfig.transactions,
-          queryParameters: {
-            'limit': pageSize,
-            'cursor': currentCursor,
-            if (since != null) 'since': since.toUtc().toIso8601String(),
-          },
-          options: _authOptions(),
+      final data = response.data is Map ? response.data['data'] : null;
+      if (data is! Map ||
+          data['transactions'] is! List ||
+          data['deleted_transaction_ids'] is! List) {
+        throw const SyncException(
+          SyncErrorCode.loadFailed,
+          cause: FormatException('Unexpected /sync/changes response shape'),
         );
-
-        final nextData =
-            nextResponse.data is Map ? nextResponse.data['data'] : null;
-        final nextItems = _requireJsonList(nextData, 'transactions');
-        if (nextItems.isEmpty) {
-          isComplete = false;
-          break;
-        }
-
-        allTransactions.addAll(nextItems.map(Transaction.fromJson));
-        onProgress?.call(allTransactions.length, page);
-
-        if (nextData is Map) {
-          hasMore = nextData['has_more'] == true;
-          currentCursor = nextData['next_cursor'] as String?;
-        } else {
-          hasMore = false;
-        }
+      }
+      serverTime ??= DateTime.tryParse('${data['server_time']}');
+      if (serverTime == null) {
+        throw const SyncException(
+          SyncErrorCode.loadFailed,
+          cause: FormatException('/sync/changes without server_time'),
+        );
       }
 
-      if (hasMore) {
-        isComplete = false;
-        if (page >= maxPages) {
-          AppLogger.w(
-              '[SyncService] Transaction pagination limit ($maxPages pages) reached.');
-        }
-      }
+      transactions
+          .addAll(_asJsonList(data['transactions']).map(Transaction.fromJson));
+      deleted.addAll(
+          (data['deleted_transaction_ids'] as List).whereType<String>());
+
+      cursor = data['next_cursor'] as String?;
+      hasMore = data['has_more'] == true && cursor != null;
     }
 
-    // ETag годится только для полного списка; сохраняет его [_pull] после
-    // сверки.
-    return _RemoteTransactionsFetchResult(
-      transactions: allTransactions,
-      isComplete: isComplete,
-      newEtag: isComplete ? newEtag : null,
+    if (hasMore) {
+      AppLogger.w(
+          '[SyncService] Transaction changes limit ($maxPages pages) reached.');
+    }
+    return _TransactionChanges(
+      transactions: transactions,
+      deletedServerIds: deleted,
+      isComplete: !hasMore,
+      serverTime: serverTime!,
     );
   }
 

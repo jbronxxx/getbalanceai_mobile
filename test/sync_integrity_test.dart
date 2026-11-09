@@ -9,11 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/cubits/profile/profile_cubit.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
-import 'package:getbalanceai_mobile/services/budget_api_service.dart';
 import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/services/pending_deletions_store.dart';
 import 'package:getbalanceai_mobile/services/sync_service.dart';
-import 'package:getbalanceai_mobile/services/transaction_api_service.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
@@ -60,6 +58,23 @@ ResponseBody _json(Object body, [int status = 200, String? etag]) =>
         if (etag != null) 'etag': [etag],
       },
     );
+
+/// Ответ `GET /sync/changes`.
+ResponseBody _changes(
+  List<Map<String, dynamic>> transactions, {
+  List<String> deleted = const [],
+  String serverTime = '2026-11-06T10:00:00.000Z',
+}) =>
+    _json({
+      'status': 'success',
+      'data': {
+        'transactions': transactions,
+        'deleted_transaction_ids': deleted,
+        'has_more': false,
+        'next_cursor': null,
+        'server_time': serverTime,
+      },
+    });
 
 /// Ответ `/sync/`, как у бэкенда: каждая отправленная запись возвращается
 /// с тем же `id` (лимит без `id` получает новый).
@@ -125,16 +140,6 @@ void main() {
       dio: dio,
       authOptions: authOptions,
       tokenProvider: () => 'token',
-      transactionApiService: TransactionApiService(
-        dio: dio,
-        authOptions: authOptions,
-        isAuthenticated: () => true,
-      ),
-      budgetApiService: BudgetApiService(
-        dio: dio,
-        authOptions: authOptions,
-        isAuthenticated: () => true,
-      ),
     );
   });
 
@@ -200,25 +205,20 @@ void main() {
       adapter.handler = (options) async {
         await Future<void>.delayed(const Duration(milliseconds: 20));
         if (options.path == '/sync/') return _acceptAll(options);
-        if (options.path == '/transactions/') {
-          return _json({
-            'status': 'success',
-            'data': {'items': [], 'has_more': false},
-          });
-        }
+        if (options.path == '/sync/changes') return _changes(const []);
         return _json({'status': 'success', 'data': []});
       };
 
       final results = await Future.wait([sync.syncAll(), sync.syncAll()]);
 
       expect(adapter.maxInFlight, 1);
-      // Первый синк: /sync/ + GET транзакций + GET лимитов; второму
+      // Первый синк: /sync/ + изменения операций + лимиты; второму
       // выгружать уже нечего — только загрузка.
       expect(adapter.requests.map((r) => r.path).toList(), [
         '/sync/',
-        '/transactions/',
+        '/sync/changes',
         '/budgets/',
-        '/transactions/',
+        '/sync/changes',
         '/budgets/',
       ]);
       expect(results, hasLength(2));
@@ -438,28 +438,29 @@ void main() {
     });
   });
 
-  group('NEW-5/NEW-6: ETag и форма ответа загрузки', () {
-    ResponseBody transactionsPage(List<Map<String, dynamic>> items,
-            [String? etag]) =>
-        _json({
-          'status': 'success',
-          'data': {'items': items, 'has_more': false},
-        }, 200, etag);
-
-    test('GET транзакций 200 → GET лимитов упал → повтор без If-None-Match',
+  group('NEW-5/NEW-6: отметка синхронизации и форма ответа загрузки', () {
+    test('изменения 200 → GET лимитов упал → повтор с той же отметкой',
         () async {
       final synced = addTransaction()
         ..serverId = 'srv-1'
         ..isModified = false;
       db().putTransactions([synced]);
-      final remote = [
-        {...synced.toJson(), 'created_at': synced.toJson()['date']},
-      ];
+      final remote = {
+        ...synced.toJson(),
+        'created_at': synced.toJson()['date']
+      };
+
+      // Первая загрузка ставит отметку
+      adapter.handler = (options) async => options.path == '/sync/changes'
+          ? _changes([remote], serverTime: '2026-11-06T10:00:00.000Z')
+          : _json({'status': 'success', 'data': []});
+      await sync.syncBackendDataToLocal();
+      expect(sync.changesSince, DateTime.parse('2026-11-06T10:00:00Z'));
 
       var budgetsFail = true;
       adapter.handler = (options) async {
-        if (options.path == '/transactions/') {
-          return transactionsPage(remote, '"t-etag"');
+        if (options.path == '/sync/changes') {
+          return _changes([remote], serverTime: '2026-11-06T11:00:00.000Z');
         }
         if (budgetsFail) return _json({'detail': 'boom'}, 500);
         return _json({'status': 'success', 'data': []}, 200, '"b-etag"');
@@ -467,32 +468,32 @@ void main() {
 
       await expectLater(
           sync.syncBackendDataToLocal(), throwsA(isA<SyncException>()));
-      expect(sync.transactionsEtag, isNull);
+      expect(sync.changesSince, DateTime.parse('2026-11-06T10:00:00Z'));
 
       budgetsFail = false;
       await sync.syncBackendDataToLocal();
-      final retried =
-          adapter.requests.where((r) => r.path == '/transactions/').toList()[1];
-      expect(retried.headers.containsKey('If-None-Match'), isFalse);
-      expect(sync.transactionsEtag, '"t-etag"');
-
-      await sync.syncBackendDataToLocal();
-      final third =
-          adapter.requests.where((r) => r.path == '/transactions/').last;
-      expect(third.headers['If-None-Match'], '"t-etag"');
+      final changesRequests = adapter.requests
+          .where((r) => r.path == '/sync/changes')
+          .map((r) => r.queryParameters['since'])
+          .toList();
+      expect(changesRequests.skip(1), [
+        '2026-11-06T10:00:00.000Z',
+        '2026-11-06T10:00:00.000Z',
+      ]);
+      expect(sync.changesSince, DateTime.parse('2026-11-06T11:00:00Z'));
     });
 
-    test('200 без items — ошибка, а не пустой список', () async {
+    test('ответ без transactions — ошибка, а не пустой список', () async {
       final synced = addTransaction()
         ..serverId = 'srv-1'
         ..isModified = false;
       db().putTransactions([synced]);
       adapter.handler = (options) async {
-        if (options.path == '/transactions/') {
+        if (options.path == '/sync/changes') {
           return _json({
             'status': 'success',
             'data': {'unexpected': true},
-          }, 200, '"t-etag"');
+          });
         }
         return _json({'status': 'success', 'data': []});
       };
@@ -501,7 +502,7 @@ void main() {
           sync.syncBackendDataToLocal(), throwsA(isA<SyncException>()));
 
       expect(db().getAllTransactions(), hasLength(1));
-      expect(sync.transactionsEtag, isNull);
+      expect(sync.changesSince, isNull);
     });
 
     test('лимиты: 200 без списка — ошибка, лимиты не удаляются', () async {
@@ -510,7 +511,7 @@ void main() {
         ..isModified = false;
       db().putBudgets([budget]);
       adapter.handler = (options) async {
-        if (options.path == '/transactions/') return transactionsPage([]);
+        if (options.path == '/sync/changes') return _changes(const []);
         return _json({'status': 'success', 'data': null});
       };
 
@@ -518,6 +519,25 @@ void main() {
           sync.syncBackendDataToLocal(), throwsA(isA<SyncException>()));
 
       expect(db().getAllBudgets(), hasLength(1));
+    });
+
+    test('NEW-21: удаления из очереди уходят в /sync/, без отдельных DELETE',
+        () async {
+      await PendingDeletionsStore.instance.addTransaction('srv-del');
+      await PendingDeletionsStore.instance.addBudget('srv-budget');
+      adapter.handler = (options) async {
+        if (options.path == '/sync/') return _acceptAll(options);
+        if (options.path == '/sync/changes') return _changes(const []);
+        return _json({'status': 'success', 'data': []});
+      };
+
+      await sync.syncAll();
+
+      expect(adapter.requests.where((r) => r.method == 'DELETE'), isEmpty);
+      final payload = syncRequests().single.data as Map;
+      expect(payload['deleted_transaction_ids'], ['srv-del']);
+      expect(payload['deleted_budget_ids'], ['srv-budget']);
+      expect(PendingDeletionsStore.instance.isEmpty, isTrue);
     });
   });
 

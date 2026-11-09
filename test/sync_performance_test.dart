@@ -33,158 +33,304 @@ void main() {
     await LocalDbService.init();
   });
 
-  group('Sync Pagination Progress and Limit Tests', () {
+  const serverTime = '2026-11-06T10:00:00.000Z';
+
+  Map<String, dynamic> txJson(String id, {double amount = 100}) => {
+        'id': id,
+        'amount': amount,
+        'description': 'Item $id',
+        'category': 'food',
+        'type': 'expense',
+        'date': '2026-10-01T10:00:00Z',
+      };
+
+  /// Ответ `GET /sync/changes`.
+  Response<dynamic> changes(
+    RequestOptions options,
+    List<Map<String, dynamic>> items, {
+    List<String> deleted = const [],
+    String? nextCursor,
+    String time = serverTime,
+  }) =>
+      Response(
+        requestOptions: options,
+        statusCode: 200,
+        data: {
+          'status': 'success',
+          'data': {
+            'transactions': items,
+            'deleted_transaction_ids': deleted,
+            'has_more': nextCursor != null,
+            'next_cursor': nextCursor,
+            'server_time': time,
+          },
+        },
+      );
+
+  Response<dynamic> noBudgets(RequestOptions options) => Response(
+        requestOptions: options,
+        statusCode: 200,
+        data: {'status': 'success', 'data': <Map<String, dynamic>>[]},
+      );
+
+  /// Подменяет сервер на время [body]: [onChanges] отвечает на
+  /// `/sync/changes`, лимиты — пустой список.
+  Future<void> withServer(
+    ApiService api,
+    Response<dynamic> Function(RequestOptions options) onChanges,
+    Future<void> Function() body,
+  ) async {
+    final interceptor = InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (options.path == '/sync/changes') {
+          return handler.resolve(onChanges(options));
+        }
+        if (options.path.contains('/budgets')) {
+          return handler.resolve(noBudgets(options));
+        }
+        return handler.next(options);
+      },
+    );
+    api.dio.interceptors.insert(0, interceptor);
+    try {
+      await body();
+    } finally {
+      api.dio.interceptors.remove(interceptor);
+    }
+  }
+
+  Transaction syncedLocal(String serverId, {bool isModified = false}) =>
+      Transaction(
+        serverId: serverId,
+        amount: 250.0,
+        description: 'Local $serverId',
+        dbCategory: Category.food.name,
+        dbType: TransactionType.expense.name,
+        dateMilliseconds: DateTime.utc(2026, 10, 1).millisecondsSinceEpoch,
+        dateCreatedMilliseconds:
+            DateTime.utc(2026, 10, 1).millisecondsSinceEpoch,
+        isModified: isModified,
+      );
+
+  Set<String?> localServerIds() => LocalDbService.instance
+      .getAllTransactions()
+      .map((t) => t.serverId)
+      .toSet();
+
+  group('Загрузка операций через /sync/changes', () {
     late ApiService api;
 
     setUp(() async {
       api = ApiService.instance;
       await api.auth.setTokens('test_token', 'test_refresh');
+      await api.sync.clearEtags();
+      await LocalDbService.instance.clearAllData();
     });
 
-    test('syncBackendDataToLocal reports progress and pages correctly',
+    test(
+        'полная загрузка: все страницы, один сигнал экранам, отметка сохраняется',
         () async {
-      final progressUpdates = <Map<String, int>>[];
+      final requests = <RequestOptions>[];
+      await withServer(api, (options) {
+        requests.add(options);
+        return options.queryParameters['cursor'] == null
+            ? changes(options, [txJson('tx-1'), txJson('tx-2')],
+                nextCursor: 'page-2')
+            : changes(options, [txJson('tx-3')],
+                time: '2026-11-06T10:00:05.000Z');
+      }, () async {
+        final changesBefore = LocalDbService.transactionsChanged.value;
+
+        final result = await api.sync.syncBackendDataToLocal();
+
+        expect(result['transactions'], 3);
+        expect(localServerIds(), {'tx-1', 'tx-2', 'tx-3'});
+        expect(LocalDbService.transactionsChanged.value, changesBefore + 1);
+        // Первая синхронизация — без since; отметка — время первой страницы
+        expect(requests.first.queryParameters.containsKey('since'), isFalse);
+        expect(requests[1].queryParameters['cursor'], 'page-2');
+        expect(api.sync.changesSince, DateTime.parse(serverTime));
+      });
+    });
+
+    test('maxPages ограничивает загрузку, отметка не сохраняется', () async {
+      var fetchCount = 0;
+      await withServer(api, (options) {
+        fetchCount++;
+        return changes(options, [txJson('tx-$fetchCount')],
+            nextCursor: 'cursor-$fetchCount');
+      }, () async {
+        final result = await api.sync.syncBackendDataToLocal(maxPages: 1);
+
+        expect(fetchCount, 1);
+        expect(result['transactions'], 1);
+        expect(api.sync.changesSince, isNull);
+      });
+    });
+
+    test('с отметкой запрашиваются только изменения: правка и удаление',
+        () async {
+      final db = LocalDbService.instance;
+      // Первая синхронизация ставит отметку
+      await withServer(
+        api,
+        (options) => changes(options, [
+          txJson('tx-edit'),
+          txJson('tx-gone'),
+          txJson('tx-kept'),
+        ]),
+        () => api.sync.syncBackendDataToLocal(),
+      );
+      // Локальная правка удалённой на сервере операции не теряется
+      final kept = db.getAllTransactions().firstWhere(
+            (t) => t.serverId == 'tx-kept',
+          )..isModified = true;
+      db.putTransactions([kept]);
+
+      RequestOptions? request;
+      await withServer(api, (options) {
+        request = options;
+        return changes(options, [txJson('tx-edit', amount: 999)],
+            deleted: ['tx-gone', 'tx-kept'], time: '2026-11-06T11:00:00.000Z');
+      }, () async {
+        final result = await api.sync.syncBackendDataToLocal();
+
+        expect(request!.queryParameters['since'], serverTime);
+        expect(result['deleted_transactions'], 2);
+        expect(result['removed_transactions'], 1);
+      });
+
+      final byId = {for (final t in db.getAllTransactions()) t.serverId: t};
+      expect(byId.keys.toSet(), {'tx-edit', 'tx-kept'});
+      expect(byId['tx-edit']!.amount, 999);
+      expect(api.sync.changesSince, DateTime.parse('2026-11-06T11:00:00Z'));
+    });
+
+    test('нет изменений — экраны не перечитывают данные', () async {
+      LocalDbService.instance.saveTransaction(syncedLocal('tx-1'));
+      await withServer(
+        api,
+        (options) => changes(options, [txJson('tx-1')]),
+        () => api.sync.syncBackendDataToLocal(),
+      );
 
       final interceptor = InterceptorsWrapper(
         onRequest: (options, handler) {
-          if (options.path.contains('/transactions/')) {
-            final cursor = options.queryParameters['cursor'];
-            if (cursor == null) {
-              return handler.resolve(Response(
-                requestOptions: options,
-                statusCode: 200,
-                data: {
-                  'status': 'success',
-                  'data': {
-                    'items': [
-                      {
-                        'id': 'tx-1',
-                        'amount': 100.0,
-                        'description': 'Item 1',
-                        'category': 'food',
-                        'type': 'expense',
-                        'date': '2026-10-01T10:00:00Z',
-                      },
-                      {
-                        'id': 'tx-2',
-                        'amount': 200.0,
-                        'description': 'Item 2',
-                        'category': 'salary',
-                        'type': 'income',
-                        'date': '2026-10-02T10:00:00Z',
-                      },
-                    ],
-                    'has_more': true,
-                    'next_cursor': 'cursor-page-2',
-                  },
-                },
-              ));
-            } else if (cursor == 'cursor-page-2') {
-              return handler.resolve(Response(
-                requestOptions: options,
-                statusCode: 200,
-                data: {
-                  'status': 'success',
-                  'data': {
-                    'items': [
-                      {
-                        'id': 'tx-3',
-                        'amount': 300.0,
-                        'description': 'Item 3',
-                        'category': 'entertainment',
-                        'type': 'expense',
-                        'date': '2026-10-03T10:00:00Z',
-                      },
-                    ],
-                    'has_more': false,
-                  },
-                },
-              ));
-            }
-          } else if (options.path.contains('/budgets/')) {
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 200,
-              data: {
-                'status': 'success',
-                'data': <Map<String, dynamic>>[],
-              },
-            ));
+          if (options.path == '/sync/changes') {
+            return handler.resolve(changes(options, const []));
+          }
+          if (options.path.contains('/budgets')) {
+            return handler
+                .resolve(Response(requestOptions: options, statusCode: 304));
           }
           return handler.next(options);
         },
       );
-
       api.dio.interceptors.insert(0, interceptor);
-
       final changesBefore = LocalDbService.transactionsChanged.value;
       try {
-        final result = await api.sync.syncBackendDataToLocal(
-          onTransactionProgress: (count, page) {
-            progressUpdates.add({'count': count, 'page': page});
-          },
-        );
-
-        // Экраны получают ровно один сигнал на загрузку с изменениями
-        expect(LocalDbService.transactionsChanged.value, changesBefore + 1);
-        expect(result['transactions'], 3);
-        expect(progressUpdates.length, 2);
-        expect(progressUpdates[0], {'count': 2, 'page': 1});
-        expect(progressUpdates[1], {'count': 3, 'page': 2});
+        await api.sync.syncBackendDataToLocal();
+        expect(LocalDbService.transactionsChanged.value, changesBefore);
       } finally {
         api.dio.interceptors.remove(interceptor);
       }
     });
 
-    test('maxPages limit prevents unbounded pagination during transaction sync',
+    test('с пустой базой загрузка полная, даже если отметка есть', () async {
+      await withServer(
+        api,
+        (options) => changes(options, [txJson('tx-1')]),
+        () => api.sync.syncBackendDataToLocal(),
+      );
+      await LocalDbService.instance.clearAllData();
+
+      RequestOptions? request;
+      await withServer(api, (options) {
+        request = options;
+        return changes(options, [txJson('tx-1')]);
+      }, () => api.sync.syncBackendDataToLocal());
+
+      expect(request!.queryParameters.containsKey('since'), isFalse);
+      expect(localServerIds(), {'tx-1'});
+    });
+
+    test('ошибка на второй странице: отметка не сохраняется, данные целы',
         () async {
-      int fetchCount = 0;
+      LocalDbService.instance.saveTransaction(syncedLocal('tx-local'));
 
       final interceptor = InterceptorsWrapper(
         onRequest: (options, handler) {
-          if (options.path.contains('/transactions/')) {
-            fetchCount++;
-            return handler.resolve(Response(
+          if (options.path == '/sync/changes') {
+            if (options.queryParameters['cursor'] == null) {
+              return handler.resolve(changes(options, [txJson('tx-remote')],
+                  nextCursor: 'cur_fail'));
+            }
+            return handler.reject(DioException(
               requestOptions: options,
-              statusCode: 200,
-              data: {
-                'status': 'success',
-                'data': {
-                  'items': [
-                    {
-                      'id': 'tx-$fetchCount',
-                      'amount': 50.0,
-                      'description': 'Paginated item $fetchCount',
-                      'category': 'food',
-                      'type': 'expense',
-                      'date': '2026-10-01T10:00:00Z',
-                    },
-                  ],
-                  'has_more': true,
-                  'next_cursor': 'cursor-$fetchCount',
-                },
-              },
-            ));
-          } else if (options.path.contains('/budgets/')) {
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 200,
-              data: {'status': 'success', 'data': <Map<String, dynamic>>[]},
+              type: DioExceptionType.badResponse,
+              response: Response(requestOptions: options, statusCode: 500),
             ));
           }
           return handler.next(options);
         },
       );
-
       api.dio.interceptors.insert(0, interceptor);
-
       try {
-        final result = await api.sync.syncBackendDataToLocal(
-          maxPages: 1,
+        await expectLater(
+          api.sync.syncBackendDataToLocal(),
+          throwsA(isA<SyncException>()),
         );
+        expect(api.sync.changesSince, isNull);
+        expect(localServerIds(), contains('tx-local'));
+      } finally {
+        api.dio.interceptors.remove(interceptor);
+      }
+    });
 
-        expect(fetchCount, 1);
-        expect(result['transactions'], 1);
+    test('неполная полная загрузка — только upsert, без удаления локальных',
+        () async {
+      LocalDbService.instance.saveTransaction(syncedLocal('tx-local-kept'));
+
+      await withServer(
+        api,
+        (options) => changes(options, [txJson('tx-remote-partial')],
+            nextCursor: 'cur_never_loaded'),
+        () async {
+          final result = await api.sync.syncBackendDataToLocal(maxPages: 1);
+          expect(result['removed_transactions'], 0);
+        },
+      );
+
+      expect(localServerIds(),
+          containsAll(['tx-local-kept', 'tx-remote-partial']));
+      expect(api.sync.changesSince, isNull);
+    });
+
+    test('ответ без transactions — ошибка, база не трогается', () async {
+      LocalDbService.instance.saveTransaction(syncedLocal('tx-1'));
+      final interceptor = InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path == '/sync/changes') {
+            return handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'status': 'success',
+                'data': {'unexpected': true},
+              },
+            ));
+          }
+          return handler.next(options);
+        },
+      );
+      api.dio.interceptors.insert(0, interceptor);
+      try {
+        await expectLater(
+          api.sync.syncBackendDataToLocal(),
+          throwsA(isA<SyncException>()),
+        );
+        expect(localServerIds(), {'tx-1'});
+        expect(api.sync.changesSince, isNull);
       } finally {
         api.dio.interceptors.remove(interceptor);
       }
@@ -279,6 +425,42 @@ void main() {
     });
 
     test(
+        'applyRemoteTransactionChanges: правка, удаление, локальные изменения и дубль невыгруженной',
+        () {
+      final db = LocalDbService.instance;
+      Transaction tx(String? id, double amount, {bool modified = false}) =>
+          Transaction.fromJson({
+            if (id != null) 'id': id,
+            'amount': amount,
+            'description': 'tx $id',
+            'category': 'food',
+            'type': 'expense',
+            'date': '2026-10-01T10:00:00Z',
+          })
+            ..isModified = modified;
+
+      db.saveTransaction(tx('srv-edit', 1));
+      db.saveTransaction(tx('srv-gone', 2));
+      db.saveTransaction(tx('srv-mod', 3, modified: true));
+      // Невыгруженная запись, которую сервер уже принял (ответ /sync потерян)
+      db.saveTransaction(tx(null, 4));
+
+      final removed = db.applyRemoteTransactionChanges(
+        [tx('srv-edit', 10), tx('srv-mod', 30), tx('srv-twin', 4)],
+        ['srv-gone', 'srv-mod', 'srv-unknown'],
+      );
+
+      expect(removed, 1);
+      final all = db.getAllTransactions();
+      final byId = {for (final t in all) t.serverId: t};
+      expect(all, hasLength(3));
+      expect(byId['srv-edit']!.amount, 10);
+      expect(byId['srv-mod']!.amount, 3);
+      expect(byId['srv-twin']!.amount, 4);
+      expect(byId.containsKey('srv-gone'), isFalse);
+    });
+
+    test(
         'reconcileBudgets cleans stale records via query and preserves local data',
         () {
       final db = LocalDbService.instance;
@@ -321,250 +503,10 @@ void main() {
     });
   });
 
-  group('Block A Sync Robustness Tests (A1, A2, A3, A6, E1)', () {
+  group('Без сессии', () {
     late ApiService api;
 
-    setUp(() async {
-      api = ApiService.instance;
-      await api.auth.setTokens('test_token', 'test_refresh');
-      await api.sync.clearEtags();
-      final all = LocalDbService.instance.getAllTransactions();
-      for (final t in all) {
-        LocalDbService.instance.deleteTransaction(t.localId);
-      }
-    });
-
-    test(
-        'E1 / A1: error on page 2 does not save ETag and does not delete local transactions',
-        () async {
-      final db = LocalDbService.instance;
-      final localTx = Transaction(
-        localId: 0,
-        serverId: 'tx-local-persistent',
-        amount: 250.0,
-        description: 'Should not be deleted',
-        dbCategory: Category.food.name,
-        dbType: TransactionType.expense.name,
-        dateMilliseconds: DateTime.utc(2026, 10, 1).millisecondsSinceEpoch,
-        dateCreatedMilliseconds:
-            DateTime.utc(2026, 10, 1).millisecondsSinceEpoch,
-        isModified: false,
-      );
-      db.saveTransaction(localTx);
-      expect(db.hasTransactions, isTrue);
-
-      final interceptor = InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (options.path.contains('/transactions')) {
-            final cursor = options.queryParameters['cursor'];
-            if (cursor == null) {
-              return handler.resolve(Response(
-                requestOptions: options,
-                statusCode: 200,
-                headers: Headers.fromMap({
-                  'etag': ['etag-page1'],
-                }),
-                data: {
-                  'status': 'success',
-                  'data': {
-                    'items': [
-                      {
-                        'id': 'tx-remote-1',
-                        'amount': 100.0,
-                        'description': 'Page 1 Item',
-                        'category': 'food',
-                        'type': 'expense',
-                        'date': '2026-10-01T10:00:00Z',
-                      }
-                    ],
-                    'has_more': true,
-                    'next_cursor': 'cur_fail',
-                  },
-                },
-              ));
-            } else if (cursor == 'cur_fail') {
-              return handler.reject(DioException(
-                requestOptions: options,
-                type: DioExceptionType.badResponse,
-                response: Response(
-                  requestOptions: options,
-                  statusCode: 500,
-                ),
-              ));
-            }
-          }
-          return handler.next(options);
-        },
-      );
-
-      api.dio.interceptors.insert(0, interceptor);
-
-      try {
-        await expectLater(
-          api.sync.syncBackendDataToLocal(),
-          throwsA(isA<SyncException>()),
-        );
-
-        // Проверяем A1: ETag не был сохранен
-        expect(api.sync.transactionsEtag, isNot('etag-page1'));
-
-        // Проверяем A2: локальная запись не была удалена
-        final remaining = db.getAllTransactions();
-        expect(
-            remaining.any((t) => t.serverId == 'tx-local-persistent'), isTrue);
-      } finally {
-        api.dio.interceptors.remove(interceptor);
-      }
-    });
-
-    test(
-        'A2: reaching maxPages with hasMore=true performs upsert only without deleting records or saving ETag',
-        () async {
-      final db = LocalDbService.instance;
-      final localTx = Transaction(
-        localId: 0,
-        serverId: 'tx-local-kept',
-        amount: 300.0,
-        description: 'Should remain on partial sync',
-        dbCategory: Category.transport.name,
-        dbType: TransactionType.expense.name,
-        dateMilliseconds: DateTime.utc(2026, 10, 2).millisecondsSinceEpoch,
-        dateCreatedMilliseconds:
-            DateTime.utc(2026, 10, 2).millisecondsSinceEpoch,
-        isModified: false,
-      );
-      db.saveTransaction(localTx);
-
-      final interceptor = InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (options.path.contains('/transactions')) {
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 200,
-              headers: Headers.fromMap({
-                'etag': ['etag-partial'],
-              }),
-              data: {
-                'status': 'success',
-                'data': {
-                  'items': [
-                    {
-                      'id': 'tx-remote-partial',
-                      'amount': 50.0,
-                      'description': 'Partial item',
-                      'category': 'food',
-                      'type': 'expense',
-                      'date': '2026-10-02T10:00:00Z',
-                    }
-                  ],
-                  'has_more': true,
-                  'next_cursor': 'cur_never_loaded',
-                },
-              },
-            ));
-          }
-          if (options.path.contains('/budgets')) {
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 200,
-              data: {
-                'status': 'success',
-                'data': [],
-              },
-            ));
-          }
-          return handler.next(options);
-        },
-      );
-
-      api.dio.interceptors.insert(0, interceptor);
-
-      try {
-        final result = await api.sync.syncBackendDataToLocal(maxPages: 1);
-        expect(result['removed_transactions'], 0);
-        expect(api.sync.transactionsEtag, isNull);
-
-        final all = db.getAllTransactions();
-        final ids = all.map((t) => t.serverId).toSet();
-        expect(ids.contains('tx-local-kept'), isTrue);
-        expect(ids.contains('tx-remote-partial'), isTrue);
-      } finally {
-        api.dio.interceptors.remove(interceptor);
-      }
-    });
-
-    test('304 for transactions and budgets does not signal screens to reload',
-        () async {
-      final interceptor = InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (options.path.contains('/transactions') ||
-              options.path.contains('/budgets')) {
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 304,
-            ));
-          }
-          return handler.next(options);
-        },
-      );
-      api.dio.interceptors.insert(0, interceptor);
-
-      final changesBefore = LocalDbService.transactionsChanged.value;
-      try {
-        await api.sync.syncBackendDataToLocal();
-        expect(LocalDbService.transactionsChanged.value, changesBefore);
-      } finally {
-        api.dio.interceptors.remove(interceptor);
-      }
-    });
-
-    test('A3: If-None-Match is NOT sent when local database is empty',
-        () async {
-      final db = LocalDbService.instance;
-      expect(db.hasTransactions, isFalse);
-
-      Map<String, dynamic>? capturedHeaders;
-
-      final interceptor = InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (options.path.contains('/transactions')) {
-            capturedHeaders = options.headers;
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 200,
-              data: {
-                'status': 'success',
-                'data': {
-                  'items': [],
-                  'has_more': false,
-                },
-              },
-            ));
-          }
-          if (options.path.contains('/budgets')) {
-            return handler.resolve(Response(
-              requestOptions: options,
-              statusCode: 200,
-              data: {
-                'status': 'success',
-                'data': [],
-              },
-            ));
-          }
-          return handler.next(options);
-        },
-      );
-
-      api.dio.interceptors.insert(0, interceptor);
-
-      try {
-        await api.sync.syncBackendDataToLocal();
-        expect(capturedHeaders, isNotNull);
-        expect(capturedHeaders!.containsKey('If-None-Match'), isFalse);
-      } finally {
-        api.dio.interceptors.remove(interceptor);
-      }
-    });
+    setUp(() => api = ApiService.instance);
 
     test(
         'A6: Unauthenticated sync throws SyncException and maps to localized string',
