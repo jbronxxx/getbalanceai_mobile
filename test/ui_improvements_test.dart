@@ -567,7 +567,6 @@ void main() {
               color: Colors.red,
               key: const Key('red_background'),
             ),
-            borderRadius: BorderRadius.circular(24),
             child: Container(
               key: key,
               width: 300,

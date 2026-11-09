@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
-import '../swipe_hint_wrapper.dart';
+import '../swipe_to_delete.dart';
 import '../../theme/app_colors.dart';
 
 /// Карточка элемента бюджета с индикатором выполнения и поддержкой свайпа для удаления.
@@ -71,16 +71,6 @@ class BudgetItemCard extends StatelessWidget {
     final progressColor =
         progressColorFor(ratio, colors, isExceeded: isExceeded);
 
-    final background = Container(
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: colorScheme.error,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Icon(Icons.delete_rounded, color: colorScheme.onError),
-    );
-
     final baseBg = colors.cardBackground;
     final cardBg = isExceeded
         ? Color.alphaBlend(
@@ -93,153 +83,145 @@ class BudgetItemCard extends StatelessWidget {
         ? exceededColor.withValues(alpha: isDark ? 0.40 : 0.35)
         : colors.cardBorder;
 
-    final cardContent = Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: glassBorder,
-          width: isExceeded ? 1.2 : 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isExceeded
-                ? exceededColor.withValues(alpha: 0.12)
-                : AppColors.of(context).cardShadow,
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: AppColors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      CategoryStyle.icon(budget.category),
-                      size: 20,
-                      color: CategoryStyle.color(budget.category),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        budget.category.getLocalizedName(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
+    // Сдвигаемая часть — прямоугольная и непрозрачная: углы скругляет
+    // SwipeToDelete сразу у карточки и красной подложки (см. его описание).
+    final cardContent = Material(
+      color: cardBg,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    CategoryStyle.icon(budget.category),
+                    size: 20,
+                    color: CategoryStyle.color(budget.category),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      budget.category.getLocalizedName(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          // Подпись отличает остаток от потраченного под шкалой
-                          if (!isExceeded)
-                            Text(
-                              context.l10n.budget_remaining,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.labelSmall?.copyWith(
-                                color: colorScheme.outline,
-                              ),
-                            ),
-                          CurrencyFormatter.formatText(
-                            (budget.limitAmount - currentSpent).abs(),
-                            currency: budget.currency,
-                            prefix: isExceeded
-                                ? '${context.l10n.budget_exceeded} '
-                                : '',
-                            useFittedBox: true,
-                            textAlign: TextAlign.end,
-                            style: textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isExceeded
-                                  ? exceededColor
-                                  : colorScheme.onSurface,
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Подпись отличает остаток от потраченного под шкалой
+                        if (!isExceeded)
+                          Text(
+                            context.l10n.budget_remaining,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.outline,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: progress,
-                  color: progressColor,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.l10n.budget_spent_of(
-                          _display(currentSpent, showSymbol: false),
-                          _display(budget.limitAmount),
+                        CurrencyFormatter.formatText(
+                          (budget.limitAmount - currentSpent).abs(),
+                          currency: budget.currency,
+                          prefix: isExceeded
+                              ? '${context.l10n.budget_exceeded} '
+                              : '',
+                          useFittedBox: true,
+                          textAlign: TextAlign.end,
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isExceeded
+                                ? exceededColor
+                                : colorScheme.onSurface,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
+                      ],
                     ),
-                    Text(
-                      '$percent%',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: progress,
+                color: progressColor,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.l10n.budget_spent_of(
+                        _display(currentSpent, showSymbol: false),
+                        _display(budget.limitAmount),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: progressColor,
+                        color: colorScheme.outline,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  Text(
+                    '$percent%',
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: progressColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
 
-    final dismissibleItem = Dismissible(
-      key: Key('budget_${budget.localId}'),
-      direction: DismissDirection.endToStart,
-      dismissThresholds: const {
-        DismissDirection.endToStart: kSwipeDeleteThreshold,
-      },
-      onDismissed: (_) => onDelete(),
-      background: background,
-      child: cardContent,
-    );
-
-    final itemWithHint = isFirst
-        ? SwipeHintWrapper(
-            showHint: showSwipeHint,
-            background: background,
-            borderRadius: BorderRadius.circular(24),
-            onHintShown: onHintShown,
-            child: dismissibleItem,
-          )
-        : dismissibleItem;
-
+    const radius = BorderRadius.all(Radius.circular(24));
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: itemWithHint,
+      child: Container(
+        // Тень — под карточкой, рамка — поверх: при свайпе рамка остаётся
+        // на месте и обводит и карточку, и подложку.
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(
+              color: isExceeded
+                  ? exceededColor.withValues(alpha: 0.12)
+                  : AppColors.of(context).cardShadow,
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        foregroundDecoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(
+            color: glassBorder,
+            width: isExceeded ? 1.2 : 1.0,
+          ),
+        ),
+        child: SwipeToDelete(
+          dismissKey: Key('budget_${budget.localId}'),
+          borderRadius: radius,
+          showHint: isFirst && showSwipeHint,
+          onHintShown: onHintShown,
+          onDelete: onDelete,
+          child: cardContent,
+        ),
+      ),
     );
   }
 }

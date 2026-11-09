@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
-import '../swipe_hint_wrapper.dart';
+import '../swipe_to_delete.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
@@ -52,21 +52,13 @@ class TransactionItemTile extends StatelessWidget {
         ? LanguageManager.formatDayMonth(transaction.date)
         : categoryName;
 
-    final background = Container(
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      color: colorScheme.error,
-      child: Icon(Icons.delete_rounded, color: colorScheme.onError),
-    );
-
-    final item = Dismissible(
-      key: Key(transaction.localId.toString()),
-      direction: DismissDirection.endToStart,
-      dismissThresholds: const {
-        DismissDirection.endToStart: kSwipeDeleteThreshold,
-      },
-      onDismissed: (_) => onDelete(),
-      background: background,
+    // Строка прямоугольная: углы скругляет карточка дня или категории,
+    // в которой она лежит.
+    return SwipeToDelete(
+      dismissKey: Key(transaction.localId.toString()),
+      showHint: isFirst && showHint,
+      onHintShown: onHintShown,
+      onDelete: onDelete,
       child: Material(
         color: backgroundColor(context),
         child: ListTile(
@@ -156,16 +148,5 @@ class TransactionItemTile extends StatelessWidget {
         ),
       ),
     );
-
-    if (isFirst) {
-      return SwipeHintWrapper(
-        showHint: showHint,
-        background: background,
-        onHintShown: onHintShown,
-        child: item,
-      );
-    }
-
-    return item;
   }
 }
