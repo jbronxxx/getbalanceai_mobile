@@ -385,13 +385,17 @@ class _SocialButton extends StatelessWidget {
                 children: [
                   icon,
                   const SizedBox(width: 14),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: AppFontSize.lead,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                      letterSpacing: -0.2,
+                  // Кнопка фиксированной высоты: при крупном шрифте подпись
+                  // слегка уменьшается, а не вылезает за край
+                  Flexible(
+                    child: OneLineLabel(
+                      text,
+                      style: TextStyle(
+                        fontSize: AppFontSize.lead,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
                 ],

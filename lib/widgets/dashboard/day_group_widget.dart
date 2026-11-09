@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../whole_words_text.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import 'transaction_item_tile.dart';
@@ -75,7 +76,7 @@ class DayGroupWidget extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
+                child: WholeWordsText(
                   isToday
                       ? '${context.l10n.today}, $formattedDate'
                       : formattedDate,

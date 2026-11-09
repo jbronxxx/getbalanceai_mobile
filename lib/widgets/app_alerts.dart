@@ -4,6 +4,7 @@ import 'package:getbalanceai_mobile/utils/utils.dart';
 import '../theme/app_theme.dart';
 import 'glass_container.dart';
 import 'one_line_label.dart';
+import 'whole_words_text.dart';
 import 'liquid_glass_nav_bar.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_colors.dart';
@@ -215,7 +216,7 @@ class AppAlerts {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (title != null) ...[
-                  Text(
+                  WholeWordsText(
                     title,
                     style: TextStyle(
                       color: theme.colorScheme.onSurface,
@@ -226,7 +227,7 @@ class AppAlerts {
                   ),
                   const SizedBox(height: 2),
                 ],
-                Text(
+                WholeWordsText(
                   message,
                   style: TextStyle(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -339,7 +340,7 @@ class AppAlerts {
                 color: accentColor,
               ),
               const SizedBox(height: 20),
-              Text(
+              WholeWordsText(
                 title,
                 style: TextStyle(
                   fontSize: AppFontSize.headline,
@@ -349,7 +350,7 @@ class AppAlerts {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              Text(
+              WholeWordsText(
                 message,
                 style: TextStyle(
                   fontSize: AppFontSize.body,
@@ -575,7 +576,7 @@ class AppAlerts {
                 color: errorColor,
               ),
               const SizedBox(height: 20),
-              Text(
+              WholeWordsText(
                 title,
                 style: TextStyle(
                   fontSize: AppFontSize.headline,
@@ -585,7 +586,7 @@ class AppAlerts {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              Text(
+              WholeWordsText(
                 message,
                 style: TextStyle(
                   fontSize: AppFontSize.body,
@@ -645,7 +646,7 @@ class AppAlerts {
                 color: AppTheme.warningAmber,
               ),
               const SizedBox(height: 20),
-              Text(
+              WholeWordsText(
                 title ?? context.l10n.service_unavailable_title,
                 style: TextStyle(
                   fontSize: AppFontSize.headline,
@@ -655,7 +656,7 @@ class AppAlerts {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              Text(
+              WholeWordsText(
                 message ?? context.l10n.service_unavailable_desc,
                 style: TextStyle(
                   fontSize: AppFontSize.body,
@@ -816,7 +817,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
           color: AppTheme.warningAmber,
         ),
         const SizedBox(height: 20),
-        Text(
+        WholeWordsText(
           widget.title,
           style: TextStyle(
             fontSize: AppFontSize.headline,
@@ -826,7 +827,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        Text(
+        WholeWordsText(
           widget.message,
           style: TextStyle(
             fontSize: AppFontSize.body,
@@ -858,14 +859,18 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
                   color: AppTheme.warningAmber,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  _secondsLeft > 0
-                      ? context.l10n.rate_limit_countdown(_secondsLeft)
-                      : context.l10n.rate_limit_ready,
-                  style: TextStyle(
-                    fontSize: AppFontSize.hint,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
+                // Длинный текст («Вы можете повторить попытку прямо сейчас»)
+                // переносится, а не вылезает за плашку
+                Flexible(
+                  child: WholeWordsText(
+                    _secondsLeft > 0
+                        ? context.l10n.rate_limit_countdown(_secondsLeft)
+                        : context.l10n.rate_limit_ready,
+                    style: TextStyle(
+                      fontSize: AppFontSize.hint,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],

@@ -151,6 +151,10 @@ class AppTheme {
         brightness: Brightness.dark,
         surface: darkSurface,
         primary: primaryTeal,
+        // fromSeed в тёмной теме даёт тёмный onPrimary (под светлый
+        // primary), а primary здесь тот же тёмно-бирюзовый, что и в светлой:
+        // текст и иконки на нём — белые, как в светлой теме.
+        onPrimary: Colors.white,
         secondary: secondaryTeal,
         error: errorRed,
       ),

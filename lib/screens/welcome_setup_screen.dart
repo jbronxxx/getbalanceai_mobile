@@ -197,8 +197,10 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          SizedBox(
-            height: 120,
+          // Не меньше 120: при смене языка список не прыгает; при крупном
+          // шрифте блок растёт, а не обрезает подзаголовок
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

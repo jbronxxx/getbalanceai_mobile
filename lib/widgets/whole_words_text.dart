@@ -10,10 +10,21 @@ class WholeWordsText extends StatelessWidget {
   final String text;
   final TextStyle? style;
   final TextAlign? textAlign;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
-  const WholeWordsText(this.text, {super.key, this.style, this.textAlign});
+  const WholeWordsText(
+    this.text, {
+    super.key,
+    this.style,
+    this.textAlign,
+    this.maxLines,
+    this.overflow,
+  });
 
-  static final _spaces = RegExp(r'\s+');
+  /// Обычные пробелы и переводы строк; неразрывный пробел (суммы
+  /// «35 891 556 сум») — часть слова, по нему строка не переносится.
+  static final _spaces = RegExp('[ \t\n]+');
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +34,13 @@ class WholeWordsText extends StatelessWidget {
           .split(_spaces)
           .map((word) => OneLineLabel.widthOf(context, word, effective))
           .fold(0.0, math.max);
-      final child = Text(text, style: style, textAlign: textAlign);
+      final child = Text(
+        text,
+        style: style,
+        textAlign: textAlign,
+        maxLines: maxLines,
+        overflow: overflow,
+      );
       if (!constraints.hasBoundedWidth || widest <= constraints.maxWidth) {
         return child;
       }

@@ -181,6 +181,41 @@ void main() {
     });
   }
 
+  testWidgets('лимит при ×2: ни один текст не обрезан «…»', (tester) async {
+    final cut = <String>[];
+    for (final language in AppLanguage.values) {
+      // Перерасход в десятки миллионов сумов — самые длинные строки
+      await pumpRow(
+        tester,
+        BudgetItemCard(
+          budget: Budget(
+            dbCategory: Category.food.name,
+            limitAmount: 35891556,
+            currencyCode: 'UZS',
+            month: 11,
+            year: 2026,
+            spent: 35983616,
+            remaining: -92060,
+          ),
+          currentSpent: 35983616,
+          isFirst: false,
+          showSwipeHint: false,
+          onTap: () {},
+          onDelete: () {},
+          onHintShown: () {},
+        ),
+        language,
+        2.0,
+      );
+      for (final p in tester.allRenderObjects.whereType<RenderParagraph>()) {
+        if (p.didExceedMaxLines) {
+          cut.add('${language.name}: «${p.text.toPlainText()}»');
+        }
+      }
+    }
+    expect(cut, isEmpty);
+  });
+
   testWidgets('обычная сумма при обычном шрифте не уменьшается',
       (tester) async {
     await pumpTile(
@@ -188,7 +223,7 @@ void main() {
     final amount = find
         .ancestor(
             of: find.textContaining('300'), matching: find.byType(FittedBox))
-        .first;
+        .last;
     final text = find.descendant(of: amount, matching: find.byType(RichText));
     expect(
       tester.getSize(amount).width,
@@ -203,7 +238,8 @@ void main() {
     final amount = find
         .ancestor(
             of: find.textContaining('999'), matching: find.byType(FittedBox))
-        .first;
+        // Внешний: сумма и «≈ в основной валюте» уменьшаются вместе
+        .last;
     final text = find.descendant(of: amount, matching: find.byType(RichText));
     expect(tester.getSize(amount).width,
         lessThan(tester.renderObject<RenderParagraph>(text).size.width));

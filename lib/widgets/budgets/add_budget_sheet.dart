@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../whole_words_text.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
 import '../../utils/utils.dart';
@@ -264,7 +265,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 const Center(
                   child: SheetHandle(),
                 ),
-                Text(
+                WholeWordsText(
                   isEditing
                       ? context.l10n.edit_budget_title
                       : context.l10n.add_budget_title,

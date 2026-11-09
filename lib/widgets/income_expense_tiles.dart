@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:getbalanceai_mobile/theme/app_colors.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'one_line_label.dart';
 
 /// Плитки «Доход» и «Расход» на бирюзовых карточках «Баланса» и «Аналитики»:
 /// одинаковые стрелки, цвета и шрифт на обоих экранах.
@@ -70,6 +71,10 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.labelMedium?.copyWith(
+      color: AppColors.onBrandBase.withValues(alpha: 0.85),
+      fontWeight: FontWeight.w500,
+    );
     final amountStyle = theme.textTheme.titleMedium?.copyWith(
       color: AppColors.onBrandBase,
       fontWeight: FontWeight.bold,
@@ -103,15 +108,17 @@ class _Tile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
+              // При крупном шрифте «Доход» слегка уменьшается, а не
+              // обрезается до «Дох…»; высота строки — полная, чтобы плитки
+              // с подписями разной длины оставались одной высоты
               Flexible(
-                child: Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.onBrandBase.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w500,
+                child: SizedBox(
+                  height: _lineHeight(context, labelStyle),
+                  child: OneLineLabel(
+                    label,
+                    alignment: AlignmentDirectional.centerStart,
+                    style: labelStyle,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

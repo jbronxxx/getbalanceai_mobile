@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../whole_words_text.dart';
 import '../../models/models.dart';
 import '../../services/local_db_service.dart';
 import '../../utils/utils.dart';
@@ -65,7 +66,7 @@ class SyncRejectedSheet extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
+              child: WholeWordsText(
                 l10n.sync_rejected_title,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -154,7 +155,7 @@ class _RejectedTile extends StatelessWidget {
               ),
               // Две строки: рядом с суммой в сотни миллионов сумов дата и описание
               // в одну строку обрезались.
-              subtitle: Text(
+              subtitle: WholeWordsText(
                 details,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

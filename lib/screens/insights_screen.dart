@@ -307,7 +307,7 @@ class _InsightCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(
+            child: WholeWordsText(
               text,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface,

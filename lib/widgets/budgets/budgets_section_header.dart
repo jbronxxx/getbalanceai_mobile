@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../whole_words_text.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
 
@@ -18,7 +19,7 @@ class BudgetsSectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
+            child: WholeWordsText(
               context.l10n.budgets_title,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,

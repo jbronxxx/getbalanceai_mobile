@@ -12,11 +12,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:getbalanceai_mobile/cubits/auth/auth_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
+import 'package:getbalanceai_mobile/cubits/report_export/report_export_cubit.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
 import 'package:getbalanceai_mobile/screens/auth_screen.dart';
 import 'package:getbalanceai_mobile/screens/main_shell.dart';
-import 'package:getbalanceai_mobile/screens/profile_screen.dart';
 import 'package:getbalanceai_mobile/screens/service_unavailable_screen.dart';
 import 'package:getbalanceai_mobile/screens/startup_error_screen.dart';
 import 'package:getbalanceai_mobile/screens/transaction_search_screen.dart';
@@ -39,7 +39,8 @@ import 'support/app_fonts.dart';
 
 /// Переносы текста на всех экранах (UX-08, UX-09, UX-10): ни одно слово не
 /// рвётся посреди («Редактиров / ать») на телефоне 360 dp при обычном и
-/// крупном (×1.15, ×1.3, ×1.5) шрифте на всех языках; до ×1.15 текст не
+/// крупном (×1.15, ×1.3, ×1.5, ×2 — максимум системного меню) шрифте на всех
+/// языках; до ×1.15 текст не
 /// обрезается троеточием, а подписи [OneLineLabel] при обычном шрифте не
 /// уменьшаются. Текст меряется настоящим шрифтом приложения
 /// (Inter из assets): тестовый шрифт с квадратными глифами вдвое шире и дал
@@ -216,12 +217,11 @@ void main() {
   });
 
   /// Конфигурации: язык × масштаб шрифта на телефоне 360 dp (на более
-  /// широких экранах места только больше).
-  const baseScales = [1.0, 1.15, 1.3, 1.5];
-
-  /// Максимум системного меню шрифта (×2) — для экранов, проверенных на
-  /// телефоне при таком масштабе (UX-17).
-  const withMaxScale = [...baseScales, 2.0];
+  /// широких экранах места только больше). ×2 — максимум системного меню.
+  final configs = [
+    for (final language in AppLanguage.values)
+      for (final scale in [1.0, 1.15, 1.3, 1.5, 2.0]) (language, 360.0, scale),
+  ];
 
   /// Проверяет поверхность [surface] во всех конфигурациях: падает со
   /// списком разорванных слов и обрезанных строк. [build] — что
@@ -232,13 +232,7 @@ void main() {
     Widget Function() build, {
     Future<void> Function(WidgetTester tester)? open,
     bool guest = false,
-    List<double> scales = baseScales,
-    Type? maxScaleScreen,
   }) {
-    final configs = [
-      for (final language in AppLanguage.values)
-        for (final scale in scales) (language, 360.0, scale),
-    ];
     testWidgets(surface, (tester) async {
       final broken = <String>[];
       if (guest) {
@@ -271,21 +265,14 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         if (open != null) await open(tester);
         await tester.pump(const Duration(seconds: 1));
-        tester.takeException();
-
         final config = '${language.name} ${width.toInt()}dp ×$scale';
-        // Выше ×1.5 — только экран [maxScaleScreen]: соседние вкладки
-        // MainShell при ×2 пока не выверены
-        final paragraphs = scale > baseScales.last && maxScaleScreen != null
-            ? find
-                .descendant(
-                    of: find.byType(maxScaleScreen),
-                    matching: find.byType(RichText))
-                .evaluate()
-                .map((e) => e.renderObject)
-                .whereType<RenderParagraph>()
-            : tester.allRenderObjects.whereType<RenderParagraph>();
-        for (final p in paragraphs) {
+        // Переполнение (полосы «overflowed») — тоже поломка вёрстки
+        final error = tester.takeException();
+        if (error != null) {
+          broken.add('$config: ${error.toString().split('\n').first}');
+        }
+
+        for (final p in tester.allRenderObjects.whereType<RenderParagraph>()) {
           if (!p.hasSize || !p.attached) continue;
           final text = p.text.toPlainText(includeSemanticsLabels: false);
           for (final word in _brokenWords(p)) {
@@ -380,14 +367,11 @@ void main() {
     audit('Аналитика', () => const MainShell(),
         open: (tester) => tapText(tester, LanguageManager.l10n.insights));
     audit('Профиль', () => const MainShell(),
-        scales: withMaxScale,
-        maxScaleScreen: ProfileScreen,
         open: (tester) => tapText(tester, LanguageManager.l10n.profile));
     // Длинные значения настроек и адрес — найдено на телефоне (×1.5):
     // «Валют / а» рядом с «Узбекский сум», «gmail.co / m».
     audit('Профиль: сум и длинный адрес', () => const MainShell(),
-        scales: withMaxScale,
-        maxScaleScreen: ProfileScreen, open: (tester) async {
+        open: (tester) async {
       when(() => authCubit.state).thenReturn(Authenticated(
           email: 'firstname.lastname.work@gmail.com', name: 'Евгений'));
       await tester.runAsync(() => CurrencyFormatter.setCurrency(Currency.uzs));
@@ -400,8 +384,6 @@ void main() {
         open: (tester) => tapText(tester, LanguageManager.l10n.insights));
     audit('Гость: Профиль', () => const MainShell(),
         guest: true,
-        scales: withMaxScale,
-        maxScaleScreen: ProfileScreen,
         open: (tester) => tapText(tester, LanguageManager.l10n.profile));
   });
 
@@ -651,7 +633,12 @@ void main() {
         open: tapOpen);
     audit('Выбор месяца', () => sheetHost(() => const PeriodPickerSheet()),
         open: tapOpen);
-    audit('Выгрузка отчёта', () => sheetHost(() => const ReportExportSheet()),
+    audit(
+        'Выгрузка отчёта',
+        () => sheetHost(() => BlocProvider(
+              create: (_) => ReportExportCubit(month: 11, year: 2026),
+              child: const ReportExportSheet(),
+            )),
         open: tapOpen);
     audit('Отклонённые записи',
         () => sheetHost(() => SyncRejectedSheet(transactions: [rejected])),
