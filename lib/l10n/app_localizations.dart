@@ -1608,6 +1608,12 @@ abstract class AppLocalizations {
   /// **'no expenses'**
   String get structure_no_expenses;
 
+  /// No description provided for @structure_no_expenses_month.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses this month'**
+  String get structure_no_expenses_month;
+
   /// No description provided for @structure_more_categories.
   ///
   /// In en, this message translates to:

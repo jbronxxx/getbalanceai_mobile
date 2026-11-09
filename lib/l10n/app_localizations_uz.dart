@@ -814,6 +814,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get structure_no_expenses => 'xarajat yo\'q';
 
   @override
+  String get structure_no_expenses_month => 'Bu oyda xarajatlar yo\'q';
+
+  @override
   String structure_more_categories(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -81,6 +81,13 @@ class _SummaryContent extends StatelessWidget {
         headlineAmount = summary.totalLimit;
     }
 
+    // Плашки не повторяют сумму заголовка: остаток — только когда в
+    // заголовке дневной лимит; в будущем месяце трат нет, и шкала с
+    // плашками повторяли бы «Запланировано».
+    final showRemaining =
+        summary.periodState == BudgetPeriodState.current && !summary.isExceeded;
+    final showBreakdown = summary.periodState != BudgetPeriodState.future;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,46 +117,48 @@ class _SummaryContent extends StatelessWidget {
             style: textTheme.bodySmall?.copyWith(color: white82),
           ),
         ],
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            key: const ValueKey('month_budget_progress'),
-            value: summary.spentRatio.clamp(0.0, 1.0),
-            minHeight: 8,
-            color: summary.isExceeded
-                ? AppColors.of(context).exceededOnBrand
-                : AppColors.of(context).onBrand,
-            backgroundColor: AppColors.onBrandBase.withValues(alpha: 0.22),
+        if (showBreakdown) ...[
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              key: const ValueKey('month_budget_progress'),
+              value: summary.spentRatio.clamp(0.0, 1.0),
+              minHeight: 8,
+              color: summary.isExceeded
+                  ? AppColors.of(context).exceededOnBrand
+                  : AppColors.of(context).onBrand,
+              backgroundColor: AppColors.onBrandBase.withValues(alpha: 0.22),
+            ),
           ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: _Figure(
-                label: l10n.budget_limits_total,
-                amount: summary.totalLimit,
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _Figure(
+                  label: l10n.budget_limits_total,
+                  amount: summary.totalLimit,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _Figure(
-                label: l10n.budget_spent,
-                amount: summary.totalSpent,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _Figure(
+                  label: l10n.budget_spent,
+                  amount: summary.totalSpent,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _Figure(
-                label: summary.isExceeded
-                    ? l10n.budget_overspent
-                    : l10n.budget_remaining,
-                amount: summary.remaining.abs(),
-              ),
-            ),
-          ],
-        ),
+              if (showRemaining) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Figure(
+                    label: l10n.budget_remaining,
+                    amount: summary.remaining,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ],
     );
   }

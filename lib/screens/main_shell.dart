@@ -28,6 +28,13 @@ class _MainShellState extends State<MainShell> {
     });
   }
 
+  void _selectTab(int index) {
+    if (_currentIndex == index) return;
+    // Тост относится к вкладке, где он появился
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    setState(() => _currentIndex = index);
+  }
+
   /// Форма новой операции открывается с любой вкладки; вкладки узнают
   /// о сохранении через `LocalDbService.transactionsChanged`.
   void _openNewTransaction() {
@@ -63,92 +70,92 @@ class _MainShellState extends State<MainShell> {
 
         // Полей ввода во вкладках нет: клавиатура листа операции не должна
         // ни перекладывать, ни перестраивать вкладки и навбар под окном.
-        return KeyboardInsetsIsolation(
-          child: Scaffold(
-            backgroundColor: shellBg,
-            resizeToAvoidBottomInset: false,
-            body: Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Positioned.fill(
-                  child: ValueListenableBuilder<Currency>(
-                    valueListenable: CurrencyFormatter.currencyNotifier,
-                    builder: (context, currency, _) {
-                      return IndexedStack(
-                        key: const Key('main_shell_indexed_stack'),
-                        index: _currentIndex,
-                        children: [
-                          DashboardScreen(
-                            key: const PageStorageKey('dashboard_tab'),
-                            onAuthenticated: (_, __) {},
-                            onOpenProfile: _openProfileTab,
-                          ),
-                          const BudgetsScreen(
-                            key: PageStorageKey('budgets_tab'),
-                          ),
-                          InsightsScreen(
-                            key: const PageStorageKey('insights_tab'),
-                            isActive: _currentIndex == 2,
-                          ),
-                          ProfileScreen(
-                            key: const PageStorageKey('profile_tab'),
-                            userEmail: email,
-                            userName: name,
-                            avatarUrl: avatarUrl,
-                          ),
-                        ]
-                            .indexed
-                            // Скрытые вкладки остаются в дереве, но их
-                            // анимации (лоадер ИИ, подсказки) не тикают.
-                            .map((tab) => TickerMode(
-                                  enabled: tab.$1 == _currentIndex,
-                                  child: tab.$2,
-                                ))
-                            .toList(),
-                      );
-                    },
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: LiquidGlassNavBar(
-                    selectedIndex: _currentIndex,
-                    centerAction: LiquidGlassNavAction(
-                      tooltip: context.l10n.new_transaction,
-                      onPressed: _openNewTransaction,
+        // «Назад» на Android со второстепенной вкладки возвращает на
+        // «Баланс», а не закрывает приложение; с «Баланса» — как обычно.
+        return PopScope(
+          canPop: _currentIndex == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _selectTab(0);
+          },
+          child: KeyboardInsetsIsolation(
+            child: Scaffold(
+              backgroundColor: shellBg,
+              resizeToAvoidBottomInset: false,
+              body: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned.fill(
+                    child: ValueListenableBuilder<Currency>(
+                      valueListenable: CurrencyFormatter.currencyNotifier,
+                      builder: (context, currency, _) {
+                        return IndexedStack(
+                          key: const Key('main_shell_indexed_stack'),
+                          index: _currentIndex,
+                          children: [
+                            DashboardScreen(
+                              key: const PageStorageKey('dashboard_tab'),
+                              onAuthenticated: (_, __) {},
+                              onOpenProfile: _openProfileTab,
+                            ),
+                            const BudgetsScreen(
+                              key: PageStorageKey('budgets_tab'),
+                            ),
+                            InsightsScreen(
+                              key: const PageStorageKey('insights_tab'),
+                              isActive: _currentIndex == 2,
+                            ),
+                            ProfileScreen(
+                              key: const PageStorageKey('profile_tab'),
+                              userEmail: email,
+                              userName: name,
+                              avatarUrl: avatarUrl,
+                            ),
+                          ]
+                              .indexed
+                              // Скрытые вкладки остаются в дереве, но их
+                              // анимации (лоадер ИИ, подсказки) не тикают.
+                              .map((tab) => TickerMode(
+                                    enabled: tab.$1 == _currentIndex,
+                                    child: tab.$2,
+                                  ))
+                              .toList(),
+                        );
+                      },
                     ),
-                    onDestinationSelected: (index) {
-                      if (_currentIndex != index) {
-                        // Тост относится к вкладке, где он появился
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        setState(() {
-                          _currentIndex = index;
-                        });
-                      }
-                    },
-                    destinations: [
-                      LiquidGlassNavItem(
-                        icon: Icons.wallet_rounded,
-                        label: context.l10n.balance,
-                      ),
-                      LiquidGlassNavItem(
-                        icon: Icons.donut_small_rounded,
-                        label: context.l10n.finances,
-                      ),
-                      LiquidGlassNavItem(
-                        icon: Icons.auto_awesome_rounded,
-                        label: context.l10n.insights,
-                      ),
-                      LiquidGlassNavItem(
-                        icon: Icons.person_rounded,
-                        label: context.l10n.profile,
-                      ),
-                    ],
                   ),
-                ),
-              ],
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: LiquidGlassNavBar(
+                      selectedIndex: _currentIndex,
+                      centerAction: LiquidGlassNavAction(
+                        tooltip: context.l10n.new_transaction,
+                        onPressed: _openNewTransaction,
+                      ),
+                      onDestinationSelected: _selectTab,
+                      destinations: [
+                        LiquidGlassNavItem(
+                          icon: Icons.wallet_rounded,
+                          label: context.l10n.balance,
+                        ),
+                        LiquidGlassNavItem(
+                          icon: Icons.donut_small_rounded,
+                          label: context.l10n.finances,
+                        ),
+                        LiquidGlassNavItem(
+                          icon: Icons.auto_awesome_rounded,
+                          label: context.l10n.insights,
+                        ),
+                        LiquidGlassNavItem(
+                          icon: Icons.person_rounded,
+                          label: context.l10n.profile,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

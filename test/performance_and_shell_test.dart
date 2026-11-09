@@ -419,6 +419,44 @@ void main() {
       );
       expect(find.byType(LiquidGlassNavBar), findsOneWidget);
     });
+
+    testWidgets('UX-03: «Назад» со второстепенной вкладки ведёт на «Баланс»',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: AppTheme.lightTheme,
+          home: BlocProvider<AuthCubit>.value(
+            value: mockAuthCubit,
+            child: const MainShell(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final stack = find.byKey(const Key('main_shell_indexed_stack'));
+
+      // С «Баланса» «Назад» отдаётся системе
+      expect(
+          tester
+              .widget<PopScope>(
+                  find.byWidgetPredicate((w) => w is PopScope).first)
+              .canPop,
+          isTrue);
+
+      await tester.tap(find.text('Профиль'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.widget<IndexedStack>(stack).index, 3);
+
+      // Системная кнопка «Назад»: приложение не закрывается, открыт «Баланс»
+      final handled = await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(handled, isTrue);
+      expect(tester.widget<IndexedStack>(stack).index, 0);
+      expect(find.byType(MainShell), findsOneWidget);
+    });
   });
 }
 

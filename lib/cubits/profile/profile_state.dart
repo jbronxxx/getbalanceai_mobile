@@ -13,10 +13,16 @@ class ProfileState {
   /// Операции, лимиты и удаления, которые ещё не дошли до сервера.
   final int pendingSyncCount;
 
+  /// Номер нажатия «Синхронизировать». Повторная попытка без сети даёт тот
+  /// же статус `noInternet` — по номеру экран понимает, что это новая
+  /// попытка, и снова показывает сообщение.
+  final int syncAttempt;
+
   const ProfileState({
     this.syncStatus = SyncStatus.idle,
     this.syncError,
     this.pendingSyncCount = 0,
+    this.syncAttempt = 0,
   });
 
   /// Возвращает копию состояния. `syncError` сбрасывается, если не передан явно.
@@ -24,11 +30,13 @@ class ProfileState {
     SyncStatus? syncStatus,
     Object? syncError,
     int? pendingSyncCount,
+    int? syncAttempt,
   }) {
     return ProfileState(
       syncStatus: syncStatus ?? this.syncStatus,
       syncError: syncError,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
+      syncAttempt: syncAttempt ?? this.syncAttempt,
     );
   }
 }

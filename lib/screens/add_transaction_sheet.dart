@@ -19,6 +19,22 @@ class AddTransactionSheet extends StatefulWidget {
 
   const AddTransactionSheet({super.key, this.transactionToEdit});
 
+  /// Дата новой операции: в открытом прошлом месяце — его последний день
+  /// (иначе запись молча уходила в «сегодня» и не появлялась на экране),
+  /// в текущем и будущих — сейчас: будущие даты календарь не разрешает.
+  static DateTime defaultDateFor(MonthPeriod period, DateTime now) {
+    if (!period.isBefore(MonthPeriod.current(now))) return now;
+    final lastDay = DateTime(period.year, period.month + 1, 0).day;
+    return DateTime(
+      period.year,
+      period.month,
+      lastDay,
+      now.hour,
+      now.minute,
+      now.second,
+    );
+  }
+
   @override
   State<AddTransactionSheet> createState() => _AddTransactionSheetState();
 }
@@ -42,7 +58,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _type = t?.type ?? TransactionType.expense;
     _category = t?.category ??
         (_type == TransactionType.income ? Category.salary : Category.food);
-    _date = t?.date ?? DateTime.now();
+    _date = t?.date ??
+        AddTransactionSheet.defaultDateFor(
+          SelectedPeriodService.instance.period,
+          DateTime.now(),
+        );
     _frequentCategories = _loadFrequentCategories(_type);
     _selectedCurrency = t?.currency ?? CurrencyFormatter.currentCurrency;
     _amountController = TextEditingController(
@@ -276,6 +296,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             children: [
               Flexible(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.only(
                     top: 10,
                     left: 24,
@@ -302,9 +324,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        TransactionTypeToggle(
-                          type: _type,
-                          onChanged: _onTypeChanged,
+                        // Тип часто выбирают до или во время ввода суммы:
+                        // для «тапа вне поля» переключатель — часть поля,
+                        // клавиатура при смене типа не закрывается.
+                        TextFieldTapRegion(
+                          child: TransactionTypeToggle(
+                            type: _type,
+                            onChanged: _onTypeChanged,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         TransactionAmountField(
@@ -332,6 +359,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         const SizedBox(height: 20),
                         TextField(
                           controller: _descriptionController,
+                          onTapOutside: unfocusOnTapOutside,
                           textCapitalization: TextCapitalization.sentences,
                           inputFormatters: [
                             LengthLimitingTextInputFormatter(

@@ -116,11 +116,29 @@ void main() {
 
     // Статус 0%
     expect(find.text('0%'), findsWidgets);
-    // Плейсхолдер отсутствия транзакций
-    expect(find.text(LanguageManager.l10n.no_transactions), findsOneWidget);
+    // Плейсхолдер — про расходы, а не «нет записей» (UX-06): на экране
+    // карточка видна только при доходах или расходах
+    expect(find.text(LanguageManager.l10n.structure_no_expenses_month),
+        findsOneWidget);
+    expect(find.text(LanguageManager.l10n.no_transactions), findsNothing);
   });
 
-  testWidgets('Кейс: группировка при более чем 3 категориях (+N ещё)',
+  testWidgets('стрелки дохода и расхода — диагональные, как на «Балансе»',
+      (tester) async {
+    await tester.pumpWidget(buildTestWidget(
+      totalIncome: 1000,
+      totalExpense: 400,
+      categoryExpenses: {Category.food: 400},
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.south_west_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.north_east_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+    expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
+  });
+
+  testWidgets('Кейс: группировка при более чем 4 категориях (+N ещё)',
       (tester) async {
     await tester.pumpWidget(buildTestWidget(
       totalIncome: 100000,
@@ -135,11 +153,39 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Топ-2 должны присутствовать
+    // Топ-3 видны по отдельности
     expect(find.text(Category.food.getLocalizedName()), findsOneWidget);
     expect(find.text(Category.transport.getLocalizedName()), findsOneWidget);
-    // Оставшиеся 3 категории сворачиваются в строку «ещё 3 категории»
-    expect(find.text('ещё 3 категории'), findsOneWidget);
+    expect(
+        find.text(Category.entertainment.getLocalizedName()), findsOneWidget);
+    // Оставшиеся 2 сворачиваются в строку «ещё 2 категории»
+    expect(find.text(Category.health.getLocalizedName()), findsNothing);
+    expect(find.text('ещё 2 категории'), findsOneWidget);
+  });
+
+  testWidgets('Кейс: ровно 4 категории — все видны, без «ещё 1»',
+      (tester) async {
+    await tester.pumpWidget(buildTestWidget(
+      totalIncome: 100000,
+      totalExpense: 56000,
+      categoryExpenses: {
+        Category.food: 25000,
+        Category.transport: 15000,
+        Category.entertainment: 10000,
+        Category.health: 6000,
+      },
+    ));
+    await tester.pumpAndSettle();
+
+    for (final c in [
+      Category.food,
+      Category.transport,
+      Category.entertainment,
+      Category.health,
+    ]) {
+      expect(find.text(c.getLocalizedName()), findsOneWidget);
+    }
+    expect(find.textContaining('ещё'), findsNothing);
   });
 
   testWidgets('Реактивность: карточка обновляет анимацию при изменении пропсов',
