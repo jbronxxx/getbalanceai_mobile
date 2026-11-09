@@ -92,12 +92,9 @@ class _SummaryContent extends StatelessWidget {
         headlineAmount = summary.totalLimit;
     }
 
-    // Плашки не повторяют сумму заголовка: остаток — только когда в
-    // заголовке дневной лимит; в будущем месяце трат нет, и шкала с
-    // плашками повторяли бы «Запланировано».
-    final showRemaining =
-        summary.periodState == BudgetPeriodState.current && !summary.isExceeded;
-    final showBreakdown = summary.periodState != BudgetPeriodState.future;
+    // В будущем месяце трат нет: пустая шкала ничего не добавляет к
+    // «Запланировано».
+    final showProgress = summary.periodState != BudgetPeriodState.future;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -128,7 +125,7 @@ class _SummaryContent extends StatelessWidget {
             style: textTheme.bodySmall?.copyWith(color: white82),
           ),
         ],
-        if (showBreakdown) ...[
+        if (showProgress) ...[
           const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -142,85 +139,8 @@ class _SummaryContent extends StatelessWidget {
               backgroundColor: AppColors.onBrandBase.withValues(alpha: 0.22),
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _Figure(
-                  label: l10n.budget_limits_total,
-                  amount: summary.totalLimit,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _Figure(
-                  label: l10n.budget_spent,
-                  amount: summary.totalSpent,
-                ),
-              ),
-              if (showRemaining) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _Figure(
-                    label: l10n.budget_remaining,
-                    amount: summary.remaining,
-                  ),
-                ),
-              ],
-            ],
-          ),
         ],
       ],
-    );
-  }
-}
-
-class _Figure extends StatelessWidget {
-  final String label;
-  final double amount;
-
-  const _Figure({required this.label, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.onBrandBase.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(18),
-        border:
-            Border.all(color: AppColors.onBrandBase.withValues(alpha: 0.24)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Подпись не обрезается, а уменьшается: три плашки в ряд узкие,
-          // а «Перерасход» и переводы длиннее русских «Траты»/«Осталось».
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: textTheme.labelSmall?.copyWith(
-                color: AppColors.onBrandBase.withValues(alpha: 0.85),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          CurrencyFormatter.formatText(
-            amount,
-            useFittedBox: true,
-            style: textTheme.titleSmall?.copyWith(
-              color: AppColors.onBrandBase,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

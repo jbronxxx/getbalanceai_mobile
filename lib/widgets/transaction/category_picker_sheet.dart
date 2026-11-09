@@ -100,7 +100,7 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        context.l10n.category_search_empty,
+                        context.l10n.search_nothing_found,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

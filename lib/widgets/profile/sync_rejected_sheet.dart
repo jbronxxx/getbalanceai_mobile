@@ -142,9 +142,11 @@ class _RejectedTile extends StatelessWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Две строки: рядом с суммой в сотни миллионов сумов дата и
+          // описание в одну строку обрезались.
           Text(
             details,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: textTheme.bodySmall?.copyWith(color: colorScheme.outline),
           ),

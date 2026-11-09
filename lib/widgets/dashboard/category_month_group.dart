@@ -136,6 +136,9 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
                           ),
                         ),
                         const SizedBox(width: 16),
+                        // Название — во всю ширину, сумма — второй строкой
+                        // справа от числа операций: суммы в сотни миллионов
+                        // сумов в одной строке с названием обрезали его.
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,30 +152,46 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
                                   color: colorScheme.onSurface,
                                 ),
                               ),
-                              Text(
-                                context.l10n.operations_count(
-                                  summary.transactions.length,
-                                ),
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.outline,
+                              const SizedBox(height: 2),
+                              LayoutBuilder(
+                                builder: (context, constraints) => Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        context.l10n.operations_count(
+                                          summary.transactions.length,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.outline,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ConstrainedBox(
+                                      // Числу операций остаётся хотя бы
+                                      // четверть строки
+                                      constraints: BoxConstraints(
+                                        maxWidth: constraints.maxWidth * 0.75,
+                                      ),
+                                      child: CurrencyFormatter.formatText(
+                                        summary.total,
+                                        showSign: true,
+                                        textAlign: TextAlign.end,
+                                        useFittedBox: true,
+                                        style: textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: summary.total >= 0
+                                              ? AppColors.of(context).accentText
+                                              : colorScheme.onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 140),
-                          child: CurrencyFormatter.formatText(
-                            summary.total,
-                            showSign: true,
-                            textAlign: TextAlign.end,
-                            useFittedBox: true,
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: summary.total >= 0
-                                  ? AppColors.of(context).accentText
-                                  : colorScheme.onSurface,
-                            ),
                           ),
                         ),
                         const SizedBox(width: 4),

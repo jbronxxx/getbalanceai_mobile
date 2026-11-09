@@ -197,7 +197,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get save_btn => 'Saqlash';
 
   @override
-  String get budget_exceeded => 'Ortiqcha xarajat:';
+  String get budget_exceeded => 'Ortiqcha xarajat';
 
   @override
   String get no_budgets_subtitle =>
@@ -732,7 +732,25 @@ class AppLocalizationsUz extends AppLocalizations {
   String get category_search_hint => 'Toifani topish';
 
   @override
-  String get category_search_empty => 'Hech narsa topilmadi';
+  String get search_nothing_found => 'Hech narsa topilmadi';
+
+  @override
+  String get transaction_search_title => 'Qidiruv';
+
+  @override
+  String get transaction_search_hint => 'Tavsif yoki kategoriya';
+
+  @override
+  String get search_clear => 'Tozalash';
+
+  @override
+  String get filter_all => 'Barchasi';
+
+  @override
+  String get filter_expenses => 'Xarajatlar';
+
+  @override
+  String get filter_incomes => 'Daromadlar';
 
   @override
   String get previous_month => 'Oldingi oy';
@@ -799,12 +817,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get budget_limits_total => 'Limitlar';
-
-  @override
-  String get budget_spent => 'Sarflandi';
-
-  @override
   String get budget_remaining => 'Qoldi';
 
   @override
@@ -848,7 +860,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String budget_spent_of(String spent, String limit) {
-    return 'Sarflandi: $limit dan $spent';
+    return '$limit dan $spent';
   }
 
   @override

@@ -266,9 +266,8 @@ class LocalDbService {
     return result;
   }
 
-  /// Все транзакции от новых к старым. В приложении не используется —
-  /// чтение всей таблицы; экраны читают по периоду.
-  @visibleForTesting
+  /// Все транзакции от новых к старым — для поиска по всей истории
+  /// (экраны месяца читают по периоду).
   List<Transaction> getAllTransactions() {
     final query = _transactionBox.query()
       ..order(Transaction_.dateMilliseconds, flags: Order.descending);

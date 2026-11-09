@@ -198,7 +198,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get save_btn => 'Сақтау';
 
   @override
-  String get budget_exceeded => 'Асып кетті:';
+  String get budget_exceeded => 'Асып кетті';
 
   @override
   String get no_budgets_subtitle =>
@@ -733,7 +733,25 @@ class AppLocalizationsKk extends AppLocalizations {
   String get category_search_hint => 'Санатты табу';
 
   @override
-  String get category_search_empty => 'Ештеңе табылмады';
+  String get search_nothing_found => 'Ештеңе табылмады';
+
+  @override
+  String get transaction_search_title => 'Іздеу';
+
+  @override
+  String get transaction_search_hint => 'Сипаттама немесе санат';
+
+  @override
+  String get search_clear => 'Тазалау';
+
+  @override
+  String get filter_all => 'Барлығы';
+
+  @override
+  String get filter_expenses => 'Шығыстар';
+
+  @override
+  String get filter_incomes => 'Кірістер';
 
   @override
   String get previous_month => 'Алдыңғы ай';
@@ -799,12 +817,6 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get budget_limits_total => 'Лимиттер';
-
-  @override
-  String get budget_spent => 'Жұмсалды';
-
-  @override
   String get budget_remaining => 'Қалды';
 
   @override
@@ -848,7 +860,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String budget_spent_of(String spent, String limit) {
-    return 'Жұмсалды: $limit ішінен $spent';
+    return '$limit ішінен $spent';
   }
 
   @override

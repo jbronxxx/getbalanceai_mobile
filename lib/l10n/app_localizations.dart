@@ -1458,11 +1458,47 @@ abstract class AppLocalizations {
   /// **'Find a category'**
   String get category_search_hint;
 
-  /// No description provided for @category_search_empty.
+  /// No description provided for @search_nothing_found.
   ///
   /// In en, this message translates to:
   /// **'Nothing found'**
-  String get category_search_empty;
+  String get search_nothing_found;
+
+  /// No description provided for @transaction_search_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get transaction_search_title;
+
+  /// No description provided for @transaction_search_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Description or category'**
+  String get transaction_search_hint;
+
+  /// No description provided for @search_clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get search_clear;
+
+  /// No description provided for @filter_all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filter_all;
+
+  /// No description provided for @filter_expenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get filter_expenses;
+
+  /// No description provided for @filter_incomes.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get filter_incomes;
 
   /// No description provided for @previous_month.
   ///
@@ -1572,18 +1608,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day left} other{{count} days left}}'**
   String days_left(int count);
 
-  /// No description provided for @budget_limits_total.
-  ///
-  /// In en, this message translates to:
-  /// **'Limits'**
-  String get budget_limits_total;
-
-  /// No description provided for @budget_spent.
-  ///
-  /// In en, this message translates to:
-  /// **'Spent'**
-  String get budget_spent;
-
   /// No description provided for @budget_remaining.
   ///
   /// In en, this message translates to:
@@ -1626,10 +1650,10 @@ abstract class AppLocalizations {
   /// **'{month, select, m1{Copy from January} m2{Copy from February} m3{Copy from March} m4{Copy from April} m5{Copy from May} m6{Copy from June} m7{Copy from July} m8{Copy from August} m9{Copy from September} m10{Copy from October} m11{Copy from November} m12{Copy from December} other{Copy from last month}}'**
   String copy_limits_cta(String month);
 
-  /// No description provided for @budget_spent_of.
+  /// Limit card under the bar: spent of limit. The non-breaking space keeps the preposition with its amount, so a long line wraps only between the two amounts.
   ///
   /// In en, this message translates to:
-  /// **'Spent: {spent} of {limit}'**
+  /// **'{spent} of {limit}'**
   String budget_spent_of(String spent, String limit);
 
   /// No description provided for @structure_title.

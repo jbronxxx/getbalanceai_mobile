@@ -10,6 +10,7 @@ export 'keyboard_insets_isolation.dart';
 export 'liquid_glass_app_bar.dart';
 export 'liquid_glass_fab.dart';
 export 'liquid_glass_nav_bar.dart';
+export 'one_line_label.dart';
 export 'reload_when_visible.dart';
 export 'screen_body_card.dart';
 export 'swipe_hint_wrapper.dart';
