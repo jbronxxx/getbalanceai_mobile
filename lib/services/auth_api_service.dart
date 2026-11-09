@@ -362,6 +362,23 @@ class AuthApiService {
     }
   }
 
+  /// Длина имени — как у колонки `users.name` на сервере.
+  static const userNameMaxLength = 100;
+
+  /// Меняет имя на сервере и на устройстве. Ошибка сервера или сети
+  /// пробрасывается: имя на устройстве меняется только после ответа сервера.
+  Future<void> updateUserName(String name) async {
+    final response = await _dio.patch(
+      ApiConfig.me,
+      data: {'name': name.trim()},
+      options: authOptions(),
+    );
+    final data = response.data;
+    final saved = data is Map ? data['data'] : null;
+    final savedName = saved is Map ? saved['name'] : null;
+    await setUserName(savedName is String ? savedName : name.trim());
+  }
+
   /// Обновляет профиль пользователя на сервере (имя, аватар, базовая валюта).
   Future<void> updateUserProfile({
     String? name,

@@ -103,6 +103,14 @@
   "category_health": "Денсаулық",
   "category_subscriptions": "Жазылымдар",
   "category_shopping": "Сатып алулар",
+  "category_housing": "Үй және ЖКШ",
+  "category_communication": "Байланыс",
+  "category_education": "Білім",
+  "category_family": "Отбасы",
+  "category_car": "Автокөлік",
+  "category_gifts": "Сыйлықтар",
+  "category_travel": "Саяхат",
+  "category_beauty": "Сұлулық",
   "category_salary": "Жалақы",
   "category_freelance": "Фриланс",
   "category_investments": "Инвестициялар",
@@ -356,5 +364,9 @@
   "app_lock_no_device_lock": "Алдымен телефон баптауларында экран құлпын қосыңыз",
   "app_lock_too_many_attempts": "Әрекет тым көп. Кейінірек қайталаңыз",
   "balance_hide": "Сомаларды жасыру",
-  "balance_show": "Сомаларды көрсету"
+  "balance_show": "Сомаларды көрсету",
+  "edit_name_title": "Сіздің атыңыз",
+  "edit_name_label": "Аты",
+  "edit_name_tooltip": "Атын өзгерту",
+  "edit_name_error": "Атты сақтау мүмкін болмады"
 }

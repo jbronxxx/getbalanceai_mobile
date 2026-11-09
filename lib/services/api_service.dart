@@ -260,6 +260,9 @@ class ApiService {
         baseCurrency: baseCurrency,
       );
 
+  /// Меняет имя пользователя; ошибка сервера или сети пробрасывается.
+  Future<void> updateUserName(String name) => _authService.updateUserName(name);
+
   /// Удаляет аккаунт на сервере и все его данные на устройстве. При ошибке
   /// сервера ничего не стирается и сессия сохраняется.
   Future<void> deleteAccount() async {

@@ -103,6 +103,14 @@
   "category_health": "Health",
   "category_subscriptions": "Subscriptions",
   "category_shopping": "Shopping",
+  "category_housing": "Housing",
+  "category_communication": "Phone & internet",
+  "category_education": "Education",
+  "category_family": "Family",
+  "category_car": "Car",
+  "category_gifts": "Gifts",
+  "category_travel": "Travel",
+  "category_beauty": "Beauty",
   "category_salary": "Salary",
   "category_freelance": "Freelance",
   "category_investments": "Investments",
@@ -479,5 +487,9 @@
   "balance_show": "Show amounts",
   "@balance_show": {
     "description": "Eye button on the balance card when amounts are hidden"
-  }
+  },
+  "edit_name_title": "Your name",
+  "edit_name_label": "Name",
+  "edit_name_tooltip": "Edit name",
+  "edit_name_error": "Couldn't save the name"
 }

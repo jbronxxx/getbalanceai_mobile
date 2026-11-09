@@ -303,6 +303,30 @@ class AppLocalizationsKk extends AppLocalizations {
   String get category_shopping => 'Сатып алулар';
 
   @override
+  String get category_housing => 'Үй және ЖКШ';
+
+  @override
+  String get category_communication => 'Байланыс';
+
+  @override
+  String get category_education => 'Білім';
+
+  @override
+  String get category_family => 'Отбасы';
+
+  @override
+  String get category_car => 'Автокөлік';
+
+  @override
+  String get category_gifts => 'Сыйлықтар';
+
+  @override
+  String get category_travel => 'Саяхат';
+
+  @override
+  String get category_beauty => 'Сұлулық';
+
+  @override
   String get category_salary => 'Жалақы';
 
   @override
@@ -958,4 +982,16 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get balance_show => 'Сомаларды көрсету';
+
+  @override
+  String get edit_name_title => 'Сіздің атыңыз';
+
+  @override
+  String get edit_name_label => 'Аты';
+
+  @override
+  String get edit_name_tooltip => 'Атын өзгерту';
+
+  @override
+  String get edit_name_error => 'Атты сақтау мүмкін болмады';
 }

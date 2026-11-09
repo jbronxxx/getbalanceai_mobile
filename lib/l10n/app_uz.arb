@@ -103,6 +103,14 @@
   "category_health": "Sog'liq",
   "category_subscriptions": "Obunalar",
   "category_shopping": "Xaridlar",
+  "category_housing": "Uy-joy, kommunal",
+  "category_communication": "Aloqa",
+  "category_education": "Ta'lim",
+  "category_family": "Oila",
+  "category_car": "Avtomobil",
+  "category_gifts": "Sovg'alar",
+  "category_travel": "Sayohat",
+  "category_beauty": "Go'zallik",
   "category_salary": "Maosh",
   "category_freelance": "Frilans",
   "category_investments": "Investitsiyalar",
@@ -356,5 +364,9 @@
   "app_lock_no_device_lock": "Avval telefon sozlamalarida ekran qulfini yoqing",
   "app_lock_too_many_attempts": "Urinishlar juda ko'p. Keyinroq qayta urinib ko'ring",
   "balance_hide": "Summalarni yashirish",
-  "balance_show": "Summalarni ko'rsatish"
+  "balance_show": "Summalarni ko'rsatish",
+  "edit_name_title": "Ismingiz",
+  "edit_name_label": "Ism",
+  "edit_name_tooltip": "Ismni o'zgartirish",
+  "edit_name_error": "Ismni saqlab bo'lmadi"
 }
