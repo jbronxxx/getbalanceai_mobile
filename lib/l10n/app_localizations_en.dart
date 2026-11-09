@@ -935,4 +935,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get category_group_collapse_hint => 'hide transactions';
+
+  @override
+  String get app_lock_title => 'App lock';
+
+  @override
+  String get app_lock_subtitle => 'Fingerprint or your phone\'s screen lock';
+
+  @override
+  String get app_lock_prompt_title => 'Unlock GetBalance AI';
+
+  @override
+  String get app_lock_reason => 'Confirm it\'s you';
+
+  @override
+  String get app_locked => 'App is locked';
+
+  @override
+  String get app_unlock => 'Unlock';
+
+  @override
+  String get app_lock_no_device_lock =>
+      'Set up a screen lock in your phone settings first';
+
+  @override
+  String get app_lock_too_many_attempts => 'Too many attempts. Try again later';
+
+  @override
+  String get balance_hide => 'Hide amounts';
+
+  @override
+  String get balance_show => 'Show amounts';
 }

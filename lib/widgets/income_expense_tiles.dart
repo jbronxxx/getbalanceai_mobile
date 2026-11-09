@@ -9,10 +9,14 @@ class IncomeExpenseTiles extends StatelessWidget {
   final double income;
   final double expense;
 
+  /// Суммы скрыты «глазком» карточки баланса (SEC-08).
+  final bool hidden;
+
   const IncomeExpenseTiles({
     super.key,
     required this.income,
     required this.expense,
+    this.hidden = false,
   });
 
   @override
@@ -23,6 +27,7 @@ class IncomeExpenseTiles extends StatelessWidget {
           child: _Tile(
             label: context.l10n.income_title,
             amount: income,
+            hidden: hidden,
             icon: Icons.south_west_rounded,
             color: AppColors.incomeOnBrand,
           ),
@@ -32,6 +37,7 @@ class IncomeExpenseTiles extends StatelessWidget {
           child: _Tile(
             label: context.l10n.expense_title,
             amount: expense,
+            hidden: hidden,
             icon: Icons.north_east_rounded,
             color: AppColors.expenseOnBrand,
           ),
@@ -44,12 +50,14 @@ class IncomeExpenseTiles extends StatelessWidget {
 class _Tile extends StatelessWidget {
   final String label;
   final double amount;
+  final bool hidden;
   final IconData icon;
   final Color color;
 
   const _Tile({
     required this.label,
     required this.amount,
+    required this.hidden,
     required this.icon,
     required this.color,
   });
@@ -131,11 +139,13 @@ class _Tile extends StatelessWidget {
             height: _lineHeight(context, amountStyle),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
-              child: CurrencyFormatter.formatText(
-                amount,
-                style: amountStyle,
-                useFittedBox: true,
-              ),
+              child: hidden
+                  ? Text(CurrencyFormatter.hiddenAmount, style: amountStyle)
+                  : CurrencyFormatter.formatText(
+                      amount,
+                      style: amountStyle,
+                      useFittedBox: true,
+                    ),
             ),
           ),
         ],

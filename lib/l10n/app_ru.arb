@@ -332,7 +332,7 @@
   "budget_all_categories_limited": "На все категории в этом месяце уже есть лимиты",
   "add_limit_cta": "Добавить лимит",
   "copy_limits_cta": "{month, select, m1{Скопировать из января} m2{Скопировать из февраля} m3{Скопировать из марта} m4{Скопировать из апреля} m5{Скопировать из мая} m6{Скопировать из июня} m7{Скопировать из июля} m8{Скопировать из августа} m9{Скопировать из сентября} m10{Скопировать из октября} m11{Скопировать из ноября} m12{Скопировать из декабря} other{Скопировать из прошлого месяца}}",
-  "budget_spent_of": "{spent} из\u00A0{limit}",
+  "budget_spent_of": "{spent} из {limit}",
   "structure_title": "Структура расходов",
   "structure_of_income": "от дохода",
   "structure_total_expenses": "всего трат",
@@ -346,5 +346,15 @@
   "logout_unsynced_warning": "Не отправлено на сервер: {count}. При выходе эти изменения будут удалены с устройства. Всё равно выйти?",
   "operations_count": "{count, plural, one{{count} операция} few{{count} операции} many{{count} операций} other{{count} операции}}",
   "category_group_expand_hint": "показать операции",
-  "category_group_collapse_hint": "скрыть операции"
+  "category_group_collapse_hint": "скрыть операции",
+  "app_lock_title": "Блокировка приложения",
+  "app_lock_subtitle": "Отпечаток или код разблокировки телефона",
+  "app_lock_prompt_title": "Вход в GetBalance AI",
+  "app_lock_reason": "Подтвердите, что это вы",
+  "app_locked": "Приложение заблокировано",
+  "app_unlock": "Разблокировать",
+  "app_lock_no_device_lock": "Сначала включите блокировку экрана в настройках телефона",
+  "app_lock_too_many_attempts": "Слишком много попыток. Попробуйте позже",
+  "balance_hide": "Скрыть суммы",
+  "balance_show": "Показать суммы"
 }

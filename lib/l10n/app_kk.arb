@@ -332,7 +332,7 @@
   "budget_all_categories_limited": "Бұл айда барлық санаттарға лимит қойылған",
   "add_limit_cta": "Лимит қосу",
   "copy_limits_cta": "{month, select, m1{Қаңтардан көшіру} m2{Ақпаннан көшіру} m3{Наурыздан көшіру} m4{Сәуірден көшіру} m5{Мамырдан көшіру} m6{Маусымнан көшіру} m7{Шілдеден көшіру} m8{Тамыздан көшіру} m9{Қыркүйектен көшіру} m10{Қазаннан көшіру} m11{Қарашадан көшіру} m12{Желтоқсаннан көшіру} other{Өткен айдан көшіру}}",
-  "budget_spent_of": "{limit}\u00A0ішінен {spent}",
+  "budget_spent_of": "{limit} ішінен {spent}",
   "structure_title": "Шығыстар құрылымы",
   "structure_of_income": "кірістен",
   "structure_total_expenses": "барлық шығын",
@@ -346,5 +346,15 @@
   "logout_unsynced_warning": "Серверге жіберілмеген: {count}. Шыққанда бұл өзгерістер құрылғыдан жойылады. Бәрібір шығасыз ба?",
   "operations_count": "{count} операция",
   "category_group_expand_hint": "операцияларды көрсету",
-  "category_group_collapse_hint": "операцияларды жасыру"
+  "category_group_collapse_hint": "операцияларды жасыру",
+  "app_lock_title": "Қолданба құлпы",
+  "app_lock_subtitle": "Саусақ ізі немесе телефонның экран құлпы",
+  "app_lock_prompt_title": "GetBalance AI-ға кіру",
+  "app_lock_reason": "Бұл сіз екеніңізді растаңыз",
+  "app_locked": "Қолданба құлыпталған",
+  "app_unlock": "Құлыпты ашу",
+  "app_lock_no_device_lock": "Алдымен телефон баптауларында экран құлпын қосыңыз",
+  "app_lock_too_many_attempts": "Әрекет тым көп. Кейінірек қайталаңыз",
+  "balance_hide": "Сомаларды жасыру",
+  "balance_show": "Сомаларды көрсету"
 }

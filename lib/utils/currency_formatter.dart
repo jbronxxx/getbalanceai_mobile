@@ -204,6 +204,9 @@ class CurrencyFormatter {
   /// Типографский минус для отображения сумм.
   static const String typographicMinus = '\u2212';
 
+  /// Сумма, скрытая «глазком» на карточке баланса (SEC-08).
+  static const String hiddenAmount = '\u2022\u2022\u2022\u2022\u2022';
+
   /// Виджет для безопасного отображения текста суммы.
   /// Использует FittedBox или ellipsis, чтобы длинные числа (UZS/KZT) не ломали верстку.
   ///

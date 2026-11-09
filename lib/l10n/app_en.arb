@@ -385,7 +385,7 @@
       }
     }
   },
-  "budget_spent_of": "{spent} of\u00A0{limit}",
+  "budget_spent_of": "{spent} of {limit}",
   "@budget_spent_of": {
     "description": "Limit card under the bar: spent of limit. The non-breaking space keeps the preposition with its amount, so a long line wraps only between the two amounts.",
     "placeholders": {
@@ -439,5 +439,45 @@
   "category_group_collapse_hint": "hide transactions",
   "@category_group_collapse_hint": {
     "description": "TalkBack/VoiceOver tap hint on an expanded category group (Double tap to ...)"
+  },
+  "app_lock_title": "App lock",
+  "@app_lock_title": {
+    "description": "App lock switch in Profile settings (SEC-08)"
+  },
+  "app_lock_subtitle": "Fingerprint or your phone's screen lock",
+  "@app_lock_subtitle": {
+    "description": "Hint under the app lock switch"
+  },
+  "app_lock_prompt_title": "Unlock GetBalance AI",
+  "@app_lock_prompt_title": {
+    "description": "Title of the system fingerprint / PIN dialog, max 60 chars"
+  },
+  "app_lock_reason": "Confirm it's you",
+  "@app_lock_reason": {
+    "description": "Text in the system fingerprint / PIN dialog"
+  },
+  "app_locked": "App is locked",
+  "@app_locked": {
+    "description": "Title of the lock screen"
+  },
+  "app_unlock": "Unlock",
+  "@app_unlock": {
+    "description": "Lock screen button"
+  },
+  "app_lock_no_device_lock": "Set up a screen lock in your phone settings first",
+  "@app_lock_no_device_lock": {
+    "description": "Shown when the phone has no PIN, pattern or fingerprint"
+  },
+  "app_lock_too_many_attempts": "Too many attempts. Try again later",
+  "@app_lock_too_many_attempts": {
+    "description": "Shown after the phone blocks fingerprint / PIN attempts"
+  },
+  "balance_hide": "Hide amounts",
+  "@balance_hide": {
+    "description": "Eye button on the balance card"
+  },
+  "balance_show": "Show amounts",
+  "@balance_show": {
+    "description": "Eye button on the balance card when amounts are hidden"
   }
 }

@@ -24,6 +24,7 @@ import 'package:getbalanceai_mobile/screens/welcome_setup_screen.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/app_lock_gate.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
 import 'package:getbalanceai_mobile/widgets/dashboard/dashboard.dart';
 import 'package:getbalanceai_mobile/widgets/insights/insights_unavailable_card.dart';
@@ -32,10 +33,12 @@ import 'package:getbalanceai_mobile/widgets/period/period.dart';
 import 'package:getbalanceai_mobile/widgets/profile/profile.dart';
 import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'support/app_fonts.dart';
+import 'support/fake_local_auth.dart';
 
 /// Переносы текста на всех экранах (UX-08, UX-09, UX-10): ни одно слово не
 /// рвётся посреди («Редактиров / ать») на телефоне 360 dp при обычном и
@@ -394,6 +397,18 @@ void main() {
     audit('Сервис недоступен', () => const ServiceUnavailableScreen());
     audit(
         'Ошибка запуска', () => StartupErrorScreen(onRetry: () async => true));
+    // С текстом «Слишком много попыток…» — самый длинный вариант экрана
+    audit(
+      'Экран блокировки',
+      () => AppLockScreen(
+        service: AppLockService(
+          auth: FakeLocalAuth(
+            result: const LocalAuthException(
+                code: LocalAuthExceptionCode.temporaryLockout),
+          ),
+        ),
+      ),
+    );
     audit(
       'Аналитика: мало операций',
       () => const Scaffold(

@@ -18,6 +18,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'config/environment.dart';
 
 import 'theme/theme.dart';
+import 'widgets/app_lock_gate.dart';
 
 /// Точка входа в приложение.
 void main() async {
@@ -104,6 +105,8 @@ Future<void> _loadSettings() async {
   LanguageManager.initFallback();
   await prefs.loadSavedOnboardingStatus();
   await prefs.loadSavedThemeMode();
+  await prefs.loadHideBalance();
+  await AppLockService.instance.init();
 }
 
 /// База, очередь удалений и сессия. Сессия — последней: ключи ETag зависят
@@ -168,6 +171,7 @@ class FinanceApp extends StatelessWidget {
               return MaterialApp(
                 navigatorKey: navigatorKey,
                 title: 'GetBalance AI',
+                builder: (context, child) => AppLockGate(child: child!),
                 debugShowCheckedModeBanner: false,
                 themeMode: themeMode,
                 locale: Locale(currentLanguage.code),

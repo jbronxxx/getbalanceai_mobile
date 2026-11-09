@@ -926,4 +926,36 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get category_group_collapse_hint => 'operatsiyalarni yashirish';
+
+  @override
+  String get app_lock_title => 'Ilova qulfi';
+
+  @override
+  String get app_lock_subtitle => 'Barmoq izi yoki telefon ekran qulfi';
+
+  @override
+  String get app_lock_prompt_title => 'GetBalance AI ga kirish';
+
+  @override
+  String get app_lock_reason => 'Bu siz ekanligingizni tasdiqlang';
+
+  @override
+  String get app_locked => 'Ilova qulflangan';
+
+  @override
+  String get app_unlock => 'Qulfni ochish';
+
+  @override
+  String get app_lock_no_device_lock =>
+      'Avval telefon sozlamalarida ekran qulfini yoqing';
+
+  @override
+  String get app_lock_too_many_attempts =>
+      'Urinishlar juda ko\'p. Keyinroq qayta urinib ko\'ring';
+
+  @override
+  String get balance_hide => 'Summalarni yashirish';
+
+  @override
+  String get balance_show => 'Summalarni ko\'rsatish';
 }

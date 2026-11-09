@@ -5,7 +5,7 @@ import '../config/secure_storage_config.dart';
 import '../utils/app_logger.dart';
 
 /// Настройки приложения: валюта, язык, тема, онбординг, кэш курсов,
-/// счётчик UX-подсказок.
+/// счётчик UX-подсказок, приватность (блокировка входа, скрытые суммы).
 ///
 /// Хранятся в `shared_preferences`: секретов здесь нет, а чтение из
 /// EncryptedSharedPreferences/Keychain — отдельный медленный вызов на каждый
@@ -25,6 +25,9 @@ class PreferencesService {
   ValueNotifier<ThemeMode> get themeModeNotifier =>
       _themeModeNotifier ??= ValueNotifier(ThemeMode.system);
 
+  /// Суммы на карточке баланса скрыты «глазком» (SEC-08).
+  final ValueNotifier<bool> hideBalanceNotifier = ValueNotifier(false);
+
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
   static const _keyCurrency = 'selected_currency';
   static const _keyLanguage = 'selected_language';
@@ -33,6 +36,8 @@ class PreferencesService {
   static const _keyExchangeRates = 'cached_exchange_rates';
   static const _keyExchangeRatesUpdated = 'cached_exchange_rates_updated';
   static const _keyLegacyTransactionsMigrated = 'legacy_transactions_migrated';
+  static const _keyAppLockEnabled = 'privacy_app_lock_enabled';
+  static const _keyHideBalance = 'privacy_hide_balance';
 
   /// Настройки перенесены из защищённого хранилища (см. [init]).
   static const _keyMovedFromSecureStorage =
@@ -204,6 +209,30 @@ class PreferencesService {
       AppLogger.e('Ошибка при чтении режима темы', e, stack);
     }
     return ThemeMode.system;
+  }
+
+  /// Вход по блокировке телефона включён (SEC-08). По умолчанию выключен.
+  Future<bool> isAppLockEnabled() async {
+    return (await _prefs).getBool(_keyAppLockEnabled) ?? false;
+  }
+
+  Future<void> setAppLockEnabled(bool enabled) async {
+    await (await _prefs).setBool(_keyAppLockEnabled, enabled);
+  }
+
+  /// Загружает при старте, скрыты ли суммы на карточке баланса.
+  Future<void> loadHideBalance() async {
+    hideBalanceNotifier.value =
+        (await _prefs).getBool(_keyHideBalance) ?? false;
+  }
+
+  Future<void> setHideBalance(bool hidden) async {
+    hideBalanceNotifier.value = hidden;
+    try {
+      await (await _prefs).setBool(_keyHideBalance, hidden);
+    } catch (e, stack) {
+      AppLogger.e('Ошибка при сохранении скрытия сумм', e, stack);
+    }
   }
 
   /// Старые операции уже приведены к текущему формату

@@ -1,5 +1,6 @@
 export 'api_service.dart';
 export 'app_info_service.dart';
+export 'app_lock_service.dart';
 export 'auth_api_service.dart';
 export 'auto_sync_service.dart';
 export 'budget_api_service.dart';
