@@ -33,6 +33,9 @@ enum InsightsUnavailableReason {
 
   /// За месяц нет операций.
   noTransactions,
+
+  /// Операций меньше [InsightsCubit.minTransactions].
+  notEnoughTransactions,
 }
 
 /// Анализировать нечего — запрос к AI не делается.

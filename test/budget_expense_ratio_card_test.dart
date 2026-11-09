@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
+import 'package:getbalanceai_mobile/theme/app_colors.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
 
@@ -123,7 +124,8 @@ void main() {
     expect(find.text(LanguageManager.l10n.no_transactions), findsNothing);
   });
 
-  testWidgets('стрелки дохода и расхода — диагональные, как на «Балансе»',
+  testWidgets(
+      'стрелки дохода и расхода — диагональные и цветные, как на «Балансе»',
       (tester) async {
     await tester.pumpWidget(buildTestWidget(
       totalIncome: 1000,
@@ -136,6 +138,11 @@ void main() {
     expect(find.byIcon(Icons.north_east_rounded), findsOneWidget);
     expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
     expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
+    // UX-13: цвета стрелок — те же, что на карточке «Баланса»
+    Color? iconColor(IconData icon) =>
+        tester.widget<Icon>(find.byIcon(icon)).color;
+    expect(iconColor(Icons.south_west_rounded), AppColors.incomeOnBrand);
+    expect(iconColor(Icons.north_east_rounded), AppColors.expenseOnBrand);
   });
 
   testWidgets('Кейс: группировка при более чем 4 категориях (+N ещё)',

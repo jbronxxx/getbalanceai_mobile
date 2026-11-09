@@ -4,6 +4,7 @@ import '../../utils/utils.dart';
 import 'currency_picker_sheet.dart';
 import 'language_picker_sheet.dart';
 import 'theme_mode_picker_sheet.dart';
+import '../one_line_label.dart';
 import '../../theme/app_colors.dart';
 
 /// Карточка настроек интерфейса (тема, язык, валюта).
@@ -55,21 +56,8 @@ class ProfileSettingsCard extends StatelessWidget {
             trailing: ValueListenableBuilder<ThemeMode>(
               valueListenable: PreferencesService.instance.themeModeNotifier,
               builder: (context, mode, child) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      ThemeModePickerSheet.getThemeModeLabel(context, mode),
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.of(context).accentText,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.chevron_right,
-                        size: 20, color: colorScheme.outline),
-                  ],
-                );
+                return _SettingValue(
+                    ThemeModePickerSheet.getThemeModeLabel(context, mode));
               },
             ),
             onTap: () => ThemeModePickerSheet.show(context),
@@ -83,20 +71,8 @@ class ProfileSettingsCard extends StatelessWidget {
                 color: colorScheme.onSurface,
               ),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  LanguageManager.currentLanguage.displayName,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.of(context).accentText,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right, size: 20, color: colorScheme.outline),
-              ],
-            ),
+            trailing:
+                _SettingValue(LanguageManager.currentLanguage.displayName),
             onTap: () {
               LanguagePickerSheet.show(
                 context,
@@ -116,27 +92,50 @@ class ProfileSettingsCard extends StatelessWidget {
             trailing: ValueListenableBuilder<Currency>(
               valueListenable: CurrencyFormatter.currencyNotifier,
               builder: (context, currency, child) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      currency.localizedName,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.of(context).accentText,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.chevron_right,
-                        size: 20, color: colorScheme.outline),
-                  ],
-                );
+                return _SettingValue(currency.localizedName);
               },
             ),
             onTap: () => CurrencyPickerSheet.show(context),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Текущее значение настройки со стрелкой. Значению — до 40% ширины экрана
+/// при обычном шрифте и меньше при крупном: длинное значение («Узбекский
+/// сум») слегка уменьшается, а название настройки слева переносится между
+/// словами, а не посреди слова («Валют / а», «оформлени / я»).
+class _SettingValue extends StatelessWidget {
+  final String value;
+
+  const _SettingValue(this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width *
+                0.4 /
+                MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+          ),
+          child: OneLineLabel(
+            value,
+            alignment: AlignmentDirectional.centerEnd,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.of(context).accentText,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Icon(Icons.chevron_right, size: 20, color: theme.colorScheme.outline),
+      ],
     );
   }
 }

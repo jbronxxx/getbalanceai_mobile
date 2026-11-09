@@ -5,6 +5,7 @@ export 'balance_card.dart';
 export 'category_style.dart';
 export 'custom_pull_to_refresh.dart';
 export 'glass_container.dart';
+export 'income_expense_tiles.dart';
 export 'keyboard_inset_padding.dart';
 export 'keyboard_insets_isolation.dart';
 export 'liquid_glass_app_bar.dart';

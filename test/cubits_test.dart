@@ -246,20 +246,85 @@ void main() {
       LanguageManager.setLanguage(AppLanguage.ru);
     });
 
-    /// В выбранном месяце есть операции — анализ доступен, запрос к AI уходит.
-    void stubMonthHasTransactions(MockLocalDbService mockDb) {
+    /// В выбранном месяце [count] операций (по умолчанию — порог анализа:
+    /// анализ доступен, запрос к AI уходит).
+    void stubMonthHasTransactions(
+      MockLocalDbService mockDb, {
+      int count = InsightsCubit.minTransactions,
+    }) {
       when(() => mockDb.getTransactionsForPeriod(any(), any(),
           limit: any(named: 'limit'))).thenReturn([
-        Transaction(
-          amount: 50,
-          description: 'Lunch',
-          dbCategory: Category.food.name,
-          dbType: TransactionType.expense.name,
-          dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
-          dateCreatedMilliseconds: 0,
-        ),
+        for (var i = 0; i < count; i++)
+          Transaction(
+            amount: 50,
+            description: 'Lunch',
+            dbCategory: Category.food.name,
+            dbType: TransactionType.expense.name,
+            dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
+            dateCreatedMilliseconds: 0,
+          ),
       ]);
     }
+
+    test('меньше порога операций — карточка «недостаточно данных» без запроса',
+        () async {
+      final mockDb = MockLocalDbService();
+      LocalDbService.instance = mockDb;
+      stubMonthHasTransactions(mockDb,
+          count: InsightsCubit.minTransactions - 2);
+      when(() => api.isAuthenticated).thenReturn(true);
+
+      final cubit = build();
+      await cubit.loadInsights();
+
+      expect(
+        cubit.state,
+        isA<InsightsUnavailable>().having((s) => s.reason, 'reason',
+            InsightsUnavailableReason.notEnoughTransactions),
+      );
+      verifyNever(() => api.getInsights(
+            currency: any(named: 'currency'),
+            locale: any(named: 'locale'),
+            month: any(named: 'month'),
+            year: any(named: 'year'),
+            generate: any(named: 'generate'),
+            cancelToken: any(named: 'cancelToken'),
+          ));
+      verifyNever(() => api.syncLocalDataToBackend());
+      verifyNever(() => connectivity.checkConnectivity());
+
+      await cubit.close();
+    });
+
+    test('not_enough_data с сервера — та же карточка', () async {
+      final mockDb = MockLocalDbService();
+      LocalDbService.instance = mockDb;
+      stubMonthHasTransactions(mockDb);
+      when(() => mockDb.getUnsyncedTransactions()).thenReturn(<Transaction>[]);
+      when(() => mockDb.getUnsyncedBudgets()).thenReturn(<Budget>[]);
+      when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.getInsights(
+                currency: any(named: 'currency'),
+                locale: any(named: 'locale'),
+                month: any(named: 'month'),
+                year: any(named: 'year'),
+                generate: any(named: 'generate'),
+                cancelToken: any(named: 'cancelToken'),
+              ))
+          .thenAnswer(
+              (_) async => {'insights': [], 'state': 'not_enough_data'});
+
+      final cubit = build();
+      await cubit.loadInsights();
+
+      expect(
+        cubit.state,
+        isA<InsightsUnavailable>().having((s) => s.reason, 'reason',
+            InsightsUnavailableReason.notEnoughTransactions),
+      );
+
+      await cubit.close();
+    });
 
     test(
         'calls syncLocalDataToBackend before getInsights when unsynced data exists',

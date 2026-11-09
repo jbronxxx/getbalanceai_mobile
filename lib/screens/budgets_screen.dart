@@ -193,7 +193,17 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
       selectedMonth: _selectedMonth,
       selectedYear: _selectedYear,
       budgetToEdit: budgetToEdit,
-      limitedCategories: {for (final b in _budgets) b.category},
+      // Новый лимит может лечь в строку, удалённую свайпом (удаление
+      // отменится). Правка же переносит свою запись в другую категорию, и
+      // строка, ждущая удаления, дала бы второй лимит той же категории —
+      // такие категории при правке не предлагаются.
+      limitedCategories: {
+        for (final b in budgetToEdit == null
+            ? _budgets
+            : LocalDbService.instance
+                .getBudgetsForPeriod(_selectedMonth, _selectedYear))
+          b.category,
+      },
       onSaved: _loadBudgets,
       onDelete: budgetToEdit == null ? null : () => _deleteBudget(budgetToEdit),
     );

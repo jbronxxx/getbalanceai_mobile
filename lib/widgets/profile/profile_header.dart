@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../utils/utils.dart';
+import '../one_line_label.dart';
 import '../user_avatar.dart';
 
 /// Виджет заголовка профиля с аватаром и информацией о пользователе.
@@ -72,8 +73,10 @@ class ProfileHeader extends StatelessWidget {
         ),
         if (isAuthenticated) ...[
           const SizedBox(height: 4),
-          Text(
-            userEmail.isNotEmpty ? userEmail : '',
+          // Адрес — одно «слово»: при крупном шрифте длинный адрес слегка
+          // уменьшается, а не переносится посреди («gmail.co / m»).
+          OneLineLabel(
+            userEmail,
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),

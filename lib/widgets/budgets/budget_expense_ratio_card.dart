@@ -4,6 +4,8 @@ import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
 import '../category_style.dart';
+import '../income_expense_tiles.dart';
+import '../one_line_label.dart';
 import '../../theme/app_typography.dart';
 
 /// Данные одного сегмента кольцевой диаграммы расходов.
@@ -149,27 +151,9 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
             ],
           ),
           const SizedBox(height: 20),
-          // Нижняя часть: Итоги дохода и расхода (единый стиль с BalanceCard)
-          Row(
-            children: [
-              Expanded(
-                child: _SummaryInfoChip(
-                  label: context.l10n.income_title,
-                  amount: widget.totalIncome,
-                  // Стрелки — как на карточке баланса «Баланса»
-                  icon: Icons.south_west_rounded,
-                  isZeroIncome: !hasIncome,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _SummaryInfoChip(
-                  label: context.l10n.expense_title,
-                  amount: widget.totalExpense,
-                  icon: Icons.north_east_rounded,
-                ),
-              ),
-            ],
+          IncomeExpenseTiles(
+            income: widget.totalIncome,
+            expense: widget.totalExpense,
           ),
         ],
       ),
@@ -431,10 +415,9 @@ class _CategoryLegendRow extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(
+                child: OneLineLabel(
                   name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  alignment: AlignmentDirectional.centerStart,
                   style: textTheme.bodySmall?.copyWith(
                     color: AppColors.onBrandBase,
                     fontSize: AppFontSize.caption,
@@ -466,82 +449,6 @@ class _CategoryLegendRow extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryInfoChip extends StatelessWidget {
-  final String label;
-  final double amount;
-  final IconData icon;
-  final bool isZeroIncome;
-
-  const _SummaryInfoChip({
-    required this.label,
-    required this.amount,
-    required this.icon,
-    this.isZeroIncome = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.onBrandBase.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.onBrandBase.withValues(alpha: 0.24),
-          width: 1.0,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: AppColors.onBrandBase.withValues(alpha: 0.22),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: AppColors.onBrandBase,
-                  size: 13,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.onBrandBase.withValues(alpha: 0.82),
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 7),
-          CurrencyFormatter.formatText(
-            amount,
-            showSign: false,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.onBrandBase,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.2,
-            ),
-            useFittedBox: true,
           ),
         ],
       ),

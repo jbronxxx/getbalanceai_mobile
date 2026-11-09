@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
@@ -308,63 +309,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             else
                               googleButton,
                             const SizedBox(height: 24),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text.rich(
-                                TextSpan(
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  children: [
-                                    TextSpan(
-                                        text: context.l10n.terms_of_use_prefix),
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.baseline,
-                                      baseline: TextBaseline.alphabetic,
-                                      child: GestureDetector(
-                                        onTap: () => launchUrl(LegalLinks.url(
-                                            LegalPage.terms,
-                                            Localizations.localeOf(context)
-                                                .languageCode)),
-                                        child: Text(
-                                          context.l10n.terms_of_use_link,
-                                          style: textTheme.bodySmall?.copyWith(
-                                            color: AppColors.of(context)
-                                                .accentText,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    TextSpan(
-                                        text: context.l10n.terms_of_use_and),
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.baseline,
-                                      baseline: TextBaseline.alphabetic,
-                                      child: GestureDetector(
-                                        onTap: () => launchUrl(LegalLinks.url(
-                                            LegalPage.privacy,
-                                            Localizations.localeOf(context)
-                                                .languageCode)),
-                                        child: Text(
-                                          context.l10n.privacy_policy_link,
-                                          style: textTheme.bodySmall?.copyWith(
-                                            color: AppColors.of(context)
-                                                .accentText,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    TextSpan(
-                                        text: context.l10n.terms_of_use_suffix),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: _LegalConsentText(),
                             ),
                             const SizedBox(height: 24),
                           ],
@@ -453,6 +400,66 @@ class _SocialButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// «Продолжая, вы принимаете Условия и Политику конфиденциальности»: ссылки —
+/// части текста, а не отдельные виджеты, поэтому при крупном шрифте строка
+/// переносится между словами, а не посреди слова ссылки.
+class _LegalConsentText extends StatefulWidget {
+  const _LegalConsentText();
+
+  @override
+  State<_LegalConsentText> createState() => _LegalConsentTextState();
+}
+
+class _LegalConsentTextState extends State<_LegalConsentText> {
+  late final _termsTap = TapGestureRecognizer()
+    ..onTap = () => _open(LegalPage.terms);
+  late final _privacyTap = TapGestureRecognizer()
+    ..onTap = () => _open(LegalPage.privacy);
+
+  void _open(LegalPage page) => launchUrl(
+      LegalLinks.url(page, Localizations.localeOf(context).languageCode));
+
+  @override
+  void dispose() {
+    _termsTap.dispose();
+    _privacyTap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final linkStyle = TextStyle(
+      color: AppColors.of(context).accentText,
+      decoration: TextDecoration.underline,
+    );
+
+    return Text.rich(
+      TextSpan(
+        style: textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        children: [
+          TextSpan(text: context.l10n.terms_of_use_prefix),
+          TextSpan(
+            text: context.l10n.terms_of_use_link,
+            style: linkStyle,
+            recognizer: _termsTap,
+          ),
+          TextSpan(text: context.l10n.terms_of_use_and),
+          TextSpan(
+            text: context.l10n.privacy_policy_link,
+            style: linkStyle,
+            recognizer: _privacyTap,
+          ),
+          TextSpan(text: context.l10n.terms_of_use_suffix),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

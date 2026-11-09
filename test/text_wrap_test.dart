@@ -11,6 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:getbalanceai_mobile/cubits/auth/auth_cubit.dart';
+import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
 import 'package:getbalanceai_mobile/screens/auth_screen.dart';
@@ -24,6 +25,7 @@ import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/budgets/budgets.dart';
 import 'package:getbalanceai_mobile/widgets/dashboard/dashboard.dart';
+import 'package:getbalanceai_mobile/widgets/insights/insights_unavailable_card.dart';
 import 'package:getbalanceai_mobile/widgets/insights/report_export_sheet.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
 import 'package:getbalanceai_mobile/widgets/profile/profile.dart';
@@ -33,10 +35,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Переносы текста на всех экранах (UX-08): ни одно слово не рвётся посреди
-/// («Редактиров / ать») на телефоне 360 dp при обычном и крупном (×1.3)
-/// шрифте на всех языках, а подписи кнопок [OneLineLabel] при обычном
-/// шрифте не уменьшаются. Текст меряется настоящим шрифтом приложения
+/// Переносы текста на всех экранах (UX-08, UX-09, UX-10): ни одно слово не
+/// рвётся посреди («Редактиров / ать») на телефоне 360 dp при обычном и
+/// крупном (×1.15, ×1.3, ×1.5) шрифте на всех языках; до ×1.15 текст не
+/// обрезается троеточием, а подписи [OneLineLabel] при обычном шрифте не
+/// уменьшаются. Текст меряется настоящим шрифтом приложения
 /// (Inter из assets): тестовый шрифт с квадратными глифами вдвое шире и дал
 /// бы ложные срабатывания.
 
@@ -232,11 +235,11 @@ void main() {
   /// широких экранах места только больше).
   final configs = [
     for (final language in AppLanguage.values)
-      for (final scale in [1.0, 1.3]) (language, 360.0, scale),
+      for (final scale in [1.0, 1.15, 1.3, 1.5]) (language, 360.0, scale),
   ];
 
   /// Проверяет поверхность [surface] во всех конфигурациях: падает со
-  /// списком разорванных слов. [build] — что
+  /// списком разорванных слов и обрезанных строк. [build] — что
   /// показать; [open] — действия после первого кадра (открыть шторку,
   /// переключить вкладку).
   void audit(
@@ -286,7 +289,7 @@ void main() {
           for (final word in _brokenWords(p)) {
             broken.add('$config: «$word» в «$text»');
           }
-          if (scale == 1.0 && p.didExceedMaxLines) {
+          if (scale <= 1.15 && p.didExceedMaxLines) {
             broken.add('$config: «$text» обрезан');
           }
         }
@@ -376,6 +379,16 @@ void main() {
         open: (tester) => tapText(tester, LanguageManager.l10n.insights));
     audit('Профиль', () => const MainShell(),
         open: (tester) => tapText(tester, LanguageManager.l10n.profile));
+    // Длинные значения настроек и адрес — найдено на телефоне (×1.5):
+    // «Валют / а» рядом с «Узбекский сум», «gmail.co / m».
+    audit('Профиль: сум и длинный адрес', () => const MainShell(),
+        open: (tester) async {
+      when(() => authCubit.state).thenReturn(Authenticated(
+          email: 'firstname.lastname.work@gmail.com', name: 'Евгений'));
+      await tester.runAsync(() => CurrencyFormatter.setCurrency(Currency.uzs));
+      addTearDown(() => CurrencyFormatter.setCurrency(Currency.usd));
+      await tapText(tester, LanguageManager.l10n.profile);
+    });
     audit('Гость: Баланс', () => const MainShell(), guest: true);
     audit('Гость: Аналитика', () => const MainShell(),
         guest: true,
@@ -392,6 +405,17 @@ void main() {
     audit('Сервис недоступен', () => const ServiceUnavailableScreen());
     audit(
         'Ошибка запуска', () => StartupErrorScreen(onRetry: () async => true));
+    audit(
+      'Аналитика: мало операций',
+      () => const Scaffold(
+        body: Padding(
+          padding: EdgeInsets.all(16),
+          child: InsightsUnavailableCard(
+            reason: InsightsUnavailableReason.notEnoughTransactions,
+          ),
+        ),
+      ),
+    );
   });
 
   group('UX-12: карточка лимита с суммами в сотни миллионов сумов', () {

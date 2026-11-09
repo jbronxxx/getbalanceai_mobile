@@ -15,9 +15,10 @@ import '../../theme/app_typography.dart';
 ///
 /// Валюта лимита выбирается бейджем в поле суммы, как в форме операции
 /// (по умолчанию — базовая). Категория выбирается чипами. Категории из
-/// [limitedCategories] (лимит в этом месяце уже есть) не предлагаются; при
-/// редактировании категория не меняется, а с [onDelete] рядом с «Сохранить»
-/// есть кнопка «Удалить»: шторка закрывается и вызывается [onDelete].
+/// [limitedCategories] (лимит в этом месяце уже есть) не предлагаются, кроме
+/// категории редактируемого лимита: её можно сменить на свободную. При
+/// редактировании с [onDelete] рядом с «Сохранить» есть кнопка «Удалить»:
+/// шторка закрывается и вызывается [onDelete].
 class AddBudgetSheet extends StatefulWidget {
   final int selectedMonth;
   final int selectedYear;
@@ -77,9 +78,12 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     super.initState();
     final edited = widget.budgetToEdit?.category;
     final limited = widget.limitedCategories;
-    _categories = edited != null
-        ? [edited]
-        : [...Category.expenseCategories.where((c) => !limited.contains(c))];
+    _categories = [
+      for (final c in Category.expenseCategories)
+        if (c == edited || !limited.contains(c)) c,
+      if (edited != null && !Category.expenseCategories.contains(edited))
+        edited,
+    ];
     _frequentCategories = _loadFrequentCategories();
     // Как и раньше — «Питание», если на него ещё нет лимита, иначе самая
     // частая из свободных категорий
@@ -187,10 +191,13 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       return;
     }
 
-    // Категорию лимита при правке не сменить; исходная строка сохраняется,
-    // чтобы неизвестная клиенту категория не стала «Прочим».
-    final dbCategory =
-        widget.budgetToEdit?.dbCategory ?? _selectedCategory.name;
+    // Категория не менялась — исходная строка сохраняется, чтобы неизвестная
+    // клиенту категория не стала «Прочим». Сменённая категория остаётся в
+    // той же записи (localId, serverId): сервер обновит лимит по ID.
+    final edited = widget.budgetToEdit;
+    final dbCategory = edited != null && _selectedCategory == edited.category
+        ? edited.dbCategory
+        : _selectedCategory.name;
     final spent = LocalDbService.instance.getSpentForCategory(
       widget.selectedMonth,
       widget.selectedYear,
