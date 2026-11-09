@@ -969,8 +969,10 @@ class _LiquidGlassDialog extends StatelessWidget {
               spreadRadius: 2,
             ),
         ],
-        padding: const EdgeInsets.all(24),
-        child: child,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: child,
+        ),
       ),
     );
   }

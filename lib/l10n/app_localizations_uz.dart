@@ -876,4 +876,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String operations_count(int count) {
     return '$count ta operatsiya';
   }
+
+  @override
+  String get category_group_expand_hint => 'operatsiyalarni ko\'rsatish';
+
+  @override
+  String get category_group_collapse_hint => 'operatsiyalarni yashirish';
 }

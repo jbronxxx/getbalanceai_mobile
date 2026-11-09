@@ -15,13 +15,15 @@ import '../../theme/app_typography.dart';
 /// Валюта лимита выбирается бейджем в поле суммы, как в форме операции
 /// (по умолчанию — базовая). Категория выбирается чипами. Категории из
 /// [limitedCategories] (лимит в этом месяце уже есть) не предлагаются; при
-/// редактировании категория не меняется.
+/// редактировании категория не меняется, а с [onDelete] рядом с «Сохранить»
+/// есть кнопка «Удалить»: шторка закрывается и вызывается [onDelete].
 class AddBudgetSheet extends StatefulWidget {
   final int selectedMonth;
   final int selectedYear;
   final Budget? budgetToEdit;
   final Set<Category> limitedCategories;
   final VoidCallback onSaved;
+  final VoidCallback? onDelete;
 
   const AddBudgetSheet({
     super.key,
@@ -30,6 +32,7 @@ class AddBudgetSheet extends StatefulWidget {
     this.budgetToEdit,
     this.limitedCategories = const {},
     required this.onSaved,
+    this.onDelete,
   });
 
   static Future<void> show(
@@ -39,6 +42,7 @@ class AddBudgetSheet extends StatefulWidget {
     Budget? budgetToEdit,
     Set<Category> limitedCategories = const {},
     required VoidCallback onSaved,
+    VoidCallback? onDelete,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -50,6 +54,7 @@ class AddBudgetSheet extends StatefulWidget {
         budgetToEdit: budgetToEdit,
         limitedCategories: limitedCategories,
         onSaved: onSaved,
+        onDelete: onDelete,
       ),
     );
   }
@@ -229,6 +234,11 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     widget.onSaved();
   }
 
+  void _deleteBudget() {
+    Navigator.pop(context);
+    widget.onDelete?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -236,6 +246,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     final textTheme = theme.textTheme;
     final isEditing = widget.budgetToEdit != null;
     final hasCategories = _categories.isNotEmpty;
+    final canDelete = isEditing && widget.onDelete != null;
 
     return KeyboardInsetPadding(
       child: Container(
@@ -327,26 +338,50 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                     ),
                   ),
                 const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                Row(
+                  children: [
+                    if (canDelete) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const ValueKey('budget_sheet_delete'),
+                          onPressed: _deleteBudget,
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: Text(context.l10n.delete_btn),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colorScheme.error,
+                            side: BorderSide(
+                              color: colorScheme.error.withValues(alpha: 0.5),
+                            ),
+                            minimumSize: const Size.fromHeight(54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          minimumSize: const Size.fromHeight(54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: hasCategories ? _saveBudget : null,
+                        child: Text(
+                          context.l10n.save_btn,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onPrimary,
+                          ),
+                        ),
                       ),
                     ),
-                    onPressed: hasCategories ? _saveBudget : null,
-                    child: Text(
-                      context.l10n.save_btn,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),

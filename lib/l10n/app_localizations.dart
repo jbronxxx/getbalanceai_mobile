@@ -1697,6 +1697,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 transaction} other{{count} transactions}}'**
   String operations_count(int count);
+
+  /// TalkBack/VoiceOver tap hint on a collapsed category group (Double tap to ...)
+  ///
+  /// In en, this message translates to:
+  /// **'show transactions'**
+  String get category_group_expand_hint;
+
+  /// TalkBack/VoiceOver tap hint on an expanded category group (Double tap to ...)
+  ///
+  /// In en, this message translates to:
+  /// **'hide transactions'**
+  String get category_group_collapse_hint;
 }
 
 class _AppLocalizationsDelegate

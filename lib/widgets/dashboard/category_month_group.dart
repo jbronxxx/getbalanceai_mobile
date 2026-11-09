@@ -102,82 +102,90 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
         borderRadius: BorderRadius.circular(24),
         child: Column(
           children: [
-            Material(
-              color: AppColors.transparent,
-              child: InkWell(
-                key: ValueKey('category_group_${summary.id}'),
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: categoryColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: categoryColor.withValues(alpha: 0.25),
-                            width: 0.8,
+            Semantics(
+              container: true,
+              button: true,
+              expanded: _expanded,
+              onTapHint: _expanded
+                  ? context.l10n.category_group_collapse_hint
+                  : context.l10n.category_group_expand_hint,
+              child: Material(
+                color: AppColors.transparent,
+                child: InkWell(
+                  key: ValueKey('category_group_${summary.id}'),
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: categoryColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: categoryColor.withValues(alpha: 0.25),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Icon(
+                            CategoryStyle.icon(summary.category),
+                            color: categoryColor,
+                            size: 20,
                           ),
                         ),
-                        child: Icon(
-                          CategoryStyle.icon(summary.category),
-                          color: categoryColor,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              summary.category.getLocalizedName(context),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                summary.category.getLocalizedName(context),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
                               ),
-                            ),
-                            Text(
-                              context.l10n.operations_count(
-                                summary.transactions.length,
+                              Text(
+                                context.l10n.operations_count(
+                                  summary.transactions.length,
+                                ),
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.outline,
+                                ),
                               ),
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.outline,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 140),
-                        child: CurrencyFormatter.formatText(
-                          summary.total,
-                          showSign: true,
-                          textAlign: TextAlign.end,
-                          useFittedBox: true,
-                          style: textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: summary.total >= 0
-                                ? AppColors.of(context).accentText
-                                : colorScheme.onSurface,
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      AnimatedRotation(
-                        turns: _expanded ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: colorScheme.outline,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 140),
+                          child: CurrencyFormatter.formatText(
+                            summary.total,
+                            showSign: true,
+                            textAlign: TextAlign.end,
+                            useFittedBox: true,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: summary.total >= 0
+                                  ? AppColors.of(context).accentText
+                                  : colorScheme.onSurface,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        AnimatedRotation(
+                          turns: _expanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: colorScheme.outline,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

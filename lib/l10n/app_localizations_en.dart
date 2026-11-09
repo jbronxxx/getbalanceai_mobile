@@ -886,4 +886,10 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get category_group_expand_hint => 'show transactions';
+
+  @override
+  String get category_group_collapse_hint => 'hide transactions';
 }

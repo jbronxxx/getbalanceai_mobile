@@ -221,12 +221,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
         centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DashboardAccountAction(
-              onLogin: _openAuthScreen,
-              onOpenProfile: _openProfile,
-            ),
+          DashboardAccountAction(
+            onLogin: _openAuthScreen,
+            onOpenProfile: _openProfile,
           ),
         ],
       ),
