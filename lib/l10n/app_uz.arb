@@ -309,6 +309,7 @@
   "structure_of_income": "daromaddan",
   "structure_total_expenses": "jami xarajat",
   "structure_no_expenses": "xarajat yo'q",
+  "structure_no_expenses_month": "Bu oyda xarajatlar yo'q",
   "structure_more_categories": "{count, plural, other{yana {count} toifa}}",
   "report_btn_short": "Hisobot",
   "insights_outdated_note": "Ushbu hisobotdan keyin ma'lumotlar o'zgardi — maslahatlardagi summalar joriylaridan farq qilishi mumkin.",

@@ -67,6 +67,7 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -86,6 +87,7 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
                 if (hasSearch) ...[
                   TextField(
                     onChanged: (value) => setState(() => _query = value),
+                    onTapOutside: unfocusOnTapOutside,
                     decoration: InputDecoration(
                       hintText: context.l10n.category_search_hint,
                       prefixIcon: const Icon(Icons.search_rounded),

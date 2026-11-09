@@ -239,16 +239,15 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
     return KeyboardInsetPadding(
       child: Container(
-        padding: EdgeInsets.only(
-          top: 10,
-          left: 24,
-          right: 24,
-          bottom: 24 + MediaQuery.paddingOf(context).bottom,
-        ),
+        // Системную полоску снизу учитывает SafeArea; прибавлять её ещё и
+        // здесь — двойной пустой отступ под «Сохранить».
+        padding:
+            const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
         decoration: AppSheet.decoration(context),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,6 +273,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                     CurrencyInputFormatter(currency: _selectedCurrency),
                   ],
                   autofocus: false,
+                  onTapOutside: unfocusOnTapOutside,
                   decoration: InputDecoration(
                     labelText: context.l10n.amount_label,
                     errorText: _amountError,

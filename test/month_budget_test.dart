@@ -186,11 +186,11 @@ void main() {
         MonthBudgetCard(summary: summary, onAddLimit: () {}),
       ));
 
-      // Заголовок и плашка остатка — «Перерасход»
-      expect(
-          find.text(LanguageManager.l10n.budget_overspent), findsNWidgets(2));
+      // «Перерасход» — только в заголовке, плашка его не повторяет (UX-06)
+      expect(find.text(LanguageManager.l10n.budget_overspent), findsOneWidget);
       expect(find.text(LanguageManager.l10n.daily_allowance), findsNothing);
-      expect(find.text(CurrencyFormatter.format(300)), findsNWidgets(2));
+      expect(find.text(CurrencyFormatter.format(300)), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.budget_remaining), findsNothing);
     });
   });
 

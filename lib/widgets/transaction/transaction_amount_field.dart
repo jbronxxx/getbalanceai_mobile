@@ -38,6 +38,7 @@ class TransactionAmountField extends StatelessWidget {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [CurrencyInputFormatter(currency: currency)],
           focusNode: focusNode,
+          onTapOutside: unfocusOnTapOutside,
           decoration: InputDecoration(
             labelText: context.l10n.amount_label,
             errorText: errorText,

@@ -1,6 +1,7 @@
 import 'package:getbalanceai_mobile/l10n/app_localizations.dart';
 export 'package:getbalanceai_mobile/l10n/app_localizations.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 
 /// Поддерживаемые языки интерфейса приложения.
@@ -45,16 +46,32 @@ class LanguageManager {
     }
   }
 
-  static Future<void> loadSavedLanguage() async {
+  /// Загружает сохранённый язык. При первом запуске (язык ещё не выбран)
+  /// берёт язык системы, если приложение его поддерживает; сохраняется
+  /// выбор только в онбординге. [systemLocales] — для тестов.
+  static Future<void> loadSavedLanguage({List<Locale>? systemLocales}) async {
     final code = await PreferencesService.instance.getLanguage();
-    if (code != null) {
-      try {
-        final saved = AppLanguage.values.firstWhere((l) => l.code == code);
-        _currentLanguage = saved;
-        _l10n = lookupAppLocalizations(Locale(saved.code));
-        languageNotifier.value = saved;
-      } catch (_) {}
+    final language = code != null
+        ? AppLanguage.values.where((l) => l.code == code).firstOrNull
+        : languageForLocales(
+            systemLocales ?? PlatformDispatcher.instance.locales,
+          );
+    if (language == null) return;
+    _currentLanguage = language;
+    _l10n = lookupAppLocalizations(Locale(language.code));
+    languageNotifier.value = language;
+  }
+
+  /// Первый из языков системы (в порядке предпочтения), который есть
+  /// в приложении; `null` — ни одного.
+  static AppLanguage? languageForLocales(List<Locale> locales) {
+    for (final locale in locales) {
+      final match = AppLanguage.values
+          .where((l) => l.code == locale.languageCode.toLowerCase())
+          .firstOrNull;
+      if (match != null) return match;
     }
+    return null;
   }
 
   static AppLanguage get currentLanguage => _currentLanguage;
@@ -155,26 +172,26 @@ class LanguageManager {
 
   /// Форматирует дату и время в человекочитаемый вид в зависимости от языка.
   static String formatDateTime(DateTime date) {
-    final dayMonth = formatDayMonth(date);
     final hours = date.hour.toString().padLeft(2, '0');
     final minutes = date.minute.toString().padLeft(2, '0');
-    final timeStr = '$hours:$minutes';
+    return '${formatDayMonthYear(date)}, $hours:$minutes';
+  }
 
-    final now = DateTime.now();
-    if (date.year != now.year) {
-      switch (_currentLanguage) {
-        case AppLanguage.ru:
-          return '$dayMonth ${date.year}, $timeStr';
-        case AppLanguage.uz:
-          return '${date.year}-yil $dayMonth, $timeStr';
-        case AppLanguage.kk:
-          return '${date.year} ж. $dayMonth, $timeStr';
-        case AppLanguage.en:
-          return '$dayMonth, ${date.year}, $timeStr';
-      }
+  /// День и месяц, а если год не текущий ([now] — для тестов) — и год:
+  /// «5 марта» / «5 марта 2025».
+  static String formatDayMonthYear(DateTime date, [DateTime? now]) {
+    final dayMonth = formatDayMonth(date);
+    if (date.year == (now ?? DateTime.now()).year) return dayMonth;
+    switch (_currentLanguage) {
+      case AppLanguage.ru:
+        return '$dayMonth ${date.year}';
+      case AppLanguage.uz:
+        return '${date.year}-yil $dayMonth';
+      case AppLanguage.kk:
+        return '${date.year} ж. $dayMonth';
+      case AppLanguage.en:
+        return '$dayMonth, ${date.year}';
     }
-
-    return '$dayMonth, $timeStr';
   }
 
   /// Форматирует дату с опциональным временем.

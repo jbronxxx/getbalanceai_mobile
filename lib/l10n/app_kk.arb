@@ -309,6 +309,7 @@
   "structure_of_income": "кірістен",
   "structure_total_expenses": "барлық шығын",
   "structure_no_expenses": "шығын жоқ",
+  "structure_no_expenses_month": "Бұл айда шығыс жоқ",
   "structure_more_categories": "{count, plural, other{тағы {count} санат}}",
   "report_btn_short": "Есеп",
   "insights_outdated_note": "Бұл есептен кейін деректер өзгерді — кеңестердегі сомалар қазіргімен сәйкес келмеуі мүмкін.",

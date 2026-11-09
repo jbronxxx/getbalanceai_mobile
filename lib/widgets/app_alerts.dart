@@ -25,34 +25,22 @@ class AppAlerts {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
-    final messenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final glassTheme = GlassTheme.of(context);
-
-    Color iconColor;
-    IconData icon;
-
-    switch (type) {
-      case AlertType.success:
-        iconColor = AppTheme.successGreen;
-        icon = Icons.check_circle_rounded;
-        break;
-      case AlertType.error:
-        iconColor = colorScheme.error;
-        icon = Icons.error_rounded;
-        break;
-      case AlertType.warning:
-        iconColor = AppTheme.warningOrange;
-        icon = Icons.warning_rounded;
-        break;
-      case AlertType.info:
-        iconColor = colorScheme.primary;
-        icon = Icons.info_rounded;
-        break;
+    // Из шторки или диалога SnackBar ушёл бы в Scaffold под затемнением —
+    // такой тост показывается в оверлее поверх всех окон.
+    if (ModalRoute.of(context) is PopupRoute) {
+      _showOverlayToast(
+        context,
+        message: message,
+        title: title,
+        type: type,
+        duration: duration,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      );
+      return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     // Форма и обрезка SnackBar из темы (радиус 16) срезали тень стекла
     // по своему контуру — получалась вторая рамка с другими углами.
     final snackBar = SnackBar(
@@ -73,122 +61,216 @@ class AppAlerts {
             8.0,
         top: 8,
       ),
-      content: GlassContainer(
-        borderRadius: _toastRadius,
-        blurSigma: 20,
-        color: glassTheme.toastSurface,
-        border: Border.all(
-          color: glassTheme.toastRim,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowBase.withValues(alpha: isDark ? 0.45 : 0.08),
-            blurRadius: isDark ? 24 : 14,
-            offset: const Offset(0, 4),
-            spreadRadius: -2,
-          ),
-          if (isDark)
-            BoxShadow(
-              color: iconColor.withValues(alpha: 0.30),
-              blurRadius: 20,
-              spreadRadius: 1,
-              offset: const Offset(0, 2),
-            ),
-        ],
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    iconColor.withValues(alpha: isDark ? 0.35 : 0.22),
-                    iconColor.withValues(alpha: isDark ? 0.12 : 0.08),
-                  ],
-                ),
-                border: Border.all(
-                  color: iconColor.withValues(alpha: 0.45),
-                  width: 1.2,
-                ),
-              ),
-              child: Center(
-                child: Icon(icon, color: iconColor, size: 22),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (title != null) ...[
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                        fontSize: AppFontSize.body,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    message,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: title != null
-                          ? AppFontSize.toastWithTitle
-                          : AppFontSize.toastSingle,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(width: 6),
-              TextButton(
-                key: const ValueKey('toast_action'),
-                onPressed: () {
-                  messenger.hideCurrentSnackBar();
-                  onAction();
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.of(context).accentText,
-                  textStyle: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                child: Text(actionLabel),
-              ),
-            ] else ...[
-              // Тост с действием закрывается смахиванием, без крестика
-              const SizedBox(width: 6),
-              IconButton(
-                icon: Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: messenger.hideCurrentSnackBar,
-              ),
-            ],
-          ],
-        ),
+      content: _toastContent(
+        context,
+        message: message,
+        title: title,
+        type: type,
+        actionLabel: actionLabel,
+        onAction: onAction,
+        onClose: messenger.hideCurrentSnackBar,
       ),
     );
 
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
+  }
+
+  /// Тост, открытый поверх шторки или диалога; новый заменяет прежний.
+  static OverlayEntry? _overlayToast;
+  static Timer? _overlayToastTimer;
+
+  static void _hideOverlayToast() {
+    _overlayToastTimer?.cancel();
+    _overlayToastTimer = null;
+    _overlayToast?.remove();
+    _overlayToast = null;
+  }
+
+  /// Показывает тост вверху экрана в корневом оверлее: внизу он закрыл бы
+  /// кнопки шторки.
+  static void _showOverlayToast(
+    BuildContext context, {
+    required String message,
+    String? title,
+    required AlertType type,
+    required Duration duration,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    _hideOverlayToast();
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final entry = OverlayEntry(
+      builder: (overlayContext) => Positioned(
+        left: 16,
+        right: 16,
+        top: MediaQuery.paddingOf(overlayContext).top + 8,
+        child: Material(
+          type: MaterialType.transparency,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 200),
+            builder: (_, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, -12 * (1 - value)),
+                child: child,
+              ),
+            ),
+            child: _toastContent(
+              overlayContext,
+              message: message,
+              title: title,
+              type: type,
+              actionLabel: actionLabel,
+              onAction: onAction,
+              onClose: _hideOverlayToast,
+            ),
+          ),
+        ),
+      ),
+    );
+    _overlayToast = entry;
+    overlay.insert(entry);
+    _overlayToastTimer = Timer(duration, () {
+      if (identical(_overlayToast, entry)) _hideOverlayToast();
+    });
+  }
+
+  /// Стеклянная карточка тоста: иконка типа, текст и крестик или действие.
+  static Widget _toastContent(
+    BuildContext context, {
+    required String message,
+    String? title,
+    required AlertType type,
+    String? actionLabel,
+    VoidCallback? onAction,
+    required VoidCallback onClose,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final glassTheme = GlassTheme.of(context);
+
+    final (Color iconColor, IconData icon) = switch (type) {
+      AlertType.success => (AppTheme.successGreen, Icons.check_circle_rounded),
+      AlertType.error => (colorScheme.error, Icons.error_rounded),
+      AlertType.warning => (AppTheme.warningOrange, Icons.warning_rounded),
+      AlertType.info => (colorScheme.primary, Icons.info_rounded),
+    };
+
+    return GlassContainer(
+      borderRadius: _toastRadius,
+      blurSigma: 20,
+      color: glassTheme.toastSurface,
+      border: Border.all(
+        color: glassTheme.toastRim,
+        width: 1.5,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.shadowBase.withValues(alpha: isDark ? 0.45 : 0.08),
+          blurRadius: isDark ? 24 : 14,
+          offset: const Offset(0, 4),
+          spreadRadius: -2,
+        ),
+        if (isDark)
+          BoxShadow(
+            color: iconColor.withValues(alpha: 0.30),
+            blurRadius: 20,
+            spreadRadius: 1,
+            offset: const Offset(0, 2),
+          ),
+      ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  iconColor.withValues(alpha: isDark ? 0.35 : 0.22),
+                  iconColor.withValues(alpha: isDark ? 0.12 : 0.08),
+                ],
+              ),
+              border: Border.all(
+                color: iconColor.withValues(alpha: 0.45),
+                width: 1.2,
+              ),
+            ),
+            child: Center(
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null) ...[
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppFontSize.body,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: title != null
+                        ? AppFontSize.toastWithTitle
+                        : AppFontSize.toastSingle,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 6),
+            TextButton(
+              key: const ValueKey('toast_action'),
+              onPressed: () {
+                onClose();
+                onAction();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.of(context).accentText,
+                textStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              child: Text(actionLabel),
+            ),
+          ] else ...[
+            // Тост с действием закрывается смахиванием, без крестика
+            const SizedBox(width: 6),
+            IconButton(
+              icon: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: onClose,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   static void success(BuildContext context, String message, {String? title}) {

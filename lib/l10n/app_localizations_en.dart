@@ -816,6 +816,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get structure_no_expenses => 'no expenses';
 
   @override
+  String get structure_no_expenses_month => 'No expenses this month';
+
+  @override
   String structure_more_categories(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -237,7 +237,8 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
     return BlocConsumer<ProfileCubit, ProfileState>(
       listenWhen: (previous, current) =>
-          previous.syncStatus != current.syncStatus,
+          previous.syncStatus != current.syncStatus ||
+          previous.syncAttempt != current.syncAttempt,
       listener: (context, state) {
         _handleSyncState(context, state);
       },

@@ -42,8 +42,19 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     super.initState();
     _pageController = PageController();
     _selectedLanguage = LanguageManager.currentLanguage;
-    _selectedCurrency = CurrencyFormatter.currentCurrency;
+    // Язык при первом запуске берётся из системы — валюта по умолчанию
+    // подстраивается под него так же, как при выборе языка вручную.
+    _selectedCurrency = CurrencyFormatter.currentCurrency == Currency.usd
+        ? _defaultCurrencyFor(_selectedLanguage)
+        : CurrencyFormatter.currentCurrency;
   }
+
+  static Currency _defaultCurrencyFor(AppLanguage language) =>
+      switch (language) {
+        AppLanguage.uz => Currency.uzs,
+        AppLanguage.kk => Currency.kzt,
+        AppLanguage.ru || AppLanguage.en => Currency.usd,
+      };
 
   @override
   void dispose() {
@@ -65,15 +76,7 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
       _selectedLanguage = lang;
       LanguageManager.setLanguage(lang, save: false);
       if (!_currencyManuallyChanged) {
-        if (lang == AppLanguage.uz) {
-          _selectedCurrency = Currency.uzs;
-        } else if (lang == AppLanguage.kk) {
-          _selectedCurrency = Currency.kzt;
-        } else if (lang == AppLanguage.ru) {
-          _selectedCurrency = Currency.usd;
-        } else if (lang == AppLanguage.en) {
-          _selectedCurrency = Currency.usd;
-        }
+        _selectedCurrency = _defaultCurrencyFor(lang);
       }
     });
   }

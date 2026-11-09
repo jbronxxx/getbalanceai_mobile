@@ -816,6 +816,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get structure_no_expenses => 'нет трат';
 
   @override
+  String get structure_no_expenses_month => 'Расходов в этом месяце нет';
+
+  @override
   String structure_more_categories(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

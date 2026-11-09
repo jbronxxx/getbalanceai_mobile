@@ -51,15 +51,19 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Запускает полную синхронизацию. Ошибка сохраняется в `state.syncError`.
   Future<void> startSync() async {
     if (state.syncStatus == SyncStatus.syncing) return;
+    final attempt = state.syncAttempt + 1;
 
     final connectivityResult = await _connectivity.checkConnectivity();
     if (isClosed) return;
     if (connectivityResult.contains(ConnectivityResult.none)) {
-      emit(state.copyWith(syncStatus: SyncStatus.noInternet));
+      emit(state.copyWith(
+        syncStatus: SyncStatus.noInternet,
+        syncAttempt: attempt,
+      ));
       return;
     }
 
-    emit(state.copyWith(syncStatus: SyncStatus.syncing));
+    emit(state.copyWith(syncStatus: SyncStatus.syncing, syncAttempt: attempt));
 
     try {
       await _api.syncAll();

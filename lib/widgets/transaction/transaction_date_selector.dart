@@ -58,7 +58,7 @@ class TransactionDateSelector extends StatelessWidget {
         ),
         _DateChip(
           label: isCustom
-              ? LanguageManager.formatDayMonth(date)
+              ? LanguageManager.formatDayMonthYear(date, today)
               : context.l10n.pick_date,
           icon: Icons.calendar_today_rounded,
           isSelected: isCustom,

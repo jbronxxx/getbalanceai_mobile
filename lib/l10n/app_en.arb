@@ -341,6 +341,7 @@
   "structure_of_income": "of income",
   "structure_total_expenses": "expenses",
   "structure_no_expenses": "no expenses",
+  "structure_no_expenses_month": "No expenses this month",
   "structure_more_categories": "{count, plural, =1{1 more category} other{{count} more categories}}",
   "@structure_more_categories": {
     "placeholders": {

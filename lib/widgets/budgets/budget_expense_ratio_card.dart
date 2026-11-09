@@ -156,7 +156,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
                 child: _SummaryInfoChip(
                   label: context.l10n.income_title,
                   amount: widget.totalIncome,
-                  icon: Icons.arrow_downward_rounded,
+                  // Стрелки — как на карточке баланса «Баланса»
+                  icon: Icons.south_west_rounded,
                   isZeroIncome: !hasIncome,
                 ),
               ),
@@ -165,7 +166,7 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
                 child: _SummaryInfoChip(
                   label: context.l10n.expense_title,
                   amount: widget.totalExpense,
-                  icon: Icons.arrow_upward_rounded,
+                  icon: Icons.north_east_rounded,
                 ),
               ),
             ],
@@ -335,7 +336,9 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                context.l10n.no_transactions,
+                // Карточка видна, только если в месяце есть доход или
+                // расход, — здесь доходы без расходов, а не пустой месяц.
+                context.l10n.structure_no_expenses_month,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodySmall?.copyWith(
@@ -350,10 +353,11 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
       );
     }
 
-    // Показываем максимум 3 элемента:
-    // если категорий <= 3, показываем все;
-    // если категорий > 3, показываем топ-2 и строку "+N другие" с остатком.
-    const maxItems = 3;
+    // Не больше четырёх строк: до четырёх категорий — все, больше — три
+    // крупнейшие и строка «ещё N» с суммой остальных (строка «ещё 1» вместо
+    // самой категории не нужна).
+    const maxItems = 4;
+    const topCount = 3;
     final List<ExpenseSegmentData> topSegments;
     final double remainingSum;
     final int remainingCount;
@@ -363,8 +367,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
       remainingSum = 0;
       remainingCount = 0;
     } else {
-      topSegments = segments.take(2).toList();
-      final remaining = segments.skip(2).toList();
+      topSegments = segments.take(topCount).toList();
+      final remaining = segments.skip(topCount).toList();
       remainingCount = remaining.length;
       remainingSum = remaining.fold(0.0, (acc, s) => acc + s.amount);
     }

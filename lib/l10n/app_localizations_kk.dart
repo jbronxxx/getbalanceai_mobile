@@ -815,6 +815,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get structure_no_expenses => 'шығын жоқ';
 
   @override
+  String get structure_no_expenses_month => 'Бұл айда шығыс жоқ';
+
+  @override
   String structure_more_categories(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
