@@ -22,6 +22,22 @@ class CategoryStyle {
         return Icons.shopping_bag;
       case Category.subscriptions:
         return Icons.subscriptions;
+      case Category.housing:
+        return Icons.home_rounded;
+      case Category.communication:
+        return Icons.smartphone_rounded;
+      case Category.education:
+        return Icons.school_rounded;
+      case Category.family:
+        return Icons.family_restroom_rounded;
+      case Category.car:
+        return Icons.directions_car_rounded;
+      case Category.gifts:
+        return Icons.card_giftcard_rounded;
+      case Category.travel:
+        return Icons.flight_rounded;
+      case Category.beauty:
+        return Icons.spa_rounded;
       case Category.freelance:
         return Icons.laptop_mac;
       case Category.investments:
@@ -53,6 +69,22 @@ class CategoryStyle {
         return const Color(0xFFEC4899);
       case Category.subscriptions:
         return const Color(0xFF6366F1);
+      case Category.housing:
+        return const Color(0xFFB45309);
+      case Category.communication:
+        return const Color(0xFF0EA5E9);
+      case Category.education:
+        return const Color(0xFF7C3AED);
+      case Category.family:
+        return const Color(0xFFF43F5E);
+      case Category.car:
+        return const Color(0xFF65A30D);
+      case Category.gifts:
+        return const Color(0xFFD946EF);
+      case Category.travel:
+        return const Color(0xFF16A34A);
+      case Category.beauty:
+        return const Color(0xFFCA8A04);
       case Category.freelance:
         return const Color(0xFFD97706);
       case Category.investments:
@@ -84,6 +116,22 @@ class CategoryStyle {
         return const Color(0xFFF472B6); // Rose Pink
       case Category.subscriptions:
         return const Color(0xFF818CF8); // Indigo
+      case Category.housing:
+        return const Color(0xFFE7C9A0); // Sand
+      case Category.communication:
+        return const Color(0xFF7DD3FC); // Light Sky
+      case Category.education:
+        return const Color(0xFFA78BFA); // Violet
+      case Category.family:
+        return const Color(0xFFFDA4AF); // Soft Rose
+      case Category.car:
+        return const Color(0xFFA3E635); // Lime
+      case Category.gifts:
+        return const Color(0xFFE879F9); // Fuchsia
+      case Category.travel:
+        return const Color(0xFF86EFAC); // Mint Green
+      case Category.beauty:
+        return const Color(0xFFFDE047); // Soft Yellow
       case Category.freelance:
         return const Color(0xFFFBBF24); // Amber
       case Category.investments:

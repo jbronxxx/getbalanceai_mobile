@@ -303,6 +303,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get category_shopping => 'Shopping';
 
   @override
+  String get category_housing => 'Housing';
+
+  @override
+  String get category_communication => 'Phone & internet';
+
+  @override
+  String get category_education => 'Education';
+
+  @override
+  String get category_family => 'Family';
+
+  @override
+  String get category_car => 'Car';
+
+  @override
+  String get category_gifts => 'Gifts';
+
+  @override
+  String get category_travel => 'Travel';
+
+  @override
+  String get category_beauty => 'Beauty';
+
+  @override
   String get category_salary => 'Salary';
 
   @override
@@ -966,4 +990,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get balance_show => 'Show amounts';
+
+  @override
+  String get edit_name_title => 'Your name';
+
+  @override
+  String get edit_name_label => 'Name';
+
+  @override
+  String get edit_name_tooltip => 'Edit name';
+
+  @override
+  String get edit_name_error => 'Couldn\'t save the name';
 }

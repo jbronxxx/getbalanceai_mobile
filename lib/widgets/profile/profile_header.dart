@@ -3,6 +3,7 @@ import '../../services/api_service.dart';
 import '../../utils/utils.dart';
 import '../one_line_label.dart';
 import '../user_avatar.dart';
+import 'edit_name_sheet.dart';
 
 /// Виджет заголовка профиля с аватаром и информацией о пользователе.
 class ProfileHeader extends StatelessWidget {
@@ -61,16 +62,51 @@ class ProfileHeader extends StatelessWidget {
             defaultIcon: Icons.person_outline_rounded,
           ),
         ),
-        const SizedBox(height: 16),
-        Text(
-          isAuthenticated && userName.isNotEmpty
-              ? userName
-              : l10n.local_profile,
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+        const SizedBox(height: 12),
+        if (isAuthenticated)
+          // Имя с карандашом: нажатие открывает шторку смены имени
+          Tooltip(
+            message: l10n.edit_name_tooltip,
+            child: InkWell(
+              key: const ValueKey('profile_edit_name'),
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => EditNameSheet.show(context, name: userName),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text.rich(
+                  TextSpan(
+                    text: userName.isNotEmpty ? userName : l10n.local_profile,
+                    children: [
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(start: 6),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          Text(
+            l10n.local_profile,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
           ),
-        ),
         if (isAuthenticated) ...[
           const SizedBox(height: 4),
           // Адрес — одно «слово»: при крупном шрифте длинный адрес слегка

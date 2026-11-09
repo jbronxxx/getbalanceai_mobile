@@ -103,6 +103,14 @@
   "category_health": "Здоровье",
   "category_subscriptions": "Подписки",
   "category_shopping": "Покупки",
+  "category_housing": "Жильё и ЖКХ",
+  "category_communication": "Связь",
+  "category_education": "Образование",
+  "category_family": "Семья",
+  "category_car": "Авто",
+  "category_gifts": "Подарки",
+  "category_travel": "Путешествия",
+  "category_beauty": "Красота",
   "category_salary": "Зарплата",
   "category_freelance": "Фриланс",
   "category_investments": "Инвестиции",
@@ -356,5 +364,9 @@
   "app_lock_no_device_lock": "Сначала включите блокировку экрана в настройках телефона",
   "app_lock_too_many_attempts": "Слишком много попыток. Попробуйте позже",
   "balance_hide": "Скрыть суммы",
-  "balance_show": "Показать суммы"
+  "balance_show": "Показать суммы",
+  "edit_name_title": "Ваше имя",
+  "edit_name_label": "Имя",
+  "edit_name_tooltip": "Изменить имя",
+  "edit_name_error": "Не удалось сохранить имя"
 }

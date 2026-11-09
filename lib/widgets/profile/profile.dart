@@ -1,4 +1,5 @@
 export 'currency_picker_sheet.dart';
+export 'edit_name_sheet.dart';
 export 'language_picker_sheet.dart';
 export 'profile_app_version.dart';
 export 'profile_data_card.dart';

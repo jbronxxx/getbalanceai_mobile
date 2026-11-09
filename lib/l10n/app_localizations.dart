@@ -666,6 +666,54 @@ abstract class AppLocalizations {
   /// **'Shopping'**
   String get category_shopping;
 
+  /// No description provided for @category_housing.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing'**
+  String get category_housing;
+
+  /// No description provided for @category_communication.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone & internet'**
+  String get category_communication;
+
+  /// No description provided for @category_education.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get category_education;
+
+  /// No description provided for @category_family.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get category_family;
+
+  /// No description provided for @category_car.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get category_car;
+
+  /// No description provided for @category_gifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Gifts'**
+  String get category_gifts;
+
+  /// No description provided for @category_travel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get category_travel;
+
+  /// No description provided for @category_beauty.
+  ///
+  /// In en, this message translates to:
+  /// **'Beauty'**
+  String get category_beauty;
+
   /// No description provided for @category_salary.
   ///
   /// In en, this message translates to:
@@ -1811,6 +1859,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show amounts'**
   String get balance_show;
+
+  /// No description provided for @edit_name_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get edit_name_title;
+
+  /// No description provided for @edit_name_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get edit_name_label;
+
+  /// No description provided for @edit_name_tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit name'**
+  String get edit_name_tooltip;
+
+  /// No description provided for @edit_name_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the name'**
+  String get edit_name_error;
 }
 
 class _AppLocalizationsDelegate

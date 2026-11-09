@@ -80,6 +80,14 @@ enum Category {
   health,
   subscriptions,
   shopping,
+  housing,
+  communication,
+  education,
+  family,
+  car,
+  gifts,
+  travel,
+  beauty,
   salary,
   freelance,
   investments,
@@ -107,6 +115,14 @@ enum Category {
     Category.health,
     Category.subscriptions,
     Category.shopping,
+    Category.housing,
+    Category.communication,
+    Category.education,
+    Category.family,
+    Category.car,
+    Category.gifts,
+    Category.travel,
+    Category.beauty,
     Category.other,
   ];
 
@@ -140,6 +156,22 @@ enum Category {
         return l.category_subscriptions;
       case Category.shopping:
         return l.category_shopping;
+      case Category.housing:
+        return l.category_housing;
+      case Category.communication:
+        return l.category_communication;
+      case Category.education:
+        return l.category_education;
+      case Category.family:
+        return l.category_family;
+      case Category.car:
+        return l.category_car;
+      case Category.gifts:
+        return l.category_gifts;
+      case Category.travel:
+        return l.category_travel;
+      case Category.beauty:
+        return l.category_beauty;
       case Category.salary:
         return l.category_salary;
       case Category.freelance:

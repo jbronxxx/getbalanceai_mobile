@@ -302,6 +302,30 @@ class AppLocalizationsUz extends AppLocalizations {
   String get category_shopping => 'Xaridlar';
 
   @override
+  String get category_housing => 'Uy-joy, kommunal';
+
+  @override
+  String get category_communication => 'Aloqa';
+
+  @override
+  String get category_education => 'Ta\'lim';
+
+  @override
+  String get category_family => 'Oila';
+
+  @override
+  String get category_car => 'Avtomobil';
+
+  @override
+  String get category_gifts => 'Sovg\'alar';
+
+  @override
+  String get category_travel => 'Sayohat';
+
+  @override
+  String get category_beauty => 'Go\'zallik';
+
+  @override
   String get category_salary => 'Maosh';
 
   @override
@@ -958,4 +982,16 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get balance_show => 'Summalarni ko\'rsatish';
+
+  @override
+  String get edit_name_title => 'Ismingiz';
+
+  @override
+  String get edit_name_label => 'Ism';
+
+  @override
+  String get edit_name_tooltip => 'Ismni o\'zgartirish';
+
+  @override
+  String get edit_name_error => 'Ismni saqlab bo\'lmadi';
 }

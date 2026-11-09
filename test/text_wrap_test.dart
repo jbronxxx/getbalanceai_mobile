@@ -646,6 +646,9 @@ void main() {
         open: tapOpen);
     audit('Тема', () => sheetHost(() => const ThemeModePickerSheet()),
         open: tapOpen);
+    audit(
+        'Имя', () => sheetHost(() => const EditNameSheet(name: 'Анна Иванова')),
+        open: tapOpen);
     audit('Выбор месяца', () => sheetHost(() => const PeriodPickerSheet()),
         open: tapOpen);
     audit(

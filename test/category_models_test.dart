@@ -37,6 +37,8 @@ void main() {
       expect(Category.expenseCategories, contains(Category.subscriptions));
       expect(Category.expenseCategories, contains(Category.shopping));
       expect(Category.expenseCategories, contains(Category.other));
+      // Последней остаётся «Другое»
+      expect(Category.expenseCategories.last, Category.other);
 
       expect(Category.expenseCategories, isNot(contains(Category.salary)));
       expect(Category.expenseCategories, isNot(contains(Category.freelance)));
@@ -44,6 +46,26 @@ void main() {
       expect(Category.expenseCategories, isNot(contains(Category.transfers)));
       expect(Category.expenseCategories, isNot(contains(Category.cashback)));
       expect(Category.expenseCategories, isNot(contains(Category.sales)));
+    });
+
+    test('новые категории расходов (USAB-03): разбор с сервера и только расход',
+        () {
+      const added = [
+        Category.housing,
+        Category.communication,
+        Category.education,
+        Category.family,
+        Category.car,
+        Category.gifts,
+        Category.travel,
+        Category.beauty,
+      ];
+      for (final c in added) {
+        expect(Category.fromString(c.name), c);
+        expect(Category.expenseCategories, contains(c));
+        expect(Category.incomeCategories, isNot(contains(c)));
+      }
+      expect(Category.expenseCategories, hasLength(15));
     });
 
     test('getLocalizedName returns translated name for every category', () {

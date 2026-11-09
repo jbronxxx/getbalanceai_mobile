@@ -302,6 +302,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get category_shopping => 'Покупки';
 
   @override
+  String get category_housing => 'Жильё и ЖКХ';
+
+  @override
+  String get category_communication => 'Связь';
+
+  @override
+  String get category_education => 'Образование';
+
+  @override
+  String get category_family => 'Семья';
+
+  @override
+  String get category_car => 'Авто';
+
+  @override
+  String get category_gifts => 'Подарки';
+
+  @override
+  String get category_travel => 'Путешествия';
+
+  @override
+  String get category_beauty => 'Красота';
+
+  @override
   String get category_salary => 'Зарплата';
 
   @override
@@ -971,4 +995,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get balance_show => 'Показать суммы';
+
+  @override
+  String get edit_name_title => 'Ваше имя';
+
+  @override
+  String get edit_name_label => 'Имя';
+
+  @override
+  String get edit_name_tooltip => 'Изменить имя';
+
+  @override
+  String get edit_name_error => 'Не удалось сохранить имя';
 }
