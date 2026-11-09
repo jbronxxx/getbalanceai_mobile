@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/selected_period_service.dart';
 import '../../utils/utils.dart';
-import '../../theme/app_colors.dart';
+import '../app_choice_chip.dart';
 
 /// Выбор дня операции: «Сегодня», «Вчера» или произвольная дата из календаря.
 ///
@@ -83,27 +83,10 @@ class _DateChip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final foreground = isSelected
-        ? AppColors.of(context).accentText
-        : colorScheme.onSurfaceVariant;
-
-    return ChoiceChip(
-      label: Text(label),
-      avatar: icon != null ? Icon(icon, size: 16, color: foreground) : null,
-      selected: isSelected,
-      showCheckmark: false,
-      onSelected: (_) => onTap(),
-      selectedColor: colorScheme.primary.withValues(alpha: 0.12),
-      side: BorderSide(
-        color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
-      ),
-      shape: const StadiumBorder(),
-      labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: foreground,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
-    );
-  }
+  Widget build(BuildContext context) => AppChoiceChip(
+        label: label,
+        icon: icon,
+        selected: isSelected,
+        onTap: onTap,
+      );
 }

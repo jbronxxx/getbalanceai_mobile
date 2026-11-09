@@ -176,13 +176,21 @@
   "@sync_rejected_hint": {
     "description": "Hint under the title of the rejected records sheet"
   },
-  "sync_reject_invalid_currency": "The server could not get the exchange rate",
+  "sync_reject_invalid_currency": "The server does not support this currency or could not get its exchange rate",
   "@sync_reject_invalid_currency": {
-    "description": "Rejection reason: the server could not get the exchange rate for the record currency"
+    "description": "Rejection reason: the record currency is not supported by the server or its exchange rate is unavailable"
   },
   "sync_reject_invalid_amount": "The amount in the main currency is too large",
   "@sync_reject_invalid_amount": {
     "description": "Rejection reason: amount converted to the main currency is too large"
+  },
+  "sync_reject_invalid_category": "The server does not know this category — choose another one or update the app",
+  "@sync_reject_invalid_category": {
+    "description": "Rejection reason: the server does not know the record category (older server) or it does not fit the record type"
+  },
+  "sync_reject_invalid_amount_range": "The amount is outside the allowed range",
+  "@sync_reject_invalid_amount_range": {
+    "description": "Rejection reason: amount is zero, negative or above the server maximum"
   },
   "sync_reject_unknown": "The server did not accept this record",
   "@sync_reject_unknown": {

@@ -34,6 +34,10 @@ class SyncRejectedSheet extends StatelessWidget {
         return l10n.sync_reject_invalid_currency;
       case 'INVALID_TRANSACTION_AMOUNT':
         return l10n.sync_reject_invalid_amount;
+      case 'INVALID_CATEGORY':
+        return l10n.sync_reject_invalid_category;
+      case 'INVALID_AMOUNT':
+        return l10n.sync_reject_invalid_amount_range;
       default:
         return l10n.sync_reject_unknown;
     }
@@ -117,60 +121,72 @@ class _RejectedTile extends StatelessWidget {
       if (description.isNotEmpty) description,
     ].join(' · ');
 
-    return ListTile(
+    // Причина — под строкой на всю ширину, а не в колонке рядом с суммой:
+    // длинный текст причины при крупном шрифте не рвёт слова.
+    return InkWell(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: categoryColor.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          CategoryStyle.icon(t.category),
-          color: categoryColor,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        t.category.getLocalizedName(context),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Две строки: рядом с суммой в сотни миллионов сумов дата и
-          // описание в одну строку обрезались.
-          Text(
-            details,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.outline),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            SyncRejectedSheet.reasonText(context.l10n, t),
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
-          ),
-        ],
-      ),
-      trailing: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 140),
-        child: CurrencyFormatter.formatText(
-          isExpense ? -t.amount : t.amount,
-          currency: t.currency,
-          showSign: true,
-          useFittedBox: true,
-          textAlign: TextAlign.end,
-          style: textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isExpense
-                ? colorScheme.onSurface
-                : AppColors.of(context).accentText,
-          ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  CategoryStyle.icon(t.category),
+                  color: categoryColor,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                t.category.getLocalizedName(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              // Две строки: рядом с суммой в сотни миллионов сумов дата и описание
+              // в одну строку обрезались.
+              subtitle: Text(
+                details,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+              ),
+              trailing: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 140),
+                child: CurrencyFormatter.formatText(
+                  isExpense ? -t.amount : t.amount,
+                  currency: t.currency,
+                  showSign: true,
+                  useFittedBox: true,
+                  textAlign: TextAlign.end,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isExpense
+                        ? colorScheme.onSurface
+                        : AppColors.of(context).accentText,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              // Под текстом строки: отступ 24 + иконка 40 + зазор 16
+              padding: const EdgeInsetsDirectional.only(start: 80, end: 24),
+              child: Text(
+                SyncRejectedSheet.reasonText(context.l10n, t),
+                style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
+              ),
+            ),
+          ],
         ),
       ),
     );

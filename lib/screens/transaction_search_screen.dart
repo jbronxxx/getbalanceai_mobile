@@ -147,7 +147,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen>
                 (TransactionType.expense, l10n.filter_expenses),
                 (TransactionType.income, l10n.filter_incomes),
               ])
-                _FilterChip(
+                AppChoiceChip(
                   key: ValueKey('search_type_${type?.name ?? 'all'}'),
                   label: label,
                   selected: _search.type == type,
@@ -162,7 +162,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen>
             _ChipRow(
               children: [
                 for (final currency in currencies)
-                  _FilterChip(
+                  AppChoiceChip(
                     key: ValueKey('search_currency_${currency.code}'),
                     label: currency.code,
                     selected: _search.currency == currency,
@@ -277,43 +277,6 @@ class _ChipRow extends StatelessWidget {
             children[i],
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// Чип фильтра в стиле чипов категорий.
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      showCheckmark: false,
-      onSelected: (_) => onTap(),
-      selectedColor: colorScheme.primary.withValues(alpha: 0.12),
-      side: BorderSide(
-        color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-        width: selected ? 1.5 : 1,
-      ),
-      shape: const StadiumBorder(),
-      labelStyle: theme.textTheme.labelLarge?.copyWith(
-        color:
-            selected ? AppColors.of(context).accentText : colorScheme.onSurface,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
       ),
     );
   }

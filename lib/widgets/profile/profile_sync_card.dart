@@ -3,6 +3,7 @@ import '../../cubits/profile/profile_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/language_manager.dart';
 import '../../theme/app_colors.dart';
+import '../whole_words_text.dart';
 
 /// Карточка статуса облачной синхронизации в стиле полированного жидкого стекла.
 class ProfileSyncCard extends StatelessWidget {
@@ -125,7 +126,7 @@ class ProfileSyncCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      WholeWordsText(
                         l10n.sync_status,
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -133,7 +134,7 @@ class ProfileSyncCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      WholeWordsText(
                         isAuthenticated
                             ? syncStatusText
                             : l10n.cloud_backup_prompt,

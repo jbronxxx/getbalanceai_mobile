@@ -144,9 +144,16 @@ void main() {
             _transaction(rejectCode: code),
           );
 
-      expect(reason('INVALID_CURRENCY'), 'Сервер не смог получить курс валюты');
+      expect(reason('INVALID_CURRENCY'),
+          'Сервер не поддерживает эту валюту или не смог получить её курс');
       expect(reason('INVALID_TRANSACTION_AMOUNT'),
           'Сумма в основной валюте слишком большая');
+      // Запись не прошла проверку на сервере (SYNC-03): категория, сумма
+      // или формат — батч при этом не падает
+      expect(reason('INVALID_CATEGORY'),
+          'Сервер не знает эту категорию — выберите другую или обновите приложение');
+      expect(reason('INVALID_AMOUNT'), 'Сумма вне допустимого диапазона');
+      expect(reason('INVALID_SYNC_ITEM'), 'Сервер не принял эту запись');
       expect(
           reason(Transaction.unknownRejectCode), 'Сервер не принял эту запись');
       expect(reason('NEW_SERVER_CODE'), 'Сервер не принял эту запись');

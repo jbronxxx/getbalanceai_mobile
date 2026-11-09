@@ -5,6 +5,7 @@ import 'currency_picker_sheet.dart';
 import 'language_picker_sheet.dart';
 import 'theme_mode_picker_sheet.dart';
 import '../one_line_label.dart';
+import '../whole_words_text.dart';
 import '../../theme/app_colors.dart';
 
 /// Карточка настроек интерфейса (тема, язык, валюта).
@@ -46,7 +47,7 @@ class ProfileSettingsCard extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            title: Text(
+            title: WholeWordsText(
               l10n.theme_mode,
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
@@ -64,7 +65,7 @@ class ProfileSettingsCard extends StatelessWidget {
           ),
           Divider(height: 1, thickness: 1, color: dividerColor),
           ListTile(
-            title: Text(
+            title: WholeWordsText(
               l10n.language,
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
@@ -82,7 +83,7 @@ class ProfileSettingsCard extends StatelessWidget {
           ),
           Divider(height: 1, thickness: 1, color: dividerColor),
           ListTile(
-            title: Text(
+            title: WholeWordsText(
               l10n.currency,
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,

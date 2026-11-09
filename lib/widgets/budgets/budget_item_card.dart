@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
+import '../one_line_label.dart';
 import '../swipe_to_delete.dart';
 import '../../theme/app_colors.dart';
 
@@ -58,6 +59,11 @@ class BudgetItemCard extends StatelessWidget {
     final textTheme = theme.textTheme;
     final isDark = theme.brightness == Brightness.dark;
     final colors = AppColors.of(context);
+    final categoryName = budget.category.getLocalizedName(context);
+    final titleStyle = textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.bold,
+      color: colorScheme.onSurface,
+    );
 
     final ratio =
         budget.limitAmount > 0 ? currentSpent / budget.limitAmount : 0.0;
@@ -108,22 +114,24 @@ class BudgetItemCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        budget.category.getLocalizedName(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
+                      child: OneLineLabel(
+                        categoryName,
+                        alignment: AlignmentDirectional.centerStart,
+                        style: titleStyle,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Сумме — приоритет (до 60% строки), название категории
-                    // обрезается раньше, чем сумма уменьшается.
+                    // Название категории получает свою ширину (при крупном
+                    // шрифте не «Здор…»), сумма — остальное, но не меньше
+                    // 40% строки; не помещаются — оба немного уменьшаются.
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: constraints.maxWidth * 0.6,
+                        maxWidth: OneLineLabel.spaceBeside(
+                          context,
+                          available: constraints.maxWidth - 20 - 8 - 12,
+                          title: categoryName,
+                          titleStyle: titleStyle,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,

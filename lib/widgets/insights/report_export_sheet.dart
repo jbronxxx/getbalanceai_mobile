@@ -5,6 +5,9 @@ import '../../models/models.dart';
 import '../../services/selected_period_service.dart';
 import '../../utils/utils.dart';
 import '../app_alerts.dart';
+import '../app_choice_chip.dart';
+import '../app_sheet.dart';
+import '../sheet_buttons.dart';
 import '../../theme/app_colors.dart';
 
 /// Модальный лист выгрузки отчёта: период, формат и кнопка «Выгрузить».
@@ -58,74 +61,87 @@ class ReportExportSheet extends StatelessWidget {
       listenWhen: (previous, current) => previous.status != current.status,
       listener: _onStatusChanged,
       builder: (context, state) {
+        // Оформление и кнопки — как у шторок операции и лимита. Системную
+        // полоску снизу учитывает SafeArea.
         return Container(
-          padding: EdgeInsets.only(
-            top: 10,
-            left: 24,
-            right: 24,
-            bottom: 24 + MediaQuery.paddingOf(context).bottom,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
+          padding:
+              const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+          decoration: AppSheet.decoration(context),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(child: SheetHandle()),
+                  Text(
+                    l10n.report_export_title,
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                ),
-                Text(
-                  l10n.report_export_title,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(l10n.report_period_label, style: textTheme.labelLarge),
-                const SizedBox(height: 8),
-                _PeriodChips(state: state),
-                const SizedBox(height: 20),
-                Text(l10n.report_format_label, style: textTheme.labelLarge),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<ReportFormat>(
-                    showSelectedIcon: false,
-                    segments: [
-                      for (final f in ReportFormat.values)
-                        ButtonSegment(
-                          value: f,
-                          label: Text(f.extension.toUpperCase()),
-                        ),
-                    ],
-                    selected: {state.format},
-                    onSelectionChanged: state.isExporting
-                        ? null
-                        : (value) => context
-                            .read<ReportExportCubit>()
-                            .selectFormat(value.first),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _ExportButtons(state: state),
-              ],
+                  const SizedBox(height: 20),
+                  _SectionLabel(l10n.report_period_label),
+                  _PeriodChips(state: state),
+                  const SizedBox(height: 20),
+                  _SectionLabel(l10n.report_format_label),
+                  _FormatChips(state: state),
+                  const SizedBox(height: 24),
+                  _ExportButtons(state: state),
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+/// Подпись над группой чипов («Период», «Формат»).
+class _SectionLabel extends StatelessWidget {
+  final String text;
+
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        text,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+/// Формат файла — чипы, как выбор периода над ними.
+class _FormatChips extends StatelessWidget {
+  final ReportExportState state;
+
+  const _FormatChips({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<ReportExportCubit>();
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final format in ReportFormat.values)
+          AppChoiceChip(
+            key: ValueKey('report_format_${format.name}'),
+            label: format.extension.toUpperCase(),
+            selected: state.format == format,
+            onTap: state.isExporting ? null : () => cubit.selectFormat(format),
+          ),
+      ],
     );
   }
 }
@@ -174,27 +190,25 @@ class _PeriodChips extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        ChoiceChip(
-          label: Text(
-            '${LanguageManager.getMonthName(state.month)} ${state.year}',
-          ),
+        AppChoiceChip(
+          label: '${LanguageManager.getMonthName(state.month)} ${state.year}',
           selected: state.preset == ReportPeriodPreset.month,
-          onSelected: enabled
-              ? (_) => cubit.selectPreset(ReportPeriodPreset.month)
+          onTap: enabled
+              ? () => cubit.selectPreset(ReportPeriodPreset.month)
               : null,
         ),
-        ChoiceChip(
-          label: Text('${l10n.report_period_year} ${state.year}'),
+        AppChoiceChip(
+          label: '${l10n.report_period_year} ${state.year}',
           selected: state.preset == ReportPeriodPreset.year,
-          onSelected: enabled
-              ? (_) => cubit.selectPreset(ReportPeriodPreset.year)
+          onTap: enabled
+              ? () => cubit.selectPreset(ReportPeriodPreset.year)
               : null,
         ),
-        ChoiceChip(
-          avatar: const Icon(Icons.date_range, size: 18),
-          label: Text(_customLabel(context)),
+        AppChoiceChip(
+          icon: Icons.calendar_today_rounded,
+          label: _customLabel(context),
           selected: state.preset == ReportPeriodPreset.custom,
-          onSelected: enabled ? (_) => _pickRange(context) : null,
+          onTap: enabled ? () => _pickRange(context) : null,
         ),
       ],
     );
@@ -238,24 +252,21 @@ class _ExportButtons extends StatelessWidget {
       children: [
         Expanded(
           child: Builder(
-            builder: (buttonContext) => FilledButton.icon(
+            builder: (buttonContext) => SheetPrimaryButton(
               key: const ValueKey('report_download_button'),
+              label: l10n.report_save_action,
               onPressed: state.canExport
                   ? () => _export(buttonContext, ReportDeliveryMode.save)
                   : null,
               icon: busy(ReportDeliveryMode.save)
                   ? _spinner()
                   : const Icon(Icons.download_rounded),
-              label: Text(l10n.report_save_action),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-              ),
             ),
           ),
         ),
         const SizedBox(width: 12),
         Builder(
-          builder: (buttonContext) => IconButton.outlined(
+          builder: (buttonContext) => SheetIconButton(
             key: const ValueKey('report_share_button'),
             tooltip: l10n.report_share_action,
             onPressed: state.canExport
@@ -264,9 +275,6 @@ class _ExportButtons extends StatelessWidget {
             icon: busy(ReportDeliveryMode.share)
                 ? _spinner()
                 : const Icon(Icons.ios_share_rounded),
-            style: IconButton.styleFrom(
-              fixedSize: const Size.square(52),
-            ),
           ),
         ),
       ],

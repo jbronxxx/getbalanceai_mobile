@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../category_style.dart';
-import '../../theme/app_colors.dart';
+import '../app_choice_chip.dart';
 
 /// Чип категории с иконкой и цветом категории.
 class CategoryChip extends StatelessWidget {
@@ -18,30 +18,15 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return ChoiceChip(
+    return AppChoiceChip(
       avatar: Icon(
         CategoryStyle.icon(category),
         size: 18,
         color: CategoryStyle.color(category),
       ),
-      label: Text(category.getLocalizedName(context)),
+      label: category.getLocalizedName(context),
       selected: isSelected,
-      showCheckmark: false,
-      onSelected: (_) => onTap(),
-      selectedColor: colorScheme.primary.withValues(alpha: 0.12),
-      side: BorderSide(
-        color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
-        width: isSelected ? 1.5 : 1,
-      ),
-      shape: const StadiumBorder(),
-      labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: isSelected
-                ? AppColors.of(context).accentText
-                : colorScheme.onSurface,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
+      onTap: onTap,
     );
   }
 }

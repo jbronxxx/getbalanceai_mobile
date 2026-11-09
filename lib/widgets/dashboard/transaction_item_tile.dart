@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../category_style.dart';
+import '../one_line_label.dart';
 import '../swipe_to_delete.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
@@ -38,6 +39,28 @@ class TransactionItemTile extends StatelessWidget {
   static Color backgroundColor(BuildContext context) =>
       AppColors.of(context).cardBackground;
 
+  static const _iconSize = 40.0;
+  static const _gap = 16.0; // ListTile.horizontalTitleGap по умолчанию
+  static const _groupIndent = 72.0;
+
+  /// Сколько места отдать сумме: название категории (или день) получает
+  /// свою ширину — при крупном шрифте не «Пита…», сумма — остальное, но не
+  /// меньше 40% строки.
+  double _amountMaxWidth(
+    BuildContext context,
+    double tileWidth,
+    String title,
+    TextStyle? style,
+  ) =>
+      OneLineLabel.spaceBeside(
+        context,
+        available: tileWidth -
+            (showDate ? _groupIndent + _gap : 2 * _gap + _iconSize + _gap) -
+            _gap,
+        title: title,
+        titleStyle: style,
+      );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -51,6 +74,10 @@ class TransactionItemTile extends StatelessWidget {
     final title = showDate
         ? LanguageManager.formatDayMonth(transaction.date)
         : categoryName;
+    final titleStyle = textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: colorScheme.onSurface,
+    );
 
     // Строка прямоугольная: углы скругляет карточка дня или категории,
     // в которой она лежит.
@@ -59,90 +86,93 @@ class TransactionItemTile extends StatelessWidget {
       showHint: isFirst && showHint,
       onHintShown: onHintShown,
       onDelete: onDelete,
-      child: Material(
-        color: backgroundColor(context),
-        child: ListTile(
-          onTap: onTap,
-          // В группе категории текст выравнивается по заголовку группы
-          contentPadding: showDate
-              ? const EdgeInsets.only(left: 72, right: 16)
-              : const EdgeInsets.symmetric(horizontal: 16),
-          leading: showDate
-              ? null
-              : Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: categoryColor.withValues(alpha: 0.25),
-                      width: 0.8,
+      child: LayoutBuilder(
+        builder: (context, constraints) => Material(
+          color: backgroundColor(context),
+          child: ListTile(
+            onTap: onTap,
+            // В группе категории текст выравнивается по заголовку группы
+            contentPadding: showDate
+                ? const EdgeInsets.only(left: _groupIndent, right: _gap)
+                : const EdgeInsets.symmetric(horizontal: _gap),
+            leading: showDate
+                ? null
+                : Container(
+                    width: _iconSize,
+                    height: _iconSize,
+                    decoration: BoxDecoration(
+                      color: categoryColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: categoryColor.withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Icon(
+                      CategoryStyle.icon(category),
+                      color: categoryColor,
+                      size: 20,
                     ),
                   ),
-                  child: Icon(
-                    CategoryStyle.icon(category),
-                    color: categoryColor,
-                    size: 20,
-                  ),
-                ),
-          title: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+            // Длинное название при крупном шрифте слегка уменьшается,
+            // а не обрезается «…»
+            title: OneLineLabel(
+              title,
+              alignment: AlignmentDirectional.centerStart,
+              style: titleStyle,
             ),
-          ),
-          subtitle: hasDescription
-              ? Text(
-                  transaction.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.outline,
-                    fontSize: AppFontSize.hint,
-                  ),
-                )
-              : null,
-          trailing: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 140),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                CurrencyFormatter.formatText(
-                  isExpense ? -transaction.amount : transaction.amount,
-                  currency: transaction.currency,
-                  textAlign: TextAlign.end,
-                  showSign: true,
-                  showSymbol: true,
-                  useFittedBox: true,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isExpense
-                        ? colorScheme.onSurface
-                        : AppColors.of(context).accentText,
-                  ),
-                ),
-                if (transaction.currency !=
-                    CurrencyFormatter.currentCurrency) ...[
-                  const SizedBox(height: 2),
-                  CurrencyFormatter.formatText(
-                    isExpense
-                        ? -transaction.effectiveBaseAmount
-                        : transaction.effectiveBaseAmount,
-                    prefix: '≈ ',
-                    textAlign: TextAlign.end,
-                    useFittedBox: true,
-                    style: textTheme.labelSmall?.copyWith(
+            subtitle: hasDescription
+                ? Text(
+                    transaction.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.outline,
-                      fontSize: AppFontSize.micro,
+                      fontSize: AppFontSize.hint,
+                    ),
+                  )
+                : null,
+            trailing: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: _amountMaxWidth(
+                    context, constraints.maxWidth, title, titleStyle),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  CurrencyFormatter.formatText(
+                    isExpense ? -transaction.amount : transaction.amount,
+                    currency: transaction.currency,
+                    textAlign: TextAlign.end,
+                    showSign: true,
+                    showSymbol: true,
+                    useFittedBox: true,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isExpense
+                          ? colorScheme.onSurface
+                          : AppColors.of(context).accentText,
                     ),
                   ),
+                  if (transaction.currency !=
+                      CurrencyFormatter.currentCurrency) ...[
+                    const SizedBox(height: 2),
+                    CurrencyFormatter.formatText(
+                      isExpense
+                          ? -transaction.effectiveBaseAmount
+                          : transaction.effectiveBaseAmount,
+                      prefix: '≈ ',
+                      textAlign: TextAlign.end,
+                      useFittedBox: true,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.outline,
+                        fontSize: AppFontSize.micro,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

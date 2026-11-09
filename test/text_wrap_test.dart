@@ -16,6 +16,7 @@ import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
 import 'package:getbalanceai_mobile/screens/auth_screen.dart';
 import 'package:getbalanceai_mobile/screens/main_shell.dart';
+import 'package:getbalanceai_mobile/screens/profile_screen.dart';
 import 'package:getbalanceai_mobile/screens/service_unavailable_screen.dart';
 import 'package:getbalanceai_mobile/screens/startup_error_screen.dart';
 import 'package:getbalanceai_mobile/screens/transaction_search_screen.dart';
@@ -34,6 +35,7 @@ import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'support/app_fonts.dart';
 
 /// Переносы текста на всех экранах (UX-08, UX-09, UX-10): ни одно слово не
 /// рвётся посреди («Редактиров / ать») на телефоне 360 dp при обычном и
@@ -94,24 +96,6 @@ List<String> _shrunkAmounts(WidgetTester tester, List<String> amounts) => [
             '«$amount» уменьшена',
     ];
 
-/// Регистрирует Inter из assets под именами, которые даёт google_fonts
-/// (`Inter_regular`, `Inter_500`…), — как на устройстве.
-Future<void> _loadAppFonts() async {
-  Future<ByteData> file(String name) async => ByteData.sublistView(
-      await File('assets/google_fonts/Inter-$name.ttf').readAsBytes());
-  const variants = {
-    'regular': 'Regular',
-    '500': 'Medium',
-    '600': 'SemiBold',
-    '700': 'Bold',
-    '800': 'Bold',
-    '900': 'Bold',
-  };
-  for (final MapEntry(:key, :value) in variants.entries) {
-    await (FontLoader('Inter_$key')..addFont(file(value))).load();
-  }
-}
-
 class _HttpAdapter implements HttpClientAdapter {
   @override
   Future<ResponseBody> fetch(RequestOptions options,
@@ -166,7 +150,7 @@ void main() {
         {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     LanguageManager.initFallback();
     await CurrencyFormatter.setCurrency(Currency.usd);
-    await _loadAppFonts();
+    await loadAppFonts();
     await LocalDbService.init();
     ApiService.instance.dio.httpClientAdapter = _HttpAdapter();
     await ApiService.instance.auth.setTokens('token', 'refresh');
@@ -233,10 +217,11 @@ void main() {
 
   /// Конфигурации: язык × масштаб шрифта на телефоне 360 dp (на более
   /// широких экранах места только больше).
-  final configs = [
-    for (final language in AppLanguage.values)
-      for (final scale in [1.0, 1.15, 1.3, 1.5]) (language, 360.0, scale),
-  ];
+  const baseScales = [1.0, 1.15, 1.3, 1.5];
+
+  /// Максимум системного меню шрифта (×2) — для экранов, проверенных на
+  /// телефоне при таком масштабе (UX-17).
+  const withMaxScale = [...baseScales, 2.0];
 
   /// Проверяет поверхность [surface] во всех конфигурациях: падает со
   /// списком разорванных слов и обрезанных строк. [build] — что
@@ -247,7 +232,13 @@ void main() {
     Widget Function() build, {
     Future<void> Function(WidgetTester tester)? open,
     bool guest = false,
+    List<double> scales = baseScales,
+    Type? maxScaleScreen,
   }) {
+    final configs = [
+      for (final language in AppLanguage.values)
+        for (final scale in scales) (language, 360.0, scale),
+    ];
     testWidgets(surface, (tester) async {
       final broken = <String>[];
       if (guest) {
@@ -283,7 +274,18 @@ void main() {
         tester.takeException();
 
         final config = '${language.name} ${width.toInt()}dp ×$scale';
-        for (final p in tester.allRenderObjects.whereType<RenderParagraph>()) {
+        // Выше ×1.5 — только экран [maxScaleScreen]: соседние вкладки
+        // MainShell при ×2 пока не выверены
+        final paragraphs = scale > baseScales.last && maxScaleScreen != null
+            ? find
+                .descendant(
+                    of: find.byType(maxScaleScreen),
+                    matching: find.byType(RichText))
+                .evaluate()
+                .map((e) => e.renderObject)
+                .whereType<RenderParagraph>()
+            : tester.allRenderObjects.whereType<RenderParagraph>();
+        for (final p in paragraphs) {
           if (!p.hasSize || !p.attached) continue;
           final text = p.text.toPlainText(includeSemanticsLabels: false);
           for (final word in _brokenWords(p)) {
@@ -378,11 +380,14 @@ void main() {
     audit('Аналитика', () => const MainShell(),
         open: (tester) => tapText(tester, LanguageManager.l10n.insights));
     audit('Профиль', () => const MainShell(),
+        scales: withMaxScale,
+        maxScaleScreen: ProfileScreen,
         open: (tester) => tapText(tester, LanguageManager.l10n.profile));
     // Длинные значения настроек и адрес — найдено на телефоне (×1.5):
     // «Валют / а» рядом с «Узбекский сум», «gmail.co / m».
     audit('Профиль: сум и длинный адрес', () => const MainShell(),
-        open: (tester) async {
+        scales: withMaxScale,
+        maxScaleScreen: ProfileScreen, open: (tester) async {
       when(() => authCubit.state).thenReturn(Authenticated(
           email: 'firstname.lastname.work@gmail.com', name: 'Евгений'));
       await tester.runAsync(() => CurrencyFormatter.setCurrency(Currency.uzs));
@@ -395,6 +400,8 @@ void main() {
         open: (tester) => tapText(tester, LanguageManager.l10n.insights));
     audit('Гость: Профиль', () => const MainShell(),
         guest: true,
+        scales: withMaxScale,
+        maxScaleScreen: ProfileScreen,
         open: (tester) => tapText(tester, LanguageManager.l10n.profile));
   });
 

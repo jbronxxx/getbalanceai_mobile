@@ -161,8 +161,10 @@
   },
   "sync_rejected_title": "Server qabul qilmagan",
   "sync_rejected_hint": "Tuzatish uchun yozuvni bosing. Saqlangandan keyin u qayta yuboriladi.",
-  "sync_reject_invalid_currency": "Server valyuta kursini ololmadi",
+  "sync_reject_invalid_currency": "Server bu valyutani qo'llamaydi yoki uning kursini ololmadi",
   "sync_reject_invalid_amount": "Asosiy valyutadagi summa juda katta",
+  "sync_reject_invalid_category": "Server bu kategoriyani bilmaydi — boshqasini tanlang yoki ilovani yangilang",
+  "sync_reject_invalid_amount_range": "Summa ruxsat etilgan oraliqdan tashqarida",
   "sync_reject_unknown": "Server bu yozuvni qabul qilmadi",
   "sync_done_with_rejected": "Sinxronlandi, lekin server qabul qilmadi: {count}",
   "@sync_done_with_rejected": {

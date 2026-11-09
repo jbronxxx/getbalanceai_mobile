@@ -449,11 +449,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sync_reject_invalid_currency =>
-      'The server could not get the exchange rate';
+      'The server does not support this currency or could not get its exchange rate';
 
   @override
   String get sync_reject_invalid_amount =>
       'The amount in the main currency is too large';
+
+  @override
+  String get sync_reject_invalid_category =>
+      'The server does not know this category — choose another one or update the app';
+
+  @override
+  String get sync_reject_invalid_amount_range =>
+      'The amount is outside the allowed range';
 
   @override
   String get sync_reject_unknown => 'The server did not accept this record';
