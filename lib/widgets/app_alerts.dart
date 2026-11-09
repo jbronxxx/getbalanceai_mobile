@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import '../theme/app_theme.dart';
 import 'glass_container.dart';
+import 'one_line_label.dart';
 import 'liquid_glass_nav_bar.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_colors.dart';
@@ -251,8 +252,15 @@ class AppAlerts {
                 textStyle: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
+                // Кнопке — не больше 35% ширины экрана: при крупном шрифте
+                // («Болдырмау») подпись чуть уменьшается, а сообщению хватает
+                // места, чтобы слова не рвались.
+                maximumSize: Size(
+                  MediaQuery.sizeOf(context).width * 0.35,
+                  double.infinity,
+                ),
               ),
-              child: Text(actionLabel),
+              child: OneLineLabel(actionLabel),
             ),
           ] else ...[
             // Тост с действием закрывается смахиванием, без крестика

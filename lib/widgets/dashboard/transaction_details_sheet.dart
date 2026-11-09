@@ -126,6 +126,8 @@ class TransactionDetailsSheet extends StatelessWidget {
                     t.amount,
                     currency: t.currency,
                     style: textTheme.bodyMedium,
+                    // Сумма не обрезается «…» при крупном шрифте
+                    useFittedBox: true,
                   ),
                 ),
                 _DetailRow(
@@ -134,6 +136,8 @@ class TransactionDetailsSheet extends StatelessWidget {
                     t.effectiveBaseAmount,
                     prefix: '≈ ',
                     style: textTheme.bodyMedium,
+                    // Сумма не обрезается «…» при крупном шрифте
+                    useFittedBox: true,
                   ),
                 ),
               ],
@@ -199,21 +203,27 @@ class _DetailRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+      // Значение занимает сколько нужно, но не больше 60% строки, подпись —
+      // остальное: при крупном шрифте ни длинная категория, ни подпись
+      // («В основной валюте») не рвутся посреди слова.
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Align(alignment: Alignment.centerRight, child: child),
-          ),
-        ],
+            const SizedBox(width: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.6),
+              child: child,
+            ),
+          ],
+        ),
       ),
     );
   }

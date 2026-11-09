@@ -11,6 +11,8 @@ import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/models/month_period.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
+import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
+import 'package:getbalanceai_mobile/widgets/insights/insights_unavailable_card.dart';
 import 'package:getbalanceai_mobile/widgets/insights/report_export_action.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
@@ -677,6 +679,81 @@ void main() {
         expect(requests(), 3);
       },
     );
+  });
+
+  testWidgets('мало операций — общий текст «Пока недостаточно данных»',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      locale: Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: InsightsUnavailableCard(
+          reason: InsightsUnavailableReason.notEnoughTransactions,
+        ),
+      ),
+    ));
+
+    expect(find.text(LanguageManager.l10n.insight_no_data), findsOneWidget);
+  });
+
+  testWidgets(
+      'повторное открытие вкладки без изменений данных не запрашивает отчёт',
+      (tester) async {
+    await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    var requests = 0;
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
+      requests++;
+      return ResponseBody.fromString(
+        jsonEncode({
+          'status': 'success',
+          'data': {
+            'insights': ['Совет $requests'],
+          },
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    });
+
+    Future<void> showTab(bool active) async {
+      await tester.pumpWidget(MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen(isActive: active),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    try {
+      await showTab(true);
+      expect(requests, 1);
+
+      for (var i = 0; i < 3; i++) {
+        await showTab(false);
+        await showTab(true);
+      }
+      expect(requests, 1, reason: 'отчёт уже на экране, данные не менялись');
+      expect(find.text('Совет 1'), findsOneWidget);
+
+      // Операции менялись, пока вкладка скрыта: запрос — один, при открытии.
+      await showTab(false);
+      LocalDbService.transactionsChanged.value++;
+      LocalDbService.budgetsChanged.value++;
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(requests, 1);
+      await showTab(true);
+      expect(requests, 2);
+      expect(find.text('Совет 2'), findsOneWidget);
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
   });
 }
 

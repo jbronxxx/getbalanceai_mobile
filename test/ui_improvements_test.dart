@@ -499,24 +499,27 @@ void main() {
       expect(selector.categories, contains(selector.selected));
     });
 
-    testWidgets('AddBudgetSheet при редактировании — только своя категория',
-        (tester) async {
+    testWidgets(
+        'USAB-05: при правке лимита категорию можно сменить на свободную — '
+        'та же запись, сервер обновит её по ID', (tester) async {
       final budget = Budget(
-        localId: 7,
+        serverId: 'srv-1',
         dbCategory: Category.food.name,
         limitAmount: 1000,
+        currencyCode: 'USD',
         month: 10,
         year: 2026,
         spent: 0,
         remaining: 1000,
       );
+      LocalDbService.instance.saveBudget(budget);
       await tester.pumpWidget(
         _buildTestApp(
           AddBudgetSheet(
             selectedMonth: 10,
             selectedYear: 2026,
             budgetToEdit: budget,
-            limitedCategories: const {Category.food},
+            limitedCategories: const {Category.food, Category.transport},
             onSaved: () {},
           ),
         ),
@@ -525,8 +528,57 @@ void main() {
 
       final chips = find.byType(CategoryChipsSelector);
       final selector = tester.widget<CategoryChipsSelector>(chips);
-      expect(selector.categories, [Category.food]);
       expect(selector.selected, Category.food);
+      expect(selector.categories, contains(Category.food));
+      expect(selector.categories, contains(Category.entertainment));
+      expect(selector.categories, isNot(contains(Category.transport)));
+
+      selector.onSelected(Category.entertainment);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pumpAndSettle();
+
+      final saved = LocalDbService.instance.getAllBudgets();
+      expect(saved, hasLength(1));
+      expect(saved.single.localId, budget.localId);
+      expect(saved.single.dbCategory, Category.entertainment.name);
+      expect(saved.single.limitAmount, 1000);
+      expect(saved.single.serverId, 'srv-1');
+      expect(saved.single.isModified, isTrue);
+    });
+
+    testWidgets(
+        'правка без смены категории сохраняет исходную строку категории',
+        (tester) async {
+      final budget = Budget(
+        dbCategory: 'pets',
+        limitAmount: 1000,
+        currencyCode: 'USD',
+        month: 10,
+        year: 2026,
+        spent: 0,
+        remaining: 1000,
+      );
+      LocalDbService.instance.saveBudget(budget);
+      await tester.pumpWidget(
+        _buildTestApp(
+          AddBudgetSheet(
+            selectedMonth: 10,
+            selectedYear: 2026,
+            budgetToEdit: budget,
+            limitedCategories: {budget.category},
+            onSaved: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '2000');
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pumpAndSettle();
+
+      final saved = LocalDbService.instance.getAllBudgets().single;
+      expect(saved.dbCategory, 'pets');
+      expect(saved.limitAmount, 2000);
     });
 
     testWidgets(
@@ -676,6 +728,56 @@ void main() {
       await tester.pumpAndSettle();
       expect(cards, findsNothing);
       expect(LocalDbService.instance.getAllBudgets(), isEmpty);
+    });
+
+    testWidgets(
+        'USAB-05: при правке не предлагается категория, лимит которой '
+        'ждёт удаления после свайпа', (tester) async {
+      tester.view
+        ..physicalSize = const Size(800, 1600)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SelectedPeriodService.instance.reset();
+      final period = SelectedPeriodService.instance.period;
+      for (final category in [Category.food, Category.transport]) {
+        LocalDbService.instance.saveBudget(Budget(
+          dbCategory: category.name,
+          limitAmount: 50000,
+          spent: 0,
+          remaining: 50000,
+          month: period.month,
+          year: period.year,
+        ));
+      }
+
+      await tester.pumpWidget(_buildTestApp(const BudgetsScreen()));
+      await tester.pumpAndSettle();
+      final cards = find.byType(BudgetItemCard);
+      await tester.drag(cards.last, const Offset(-700, 0));
+      await tester.pumpAndSettle();
+      expect(cards, findsOneWidget);
+
+      await tester.tap(cards);
+      await tester.pumpAndSettle();
+      final selector = tester
+          .widget<CategoryChipsSelector>(find.byType(CategoryChipsSelector));
+      final edited = selector.selected;
+      final pending =
+          edited == Category.food ? Category.transport : Category.food;
+      expect(selector.categories, contains(edited));
+      expect(selector.categories, isNot(contains(pending)));
+
+      selector.onSelected(Category.entertainment);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+
+      expect(
+        LocalDbService.instance.getAllBudgets().map((b) => b.dbCategory),
+        [Category.entertainment.name],
+      );
+      expect(cards, findsOneWidget);
     });
 
     testWidgets('Обычный тост сохраняет крестик закрытия', (tester) async {

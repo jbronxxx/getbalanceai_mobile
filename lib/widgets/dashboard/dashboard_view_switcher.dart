@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
+import '../one_line_label.dart';
 
 /// Вид ленты дашборда.
 enum DashboardViewMode {
@@ -107,11 +108,7 @@ class _ViewPill extends StatelessWidget {
                     color: foreground,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: OneLineLabel(label),
                 ),
               ),
             ),

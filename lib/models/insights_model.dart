@@ -9,6 +9,9 @@ enum InsightsReportState {
   /// Будущий месяц или нет операций за период.
   noData,
 
+  /// Операций за период меньше порога (`InsightsCubit.minTransactions`).
+  notEnoughData,
+
   /// Суточная квота исчерпана; `insights` — сообщение о лимите или
   /// устаревший сохранённый отчёт ([InsightsModel.isOutdated]).
   quotaExceeded,
@@ -23,6 +26,8 @@ enum InsightsReportState {
         return InsightsReportState.notGenerated;
       case 'no_data':
         return InsightsReportState.noData;
+      case 'not_enough_data':
+        return InsightsReportState.notEnoughData;
       case 'quota_exceeded':
         return InsightsReportState.quotaExceeded;
       case 'busy':

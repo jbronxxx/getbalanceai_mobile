@@ -12,8 +12,8 @@ part 'insights_state.dart';
 /// Загружает AI-отчёт за выбранный месяц.
 ///
 /// Генерация — платный запрос к LLM, поэтому:
-/// * будущий месяц и месяц без операций определяются локально — без запроса
-///   ([InsightsUnavailable]);
+/// * будущий месяц и месяц, где операций меньше [minTransactions],
+///   определяются локально — без запроса ([InsightsUnavailable]);
 /// * текущий месяц запрашивается с генерацией: бэкенд сам отдаёт сохранённый
 ///   отчёт, пока данные месяца почти не менялись;
 /// * прошлые месяцы и смена валюты/языка — только сохранённый отчёт
@@ -27,6 +27,11 @@ part 'insights_state.dart';
 ///   с пометкой [InsightsLoaded.isOutdated], чтобы суммы в тексте не
 ///   выдавались за актуальные.
 class InsightsCubit extends Cubit<InsightsState> {
+  /// Меньше операций за месяц — советам не на чем строиться, а генерация
+  /// тратит суточную квоту. Тот же порог на бэкенде
+  /// (`MIN_TRANSACTIONS_FOR_INSIGHTS`).
+  static const minTransactions = 7;
+
   final ApiService _api;
   final Connectivity _connectivity;
   CancelToken? _cancelToken;
@@ -117,16 +122,27 @@ class InsightsCubit extends Cubit<InsightsState> {
 
   bool get _isCurrentMonth => _period == MonthPeriod.current();
 
-  /// Причина, по которой анализировать период нечего, или `null`.
-  InsightsUnavailableReason? _unavailableReason() {
+  /// Состояние «анализировать нечего» для периода или `null`.
+  InsightsUnavailable? _unavailableState(int month, int year) {
+    InsightsUnavailable unavailable(InsightsUnavailableReason reason) =>
+        InsightsUnavailable(
+          reason,
+          selectedMonth: month,
+          selectedYear: year,
+        );
+
     if (_period.isAfter(MonthPeriod.current())) {
-      return InsightsUnavailableReason.futureMonth;
+      return unavailable(InsightsUnavailableReason.futureMonth);
     }
-    if (LocalDbService.isInitialized &&
-        LocalDbService.instance
-            .getTransactionsForPeriod(_selectedMonth, _selectedYear, limit: 1)
-            .isEmpty) {
-      return InsightsUnavailableReason.noTransactions;
+    if (!LocalDbService.isInitialized) return null;
+    final count = LocalDbService.instance
+        .getTransactionsForPeriod(month, year, limit: minTransactions)
+        .length;
+    if (count == 0) {
+      return unavailable(InsightsUnavailableReason.noTransactions);
+    }
+    if (count < minTransactions) {
+      return unavailable(InsightsUnavailableReason.notEnoughTransactions);
     }
     return null;
   }
@@ -214,13 +230,9 @@ class InsightsCubit extends Cubit<InsightsState> {
       return;
     }
 
-    final unavailable = _unavailableReason();
+    final unavailable = _unavailableState(month, year);
     if (unavailable != null) {
-      emit(InsightsUnavailable(
-        unavailable,
-        selectedMonth: month,
-        selectedYear: year,
-      ));
+      emit(unavailable);
       return;
     }
 
@@ -310,6 +322,13 @@ class InsightsCubit extends Cubit<InsightsState> {
       case InsightsReportState.noData:
         return InsightsUnavailable(
           InsightsUnavailableReason.noTransactions,
+          selectedMonth: month,
+          selectedYear: year,
+        );
+      case InsightsReportState.notEnoughData:
+        // Локально операций хватает, а на сервер дошли не все.
+        return InsightsUnavailable(
+          InsightsUnavailableReason.notEnoughTransactions,
           selectedMonth: month,
           selectedYear: year,
         );

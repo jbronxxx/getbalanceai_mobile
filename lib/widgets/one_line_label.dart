@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 
-/// Подпись кнопки в одну строку. Слово не переносится посреди
-/// («Редактиров / ать»): если подпись не помещается при крупном шрифте или
-/// на узком экране, она немного уменьшается.
+/// Короткая подпись (кнопка, переключатель, строка настроек) в одну строку.
+/// Слово не переносится посреди («Редактиров / ать») и не обрезается
+/// троеточием: если подпись не помещается при крупном шрифте или на узком
+/// экране, она немного уменьшается.
 class OneLineLabel extends StatelessWidget {
   final String text;
   final TextStyle? style;
 
-  const OneLineLabel(this.text, {super.key, this.style});
+  /// Положение подписи, когда места больше, чем ей нужно.
+  final AlignmentGeometry alignment;
+
+  const OneLineLabel(
+    this.text, {
+    super.key,
+    this.style,
+    this.alignment = Alignment.center,
+  });
 
   @override
   Widget build(BuildContext context) {
     return FittedBox(
       fit: BoxFit.scaleDown,
+      alignment: alignment,
       child: Text(text, style: style, maxLines: 1, softWrap: false),
     );
   }
