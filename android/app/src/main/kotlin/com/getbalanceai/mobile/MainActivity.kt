@@ -1,12 +1,24 @@
 package com.getbalanceai.mobile
 
 import android.os.Build
+import android.os.Bundle
 import android.view.View
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragment
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+// FragmentActivity — требование local_auth (вход по блокировке телефона).
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // SEC-08: в списке недавних приложений вместо снимка экрана с суммами —
+        // пустая карточка (Android 13+). Скриншоты при этом не запрещены.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(false)
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         // Уровень API для DeviceCapabilityService: Platform.operatingSystemVersion
@@ -30,7 +42,7 @@ class MainActivity : FlutterActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus) return
-        val flutterView = findViewById<View>(FLUTTER_VIEW_ID) ?: return
+        val flutterView = findViewById<View>(FlutterFragment.FLUTTER_VIEW_ID) ?: return
         flutterView.postDelayed({
             val insets = flutterView.rootWindowInsets ?: return@postDelayed
             flutterView.onApplyWindowInsets(insets)

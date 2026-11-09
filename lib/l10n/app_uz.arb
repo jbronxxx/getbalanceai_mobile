@@ -332,7 +332,7 @@
   "budget_all_categories_limited": "Bu oyda barcha toifalarga limit qo'yilgan",
   "add_limit_cta": "Limit qo'shish",
   "copy_limits_cta": "{month, select, m1{Yanvardan nusxalash} m2{Fevraldan nusxalash} m3{Martdan nusxalash} m4{Apreldan nusxalash} m5{Maydan nusxalash} m6{Iyundan nusxalash} m7{Iyuldan nusxalash} m8{Avgustdan nusxalash} m9{Sentabrdan nusxalash} m10{Oktabrdan nusxalash} m11{Noyabrdan nusxalash} m12{Dekabrdan nusxalash} other{O'tgan oydan nusxalash}}",
-  "budget_spent_of": "{limit}\u00A0dan {spent}",
+  "budget_spent_of": "{limit} dan {spent}",
   "structure_title": "Xarajatlar tarkibi",
   "structure_of_income": "daromaddan",
   "structure_total_expenses": "jami xarajat",
@@ -346,5 +346,15 @@
   "logout_unsynced_warning": "Serverga yuborilmagan: {count}. Chiqishda bu o'zgarishlar qurilmadan o'chiriladi. Baribir chiqasizmi?",
   "operations_count": "{count} ta operatsiya",
   "category_group_expand_hint": "operatsiyalarni ko'rsatish",
-  "category_group_collapse_hint": "operatsiyalarni yashirish"
+  "category_group_collapse_hint": "operatsiyalarni yashirish",
+  "app_lock_title": "Ilova qulfi",
+  "app_lock_subtitle": "Barmoq izi yoki telefon ekran qulfi",
+  "app_lock_prompt_title": "GetBalance AI ga kirish",
+  "app_lock_reason": "Bu siz ekanligingizni tasdiqlang",
+  "app_locked": "Ilova qulflangan",
+  "app_unlock": "Qulfni ochish",
+  "app_lock_no_device_lock": "Avval telefon sozlamalarida ekran qulfini yoqing",
+  "app_lock_too_many_attempts": "Urinishlar juda ko'p. Keyinroq qayta urinib ko'ring",
+  "balance_hide": "Summalarni yashirish",
+  "balance_show": "Summalarni ko'rsatish"
 }

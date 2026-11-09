@@ -926,4 +926,36 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get category_group_collapse_hint => 'операцияларды жасыру';
+
+  @override
+  String get app_lock_title => 'Қолданба құлпы';
+
+  @override
+  String get app_lock_subtitle => 'Саусақ ізі немесе телефонның экран құлпы';
+
+  @override
+  String get app_lock_prompt_title => 'GetBalance AI-ға кіру';
+
+  @override
+  String get app_lock_reason => 'Бұл сіз екеніңізді растаңыз';
+
+  @override
+  String get app_locked => 'Қолданба құлыпталған';
+
+  @override
+  String get app_unlock => 'Құлыпты ашу';
+
+  @override
+  String get app_lock_no_device_lock =>
+      'Алдымен телефон баптауларында экран құлпын қосыңыз';
+
+  @override
+  String get app_lock_too_many_attempts =>
+      'Әрекет тым көп. Кейінірек қайталаңыз';
+
+  @override
+  String get balance_hide => 'Сомаларды жасыру';
+
+  @override
+  String get balance_show => 'Сомаларды көрсету';
 }

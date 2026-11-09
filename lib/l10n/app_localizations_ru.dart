@@ -939,4 +939,36 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get category_group_collapse_hint => 'скрыть операции';
+
+  @override
+  String get app_lock_title => 'Блокировка приложения';
+
+  @override
+  String get app_lock_subtitle => 'Отпечаток или код разблокировки телефона';
+
+  @override
+  String get app_lock_prompt_title => 'Вход в GetBalance AI';
+
+  @override
+  String get app_lock_reason => 'Подтвердите, что это вы';
+
+  @override
+  String get app_locked => 'Приложение заблокировано';
+
+  @override
+  String get app_unlock => 'Разблокировать';
+
+  @override
+  String get app_lock_no_device_lock =>
+      'Сначала включите блокировку экрана в настройках телефона';
+
+  @override
+  String get app_lock_too_many_attempts =>
+      'Слишком много попыток. Попробуйте позже';
+
+  @override
+  String get balance_hide => 'Скрыть суммы';
+
+  @override
+  String get balance_show => 'Показать суммы';
 }

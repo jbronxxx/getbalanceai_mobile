@@ -1751,6 +1751,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'hide transactions'**
   String get category_group_collapse_hint;
+
+  /// App lock switch in Profile settings (SEC-08)
+  ///
+  /// In en, this message translates to:
+  /// **'App lock'**
+  String get app_lock_title;
+
+  /// Hint under the app lock switch
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint or your phone\'s screen lock'**
+  String get app_lock_subtitle;
+
+  /// Title of the system fingerprint / PIN dialog, max 60 chars
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock GetBalance AI'**
+  String get app_lock_prompt_title;
+
+  /// Text in the system fingerprint / PIN dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it\'s you'**
+  String get app_lock_reason;
+
+  /// Title of the lock screen
+  ///
+  /// In en, this message translates to:
+  /// **'App is locked'**
+  String get app_locked;
+
+  /// Lock screen button
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get app_unlock;
+
+  /// Shown when the phone has no PIN, pattern or fingerprint
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a screen lock in your phone settings first'**
+  String get app_lock_no_device_lock;
+
+  /// Shown after the phone blocks fingerprint / PIN attempts
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Try again later'**
+  String get app_lock_too_many_attempts;
+
+  /// Eye button on the balance card
+  ///
+  /// In en, this message translates to:
+  /// **'Hide amounts'**
+  String get balance_hide;
+
+  /// Eye button on the balance card when amounts are hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Show amounts'**
+  String get balance_show;
 }
 
 class _AppLocalizationsDelegate
