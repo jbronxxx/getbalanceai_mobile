@@ -1086,4 +1086,41 @@ class AppLocalizationsUz extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reminder_channel_name => 'Doimiy to\'lovlar';
+
+  @override
+  String get reminder_channel_description =>
+      'Doimiy to\'lov yoki daromad kunida eslatma';
+
+  @override
+  String reminder_payment_title(String name) {
+    return 'Bugun to\'lov: $name';
+  }
+
+  @override
+  String reminder_income_title(String name) {
+    return 'Bugun kutilmoqda: $name';
+  }
+
+  @override
+  String reminder_payment_body(String amount) {
+    return '$amount — to\'lovni belgilash uchun bosing';
+  }
+
+  @override
+  String reminder_income_body(String amount) {
+    return '$amount — olinganini belgilash uchun bosing';
+  }
+
+  @override
+  String get debug_test_reminder => '10 soniyadan keyin eslatma';
+
+  @override
+  String get debug_reminder_scheduled =>
+      'Eslatma 10 soniyadan keyin keladi — ilovani yopish mumkin';
+
+  @override
+  String get debug_reminder_none => 'Kutilayotgan doimiy to\'lovlar yo\'q';
 }

@@ -1096,4 +1096,41 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reminder_channel_name => 'Recurring payments';
+
+  @override
+  String get reminder_channel_description =>
+      'Reminders on the day of a recurring payment or income';
+
+  @override
+  String reminder_payment_title(String name) {
+    return 'Payment due today: $name';
+  }
+
+  @override
+  String reminder_income_title(String name) {
+    return 'Expected today: $name';
+  }
+
+  @override
+  String reminder_payment_body(String amount) {
+    return '$amount — tap to mark as paid';
+  }
+
+  @override
+  String reminder_income_body(String amount) {
+    return '$amount — tap to mark as received';
+  }
+
+  @override
+  String get debug_test_reminder => 'Reminder in 10 seconds';
+
+  @override
+  String get debug_reminder_scheduled =>
+      'Reminder in 10 seconds — you can close the app';
+
+  @override
+  String get debug_reminder_none => 'No pending recurring payments';
 }

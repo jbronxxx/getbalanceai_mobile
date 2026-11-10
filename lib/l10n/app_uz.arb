@@ -392,5 +392,14 @@
   "recurring_repeat_label": "Takrorlash",
   "recurring_due_label": "To'lov sanasi",
   "recurring_progress": "{total} tadan {number}-to'lov",
-  "daily_allowance_reserved": "{count, plural, other{{count} ta to'lov hisobga olingan · {amount}}}"
+  "daily_allowance_reserved": "{count, plural, other{{count} ta to'lov hisobga olingan · {amount}}}",
+  "reminder_channel_name": "Doimiy to'lovlar",
+  "reminder_channel_description": "Doimiy to'lov yoki daromad kunida eslatma",
+  "reminder_payment_title": "Bugun to'lov: {name}",
+  "reminder_income_title": "Bugun kutilmoqda: {name}",
+  "reminder_payment_body": "{amount} — to'lovni belgilash uchun bosing",
+  "reminder_income_body": "{amount} — olinganini belgilash uchun bosing",
+  "debug_test_reminder": "10 soniyadan keyin eslatma",
+  "debug_reminder_scheduled": "Eslatma 10 soniyadan keyin keladi — ilovani yopish mumkin",
+  "debug_reminder_none": "Kutilayotgan doimiy to'lovlar yo'q"
 }

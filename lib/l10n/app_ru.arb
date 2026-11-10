@@ -392,5 +392,14 @@
   "recurring_repeat_label": "Повтор",
   "recurring_due_label": "Дата платежа",
   "recurring_progress": "Платёж {number} из {total}",
-  "daily_allowance_reserved": "{count, plural, one{С учётом {count} платежа · {amount}} few{С учётом {count} платежей · {amount}} many{С учётом {count} платежей · {amount}} other{С учётом {count} платежа · {amount}}}"
+  "daily_allowance_reserved": "{count, plural, one{С учётом {count} платежа · {amount}} few{С учётом {count} платежей · {amount}} many{С учётом {count} платежей · {amount}} other{С учётом {count} платежа · {amount}}}",
+  "reminder_channel_name": "Регулярные платежи",
+  "reminder_channel_description": "Напоминания в день регулярного платежа или дохода",
+  "reminder_payment_title": "Сегодня платёж: {name}",
+  "reminder_income_title": "Сегодня ожидается: {name}",
+  "reminder_payment_body": "{amount} — нажмите, чтобы отметить оплату",
+  "reminder_income_body": "{amount} — нажмите, чтобы отметить получение",
+  "debug_test_reminder": "Напоминание через 10 секунд",
+  "debug_reminder_scheduled": "Напоминание придёт через 10 секунд — можно свернуть приложение",
+  "debug_reminder_none": "Нет ожидающих регулярных платежей"
 }

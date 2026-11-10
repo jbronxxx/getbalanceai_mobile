@@ -2027,6 +2027,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{Incl. {count} upcoming payment · {amount}} other{Incl. {count} upcoming payments · {amount}}}'**
   String daily_allowance_reserved(int count, String amount);
+
+  /// No description provided for @reminder_channel_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring payments'**
+  String get reminder_channel_name;
+
+  /// No description provided for @reminder_channel_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders on the day of a recurring payment or income'**
+  String get reminder_channel_description;
+
+  /// Notification on the day of a recurring payment; name is the payment name or its category.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment due today: {name}'**
+  String reminder_payment_title(String name);
+
+  /// No description provided for @reminder_income_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected today: {name}'**
+  String reminder_income_title(String name);
+
+  /// No description provided for @reminder_payment_body.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} — tap to mark as paid'**
+  String reminder_payment_body(String amount);
+
+  /// No description provided for @reminder_income_body.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} — tap to mark as received'**
+  String reminder_income_body(String amount);
+
+  /// No description provided for @debug_test_reminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder in 10 seconds'**
+  String get debug_test_reminder;
+
+  /// No description provided for @debug_reminder_scheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder in 10 seconds — you can close the app'**
+  String get debug_reminder_scheduled;
+
+  /// No description provided for @debug_reminder_none.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending recurring payments'**
+  String get debug_reminder_none;
 }
 
 class _AppLocalizationsDelegate

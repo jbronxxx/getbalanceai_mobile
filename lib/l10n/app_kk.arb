@@ -392,5 +392,14 @@
   "recurring_repeat_label": "Қайталау",
   "recurring_due_label": "Төлем күні",
   "recurring_progress": "{total} төлемнің {number}-і",
-  "daily_allowance_reserved": "{count, plural, other{{count} төлемді ескергенде · {amount}}}"
+  "daily_allowance_reserved": "{count, plural, other{{count} төлемді ескергенде · {amount}}}",
+  "reminder_channel_name": "Тұрақты төлемдер",
+  "reminder_channel_description": "Тұрақты төлем немесе кіріс күні еске салу",
+  "reminder_payment_title": "Бүгін төлем: {name}",
+  "reminder_income_title": "Бүгін күтілуде: {name}",
+  "reminder_payment_body": "{amount} — төлемді белгілеу үшін басыңыз",
+  "reminder_income_body": "{amount} — түскенін белгілеу үшін басыңыз",
+  "debug_test_reminder": "10 секундтан кейін еске салу",
+  "debug_reminder_scheduled": "Еске салу 10 секундтан кейін келеді — қолданбаны жабуға болады",
+  "debug_reminder_none": "Күтілетін тұрақты төлемдер жоқ"
 }

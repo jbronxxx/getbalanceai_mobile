@@ -1086,4 +1086,41 @@ class AppLocalizationsKk extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reminder_channel_name => 'Тұрақты төлемдер';
+
+  @override
+  String get reminder_channel_description =>
+      'Тұрақты төлем немесе кіріс күні еске салу';
+
+  @override
+  String reminder_payment_title(String name) {
+    return 'Бүгін төлем: $name';
+  }
+
+  @override
+  String reminder_income_title(String name) {
+    return 'Бүгін күтілуде: $name';
+  }
+
+  @override
+  String reminder_payment_body(String amount) {
+    return '$amount — төлемді белгілеу үшін басыңыз';
+  }
+
+  @override
+  String reminder_income_body(String amount) {
+    return '$amount — түскенін белгілеу үшін басыңыз';
+  }
+
+  @override
+  String get debug_test_reminder => '10 секундтан кейін еске салу';
+
+  @override
+  String get debug_reminder_scheduled =>
+      'Еске салу 10 секундтан кейін келеді — қолданбаны жабуға болады';
+
+  @override
+  String get debug_reminder_none => 'Күтілетін тұрақты төлемдер жоқ';
 }

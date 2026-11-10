@@ -385,6 +385,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       if (_repeat) {
         recurring.startFrom(saved,
             start: DateUtils.dateOnly(_date), end: _repeatEnd);
+        // Разрешение на напоминания — когда они впервые понадобились
+        unawaited(RecurringReminderService.instance.requestPermission());
       } else {
         LocalDbService.instance.saveTransaction(saved);
       }

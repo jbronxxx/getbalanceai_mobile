@@ -1105,4 +1105,41 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reminder_channel_name => 'Регулярные платежи';
+
+  @override
+  String get reminder_channel_description =>
+      'Напоминания в день регулярного платежа или дохода';
+
+  @override
+  String reminder_payment_title(String name) {
+    return 'Сегодня платёж: $name';
+  }
+
+  @override
+  String reminder_income_title(String name) {
+    return 'Сегодня ожидается: $name';
+  }
+
+  @override
+  String reminder_payment_body(String amount) {
+    return '$amount — нажмите, чтобы отметить оплату';
+  }
+
+  @override
+  String reminder_income_body(String amount) {
+    return '$amount — нажмите, чтобы отметить получение';
+  }
+
+  @override
+  String get debug_test_reminder => 'Напоминание через 10 секунд';
+
+  @override
+  String get debug_reminder_scheduled =>
+      'Напоминание придёт через 10 секунд — можно свернуть приложение';
+
+  @override
+  String get debug_reminder_none => 'Нет ожидающих регулярных платежей';
 }

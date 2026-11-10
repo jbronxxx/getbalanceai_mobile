@@ -559,5 +559,43 @@
         "type": "String"
       }
     }
-  }
+  },
+  "reminder_channel_name": "Recurring payments",
+  "reminder_channel_description": "Reminders on the day of a recurring payment or income",
+  "reminder_payment_title": "Payment due today: {name}",
+  "@reminder_payment_title": {
+    "description": "Notification on the day of a recurring payment; name is the payment name or its category.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_income_title": "Expected today: {name}",
+  "@reminder_income_title": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_payment_body": "{amount} — tap to mark as paid",
+  "@reminder_payment_body": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_income_body": "{amount} — tap to mark as received",
+  "@reminder_income_body": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_test_reminder": "Reminder in 10 seconds",
+  "debug_reminder_scheduled": "Reminder in 10 seconds — you can close the app",
+  "debug_reminder_none": "No pending recurring payments"
 }
