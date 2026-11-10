@@ -37,14 +37,7 @@ class _MainShellState extends State<MainShell> {
 
   /// Форма новой операции открывается с любой вкладки; вкладки узнают
   /// о сохранении через `LocalDbService.transactionsChanged`.
-  void _openNewTransaction() {
-    showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.transparent,
-      builder: (_) => const AddTransactionSheet(),
-    );
-  }
+  void _openNewTransaction() => AddTransactionSheet.show(context);
 
   @override
   Widget build(BuildContext context) {

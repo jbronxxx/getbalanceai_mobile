@@ -180,6 +180,95 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(3, 7763942003062970371),
+    name: 'RecurringPayment',
+    lastPropertyId: const obx_int.IdUid(13, 2397507860431193943),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 5180859435250188094),
+        name: 'localId',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8817398361588270069),
+        name: 'uid',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(4, 1790438962874727629),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 4963963299462895836),
+        name: 'dbType',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 3453229520381796133),
+        name: 'dbCategory',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 3411401379790062701),
+        name: 'amount',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 6831351362658374150),
+        name: 'currencyCode',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 3218839547639508405),
+        name: 'description',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3420662877416477128),
+        name: 'dayOfMonth',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 597829826838645644),
+        name: 'startDate',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 833539233488453604),
+        name: 'endDate',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 8055162322987285634),
+        name: 'skippedPeriods',
+        type: 30,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 4153575816068874835),
+        name: 'isModified',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 2397507860431193943),
+        name: 'isOnServer',
+        type: 1,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -220,8 +309,8 @@ Future<obx.Store> openStore({
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(2, 4394803372386859630),
-    lastIndexId: const obx_int.IdUid(3, 6924193905683547091),
+    lastEntityId: const obx_int.IdUid(3, 7763942003062970371),
+    lastIndexId: const obx_int.IdUid(4, 1790438962874727629),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -450,6 +539,120 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    RecurringPayment: obx_int.EntityDefinition<RecurringPayment>(
+      model: _entities[2],
+      toOneRelations: (RecurringPayment object) => [],
+      toManyRelations: (RecurringPayment object) => {},
+      getId: (RecurringPayment object) => object.localId,
+      setId: (RecurringPayment object, int id) {
+        object.localId = id;
+      },
+      objectToFB: (RecurringPayment object, fb.Builder fbb) {
+        final uidOffset = fbb.writeString(object.uid);
+        final dbTypeOffset = fbb.writeString(object.dbType);
+        final dbCategoryOffset = fbb.writeString(object.dbCategory);
+        final currencyCodeOffset = fbb.writeString(object.currencyCode);
+        final descriptionOffset = fbb.writeString(object.description);
+        final startDateOffset = fbb.writeString(object.startDate);
+        final endDateOffset =
+            object.endDate == null ? null : fbb.writeString(object.endDate!);
+        final skippedPeriodsOffset = fbb.writeList(
+          object.skippedPeriods.map(fbb.writeString).toList(growable: false),
+        );
+        fbb.startTable(14);
+        fbb.addInt64(0, object.localId);
+        fbb.addOffset(1, uidOffset);
+        fbb.addOffset(2, dbTypeOffset);
+        fbb.addOffset(3, dbCategoryOffset);
+        fbb.addFloat64(4, object.amount);
+        fbb.addOffset(5, currencyCodeOffset);
+        fbb.addOffset(6, descriptionOffset);
+        fbb.addInt64(7, object.dayOfMonth);
+        fbb.addOffset(8, startDateOffset);
+        fbb.addOffset(9, endDateOffset);
+        fbb.addOffset(10, skippedPeriodsOffset);
+        fbb.addBool(11, object.isModified);
+        fbb.addBool(12, object.isOnServer);
+        fbb.finish(fbb.endTable());
+        return object.localId;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final localIdParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final dbTypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final dbCategoryParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final amountParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          12,
+          0,
+        );
+        final currencyCodeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final descriptionParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final dayOfMonthParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final startDateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 20, '');
+        final endDateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 22);
+        final skippedPeriodsParam = const fb.ListReader<String>(
+          fb.StringReader(asciiOptimization: true),
+          lazy: false,
+        ).vTableGet(buffer, rootOffset, 24, []);
+        final isModifiedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          false,
+        );
+        final isOnServerParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          28,
+          false,
+        );
+        final object = RecurringPayment(
+          localId: localIdParam,
+          uid: uidParam,
+          dbType: dbTypeParam,
+          dbCategory: dbCategoryParam,
+          amount: amountParam,
+          currencyCode: currencyCodeParam,
+          description: descriptionParam,
+          dayOfMonth: dayOfMonthParam,
+          startDate: startDateParam,
+          endDate: endDateParam,
+          skippedPeriods: skippedPeriodsParam,
+          isModified: isModifiedParam,
+          isOnServer: isOnServerParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -573,5 +776,73 @@ class Transaction_ {
   /// See [Transaction.syncRejectCode].
   static final syncRejectCode = obx.QueryStringProperty<Transaction>(
     _entities[1].properties[12],
+  );
+}
+
+/// [RecurringPayment] entity fields to define ObjectBox queries.
+class RecurringPayment_ {
+  /// See [RecurringPayment.localId].
+  static final localId = obx.QueryIntegerProperty<RecurringPayment>(
+    _entities[2].properties[0],
+  );
+
+  /// See [RecurringPayment.uid].
+  static final uid = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[1],
+  );
+
+  /// See [RecurringPayment.dbType].
+  static final dbType = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[2],
+  );
+
+  /// See [RecurringPayment.dbCategory].
+  static final dbCategory = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[3],
+  );
+
+  /// See [RecurringPayment.amount].
+  static final amount = obx.QueryDoubleProperty<RecurringPayment>(
+    _entities[2].properties[4],
+  );
+
+  /// See [RecurringPayment.currencyCode].
+  static final currencyCode = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[5],
+  );
+
+  /// See [RecurringPayment.description].
+  static final description = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[6],
+  );
+
+  /// See [RecurringPayment.dayOfMonth].
+  static final dayOfMonth = obx.QueryIntegerProperty<RecurringPayment>(
+    _entities[2].properties[7],
+  );
+
+  /// See [RecurringPayment.startDate].
+  static final startDate = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[8],
+  );
+
+  /// See [RecurringPayment.endDate].
+  static final endDate = obx.QueryStringProperty<RecurringPayment>(
+    _entities[2].properties[9],
+  );
+
+  /// See [RecurringPayment.skippedPeriods].
+  static final skippedPeriods = obx.QueryStringVectorProperty<RecurringPayment>(
+    _entities[2].properties[10],
+  );
+
+  /// See [RecurringPayment.isModified].
+  static final isModified = obx.QueryBooleanProperty<RecurringPayment>(
+    _entities[2].properties[11],
+  );
+
+  /// See [RecurringPayment.isOnServer].
+  static final isOnServer = obx.QueryBooleanProperty<RecurringPayment>(
+    _entities[2].properties[12],
   );
 }

@@ -89,12 +89,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   Future<void> _openRejected() async {
     final transaction = await SyncRejectedSheet.show(context);
     if (!mounted || transaction == null) return;
-    await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.transparent,
-      builder: (_) => AddTransactionSheet(transactionToEdit: transaction),
-    );
+    await AddTransactionSheet.show(context, transactionToEdit: transaction);
   }
 
   void _showLoadingDialog(String message) {
@@ -188,7 +183,6 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       confirmText: context.l10n.logout,
       cancelText: context.l10n.cancel,
       isDestructive: unsynced > 0,
-      icon: Icons.logout_rounded,
     );
 
     if (confirm != true || !mounted) return;
@@ -211,7 +205,6 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       confirmText: context.l10n.delete_account_confirm_btn,
       cancelText: context.l10n.cancel,
       isDestructive: true,
-      icon: Icons.delete_forever_rounded,
     );
 
     if (confirm == true && mounted) {
@@ -329,7 +322,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       width: double.infinity,
                       height: 56,
                       child: isAuthenticated
-                          ? TextButton.icon(
+                          ? TextButton(
                               style: TextButton.styleFrom(
                                 foregroundColor: colorScheme.error,
                                 shape: RoundedRectangleBorder(
@@ -337,8 +330,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                                 ),
                               ),
                               onPressed: _handleLogout,
-                              icon: const Icon(Icons.logout),
-                              label: Text(
+                              child: Text(
                                 context.l10n.logout,
                                 style: textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
@@ -346,7 +338,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                                 ),
                               ),
                             )
-                          : FilledButton.icon(
+                          : FilledButton(
                               style: FilledButton.styleFrom(
                                 backgroundColor: colorScheme.primary,
                                 shape: RoundedRectangleBorder(
@@ -355,8 +347,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                               ),
                               onPressed: () =>
                                   Navigator.of(context).pushNamed('/login'),
-                              icon: const Icon(Icons.login),
-                              label: Text(
+                              child: Text(
                                 context.l10n.login_or_register,
                                 style: textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,

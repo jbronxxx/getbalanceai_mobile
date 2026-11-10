@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
-import '../whole_words_text.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
-import '../category_style.dart';
+import '../category_icon_badge.dart';
 import '../app_sheet.dart';
 import '../sheet_buttons.dart';
+import '../detail_row.dart';
+import '../whole_words_text.dart';
 import '../../theme/app_colors.dart';
 
 /// Действие, выбранное в карточке операции.
-enum TransactionDetailsAction { edit, delete }
+enum TransactionDetailsAction {
+  edit,
+  delete,
+
+  /// Открыть регулярный платёж, оплатой которого стала запись.
+  recurring,
+}
 
 /// Карточка операции «только для чтения»: полное описание, категория, дата
 /// и время, для иностранной валюты — сумма чека и пересчёт. Редактирование
@@ -16,7 +23,15 @@ enum TransactionDetailsAction { edit, delete }
 class TransactionDetailsSheet extends StatelessWidget {
   final Transaction transaction;
 
-  const TransactionDetailsSheet({super.key, required this.transaction});
+  /// Регулярный платёж, оплатой которого стала запись: строка «Повтор»
+  /// открывает его карточку.
+  final RecurringOccurrence? recurring;
+
+  const TransactionDetailsSheet({
+    super.key,
+    required this.transaction,
+    this.recurring,
+  });
 
   /// Поля кнопок уже стандартных (16 + 24 у кнопки с иконкой): в половине
   /// ширины телефона 360 dp иначе «Редактировать» не помещается в полный
@@ -24,14 +39,18 @@ class TransactionDetailsSheet extends StatelessWidget {
   /// Открывает карточку; возвращает выбранное действие или `null`.
   static Future<TransactionDetailsAction?> show(
     BuildContext context,
-    Transaction transaction,
-  ) {
+    Transaction transaction, {
+    RecurringOccurrence? recurring,
+  }) {
     return showModalBottomSheet<TransactionDetailsAction>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: AppColors.transparent,
-      builder: (_) => TransactionDetailsSheet(transaction: transaction),
+      builder: (_) => TransactionDetailsSheet(
+        transaction: transaction,
+        recurring: recurring,
+      ),
     );
   }
 
@@ -43,7 +62,6 @@ class TransactionDetailsSheet extends StatelessWidget {
     final t = transaction;
     final isExpense = t.type == TransactionType.expense;
     final isForeign = t.currency != CurrencyFormatter.currentCurrency;
-    final categoryColor = CategoryStyle.color(t.category);
     final description = t.description.trim();
 
     return Container(
@@ -91,35 +109,49 @@ class TransactionDetailsSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              _DetailRow(
+              DetailRow(
                 label: context.l10n.category_label,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      CategoryStyle.icon(t.category),
-                      size: 18,
-                      color: categoryColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: WholeWordsText(
-                        t.category.getLocalizedName(context),
-                        style: textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                ),
+                child: CategoryInlineLabel(category: t.category),
               ),
-              _DetailRow(
+              DetailRow(
                 label: context.l10n.date_label,
                 child: Text(
                   LanguageManager.formatDateTime(t.date),
                   style: textTheme.bodyMedium,
                 ),
               ),
+              if (recurring case final recurring?)
+                DetailRow(
+                  label: context.l10n.recurring_repeat_label,
+                  child: InkWell(
+                    key: const ValueKey('transaction_details_recurring'),
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => Navigator.pop(
+                        context, TransactionDetailsAction.recurring),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.repeat_rounded,
+                            size: 18, color: AppColors.of(context).accentText),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: WholeWordsText(
+                            context.l10n.recurring_every_day(
+                                recurring.payment.dayOfMonth),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: AppColors.of(context).accentText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded,
+                            size: 18, color: AppColors.of(context).accentText),
+                      ],
+                    ),
+                  ),
+                ),
               if (isForeign) ...[
-                _DetailRow(
+                DetailRow(
                   label: context.l10n.details_original_amount,
                   child: CurrencyFormatter.formatText(
                     t.amount,
@@ -129,7 +161,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                     useFittedBox: true,
                   ),
                 ),
-                _DetailRow(
+                DetailRow(
                   label: context.l10n.details_in_base_currency,
                   child: CurrencyFormatter.formatText(
                     t.effectiveBaseAmount,
@@ -147,7 +179,6 @@ class TransactionDetailsSheet extends StatelessWidget {
                     child: SheetOutlinedButton(
                       key: const ValueKey('transaction_details_delete'),
                       label: context.l10n.delete_btn,
-                      icon: const Icon(Icons.delete_outline_rounded),
                       color: colorScheme.error,
                       onPressed: () => Navigator.pop(
                           context, TransactionDetailsAction.delete),
@@ -166,44 +197,6 @@ class TransactionDetailsSheet extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final Widget child;
-
-  const _DetailRow({required this.label, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      // Значение занимает сколько нужно, но не больше 60% строки, подпись —
-      // остальное: при крупном шрифте ни длинная категория, ни подпись
-      // («В основной валюте») не рвутся посреди слова.
-      child: LayoutBuilder(
-        builder: (context, constraints) => Row(
-          children: [
-            Expanded(
-              child: WholeWordsText(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.6),
-              child: child,
-            ),
-          ],
         ),
       ),
     );

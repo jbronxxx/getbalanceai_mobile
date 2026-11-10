@@ -140,7 +140,7 @@ class AppAlerts {
     });
   }
 
-  /// Стеклянная карточка тоста: иконка типа, текст и крестик или действие.
+  /// Стеклянная карточка тоста: текст и крестик или действие (без иконки).
   static Widget _toastContent(
     BuildContext context, {
     required String message,
@@ -155,11 +155,12 @@ class AppAlerts {
     final isDark = theme.brightness == Brightness.dark;
     final glassTheme = GlassTheme.of(context);
 
-    final (Color iconColor, IconData icon) = switch (type) {
-      AlertType.success => (AppTheme.successGreen, Icons.check_circle_rounded),
-      AlertType.error => (colorScheme.error, Icons.error_rounded),
-      AlertType.warning => (AppTheme.warningOrange, Icons.warning_rounded),
-      AlertType.info => (colorScheme.primary, Icons.info_rounded),
+    // Цвет типа — только подсветка тоста в тёмной теме, без иконки
+    final accent = switch (type) {
+      AlertType.success => AppTheme.successGreen,
+      AlertType.error => colorScheme.error,
+      AlertType.warning => AppTheme.warningOrange,
+      AlertType.info => colorScheme.primary,
     };
 
     return GlassContainer(
@@ -179,7 +180,7 @@ class AppAlerts {
         ),
         if (isDark)
           BoxShadow(
-            color: iconColor.withValues(alpha: 0.30),
+            color: accent.withValues(alpha: 0.30),
             blurRadius: 20,
             spreadRadius: 1,
             offset: const Offset(0, 2),
@@ -189,27 +190,6 @@ class AppAlerts {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  iconColor.withValues(alpha: isDark ? 0.35 : 0.22),
-                  iconColor.withValues(alpha: isDark ? 0.12 : 0.08),
-                ],
-              ),
-              border: Border.all(
-                color: iconColor.withValues(alpha: 0.45),
-                width: 1.2,
-              ),
-            ),
-            child: Center(
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -315,15 +295,12 @@ class AppAlerts {
     String? confirmText,
     String? cancelText,
     bool isDestructive = false,
-    IconData? icon,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
     final effectiveConfirmText = confirmText ?? l10n.dialog_ok;
     final effectiveCancelText = cancelText ?? l10n.cancel;
-    final effectiveIcon = icon ??
-        (isDestructive ? Icons.warning_rounded : Icons.help_outline_rounded);
     final accentColor = isDestructive ? colorScheme.error : colorScheme.primary;
 
     return showDialog<bool>(
@@ -335,11 +312,6 @@ class AppAlerts {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _LiquidAlertIconBadge(
-                icon: effectiveIcon,
-                color: accentColor,
-              ),
-              const SizedBox(height: 20),
               WholeWordsText(
                 title,
                 style: TextStyle(
@@ -571,11 +543,6 @@ class AppAlerts {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _LiquidAlertIconBadge(
-                icon: Icons.warning_rounded,
-                color: errorColor,
-              ),
-              const SizedBox(height: 20),
               WholeWordsText(
                 title,
                 style: TextStyle(
@@ -641,11 +608,6 @@ class AppAlerts {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const _LiquidAlertIconBadge(
-                icon: Icons.engineering_rounded,
-                color: AppTheme.warningAmber,
-              ),
-              const SizedBox(height: 20),
               WholeWordsText(
                 title ?? context.l10n.service_unavailable_title,
                 style: TextStyle(
@@ -812,11 +774,6 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const _LiquidAlertIconBadge(
-          icon: Icons.hourglass_bottom_rounded,
-          color: AppTheme.warningAmber,
-        ),
-        const SizedBox(height: 20),
         WholeWordsText(
           widget.title,
           style: TextStyle(
@@ -851,14 +808,6 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  _secondsLeft > 0
-                      ? Icons.timer_outlined
-                      : Icons.check_circle_outline,
-                  size: 18,
-                  color: AppTheme.warningAmber,
-                ),
-                const SizedBox(width: 8),
                 // Длинный текст («Вы можете повторить попытку прямо сейчас»)
                 // переносится, а не вылезает за плашку
                 Flexible(
@@ -985,53 +934,6 @@ class _LiquidGlassDialog extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _LiquidAlertIconBadge extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-
-  const _LiquidAlertIconBadge({
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            color.withValues(alpha: isDark ? 0.32 : 0.18),
-            color.withValues(alpha: isDark ? 0.10 : 0.04),
-          ],
-        ),
-        border: Border.all(
-          color: color.withValues(alpha: isDark ? 0.45 : 0.30),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: isDark ? 0.30 : 0.12),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Center(
-        child: Icon(
-          icon,
-          color: color,
-          size: 32,
         ),
       ),
     );

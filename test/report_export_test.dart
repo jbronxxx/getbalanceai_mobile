@@ -590,7 +590,7 @@ void main() {
       );
 
       expect(find.byTooltip('Выгрузка отчёта'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.file_download_outlined));
+      await tester.tap(find.text('Отчёт'));
       await tester.pumpAndSettle();
 
       expect(find.text('Март 2030'), findsOneWidget);

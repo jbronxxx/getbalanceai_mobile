@@ -491,5 +491,111 @@
   "edit_name_title": "Your name",
   "edit_name_label": "Name",
   "edit_name_tooltip": "Edit name",
-  "edit_name_error": "Couldn't save the name"
+  "edit_name_error": "Couldn't save the name",
+  "recurring_every_month": "Every month",
+  "recurring_every_day": "Every month on day {day}",
+  "@recurring_every_day": {
+    "description": "Repeat chip in the record form when monthly repeat is on: the payment day of month (1-31).",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "recurring_end_none": "No end date",
+  "recurring_end_until": "Until {date}",
+  "@recurring_end_until": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "recurring_end_count": "{count, plural, one{{count} payment} other{{count} payments}}",
+  "@recurring_end_count": {
+    "description": "How many monthly payments in total (a loan for 12 months).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recurring_end_title": "How long to repeat",
+  "recurring_end_pick_date": "Pick an end date",
+  "recurring_add_btn": "Add recurring",
+  "recurring_expected": "Expected",
+  "recurring_not_paid": "Not paid yet",
+  "recurring_payment_title": "Recurring payment",
+  "recurring_income_title": "Recurring income",
+  "recurring_pay_title": "Mark as paid",
+  "recurring_receive_title": "Mark as received",
+  "recurring_paid_btn": "Paid",
+  "recurring_received_btn": "Received",
+  "recurring_skip_btn": "Skip this month",
+  "recurring_stop_btn": "Stop",
+  "recurring_skipped_toast": "Skipped this month",
+  "recurring_stopped_toast": "Recurring payment stopped",
+  "recurring_repeat_label": "Repeats",
+  "recurring_due_label": "Due date",
+  "recurring_progress": "Payment {number} of {total}",
+  "@recurring_progress": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "daily_allowance_reserved": "{count, plural, one{Incl. {count} upcoming payment · {amount}} other{Incl. {count} upcoming payments · {amount}}}",
+  "@daily_allowance_reserved": {
+    "description": "Under the daily allowance on the Budget card: upcoming recurring payments in limited categories already set aside.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_channel_name": "Recurring payments",
+  "reminder_channel_description": "Reminders on the day of a recurring payment or income",
+  "reminder_payment_title": "Payment due today: {name}",
+  "@reminder_payment_title": {
+    "description": "Notification on the day of a recurring payment; name is the payment name or its category.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_income_title": "Expected today: {name}",
+  "@reminder_income_title": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_payment_body": "{amount} — tap to mark as paid",
+  "@reminder_payment_body": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reminder_income_body": "{amount} — tap to mark as received",
+  "@reminder_income_body": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "debug_test_reminder": "Reminder in 10 seconds",
+  "debug_reminder_scheduled": "Reminder in 10 seconds — you can close the app",
+  "debug_reminder_none": "No pending recurring payments"
 }

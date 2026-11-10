@@ -7,7 +7,7 @@ import '../utils/utils.dart';
 import '../widgets/dashboard/dashboard.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
-import 'add_transaction_sheet.dart';
+import 'record_actions.dart';
 import 'auth_screen.dart';
 import 'transaction_search_screen.dart';
 import '../theme/theme.dart';
@@ -37,6 +37,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   /// сбрасывались при каждой правке.
   List<Transaction> _transactions = const [];
   Map<DateTime, List<Transaction>> _groupedTransactions = {};
+
+  /// Ожидающие оплаты регулярные платежи месяца по дням и `serverId`
+  /// записей «Оплачено» (значок ⟳ в строке).
+  Map<DateTime, List<RecurringOccurrence>> _occurrencesByDay = {};
+  Set<String> _recurringRecordIds = const {};
   List<DateTime> _days = const [];
   DashboardViewMode _viewMode = DashboardViewMode.days;
   List<CategoryMonthSummary> _categorySummaries = [];
@@ -46,6 +51,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Удалённые свайпом или из карточки операции ждут здесь отмены.
   final _deletions = UndoableDeletions.transactions;
+
+  /// Остановленные регулярные платежи ждут здесь отмены.
+  final _recurringDeletions = UndoableDeletions.recurringPayments;
 
   bool _shouldShowSwipeHint = false;
   Timer? _swipeHintDismissTimer;
@@ -58,7 +66,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
     SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
+    LocalDbService.recurringPaymentsChanged.addListener(_onDataChanged);
     _deletions.addListener(_onDataChanged);
+    _recurringDeletions.addListener(_onDataChanged);
   }
 
   /// Перечитывает данные при смене валюты, периода или операций
@@ -74,6 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onDataChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    LocalDbService.recurringPaymentsChanged.removeListener(_onDataChanged);
+    _recurringDeletions.removeListener(_onDataChanged);
     // Очередь общая: при уходе с экрана скрытые операции удаляются сразу
     _deletions
       ..removeListener(_onDataChanged)
@@ -108,6 +120,16 @@ class _DashboardScreenState extends State<DashboardScreen>
     final grouped = byCategories
         ? <DateTime, List<Transaction>>{}
         : DayGroupWidget.groupByDay(all);
+    final recurring = RecurringPaymentService.instance;
+    final period = SelectedPeriodService.instance.period;
+    final occurrencesByDay = <DateTime, List<RecurringOccurrence>>{};
+    if (!byCategories) {
+      for (final o in recurring.occurrencesIn(period)) {
+        if (!o.isPending || _recurringDeletions.isPending(o.payment)) continue;
+        occurrencesByDay.putIfAbsent(o.dueDate, () => []).add(o);
+      }
+    }
+    final recordIds = recurring.paidAround(period).keys.toSet();
     setState(() {
       _totalIncome = totals['income'] ?? 0;
       _totalExpense = totals['expense'] ?? 0;
@@ -116,7 +138,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       _categorySummaries =
           byCategories ? CategoryMonthSummary.fromTransactions(all) : const [];
       _groupedTransactions = grouped;
-      _days = grouped.keys.toList(growable: false);
+      _occurrencesByDay = occurrencesByDay;
+      _recurringRecordIds = recordIds;
+      _days = DayGroupWidget.mergeDays(grouped.keys, occurrencesByDay.keys);
     });
   }
 
@@ -159,23 +183,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Тап по операции открывает карточку «только для чтения»; правка и
   /// удаление — её кнопками.
-  Future<void> _openTransactionDetails(Transaction transaction) async {
-    final action = await TransactionDetailsSheet.show(context, transaction);
-    if (!mounted || action == null) return;
-    switch (action) {
-      case TransactionDetailsAction.edit:
-        showModalBottomSheet<bool>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: AppColors.transparent,
-          builder: (context) => AddTransactionSheet(
-            transactionToEdit: transaction,
-          ),
-        );
-      case TransactionDetailsAction.delete:
-        _deleteTransaction(transaction);
-    }
-  }
+  Future<void> _openTransactionDetails(Transaction transaction) =>
+      RecordActions.openTransaction(context, transaction,
+          onDelete: _deleteTransaction);
 
   /// Скрывает операцию и предлагает отменить удаление, пока виден тост.
   void _deleteTransaction(Transaction transaction) {
@@ -275,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           onChanged: _onViewModeChanged,
                         ),
                         const SizedBox(height: 8),
-                        if (_transactions.isEmpty)
+                        if (_transactions.isEmpty && _days.isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 40.0),
                             child: Center(
@@ -310,8 +320,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                   ),
-                if (_transactions.isNotEmpty &&
-                    _viewMode == DashboardViewMode.days)
+                if (_days.isNotEmpty && _viewMode == DashboardViewMode.days)
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     sliver: SliverList(
@@ -322,7 +331,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                           return DayGroupWidget(
                             key: ValueKey('day_${date.millisecondsSinceEpoch}'),
                             date: date,
-                            transactions: _groupedTransactions[date]!,
+                            transactions:
+                                _groupedTransactions[date] ?? const [],
+                            occurrences: _occurrencesByDay[date] ?? const [],
+                            onOccurrenceTap: (o) =>
+                                RecordActions.openRecurring(context, o),
+                            recurringRecordIds: _recurringRecordIds,
                             showHintOnFirstTransaction:
                                 index == 0 && _shouldShowSwipeHint,
                             onTransactionTap: _openTransactionDetails,

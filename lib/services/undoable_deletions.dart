@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show ChangeNotifier;
 import '../models/models.dart';
 import '../utils/app_logger.dart';
 import 'api_service.dart';
+import 'recurring_payment_service.dart';
 
 /// Отложенное удаление записей (операций, лимитов) с возможностью отмены.
 ///
@@ -15,8 +16,8 @@ import 'api_service.dart';
 ///
 /// Слушатели уведомляются, когда запись скрыта, возвращена или удалена.
 ///
-/// Очереди операций и лимитов общие на всё приложение ([transactions],
-/// [budgets]): скрытую операцию не должны учитывать и другие экраны —
+/// Очереди операций, лимитов и регулярных платежей общие на всё приложение
+/// ([transactions], [budgets], [recurringPayments]): скрытую операцию не должны учитывать и другие экраны —
 /// «Бюджет», структура расходов, экспорт отчёта.
 class UndoableDeletions<T> extends ChangeNotifier {
   UndoableDeletions({
@@ -38,6 +39,28 @@ class UndoableDeletions<T> extends ChangeNotifier {
     idOf: (b) => b.localId,
     commit: (b) => ApiService.instance.deleteBudgetEverywhere(b),
   );
+
+  /// Регулярные платежи («Остановить»): удаление локально и на сервере;
+  /// записи прошлых месяцев остаются.
+  static final UndoableDeletions<RecurringPayment> recurringPayments =
+      UndoableDeletions<RecurringPayment>(
+    idOf: (p) => p.localId,
+    commit: (p) => RecurringPaymentService.instance.deleteEverywhere(p),
+  );
+
+  /// Есть ли записи, ожидающие удаления, в любой из очередей.
+  static bool get anyPending =>
+      transactions.hasPending ||
+      budgets.hasPending ||
+      recurringPayments.hasPending;
+
+  /// Выполняет отложенные удаления во всех очередях сразу (уход в фон,
+  /// выход из аккаунта).
+  static Future<void> flushAll() => Future.wait([
+        transactions.flush(),
+        budgets.flush(),
+        recurringPayments.flush(),
+      ]);
 
   final Duration delay;
   final int Function(T item) _idOf;

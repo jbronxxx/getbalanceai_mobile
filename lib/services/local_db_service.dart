@@ -43,6 +43,10 @@ class LocalDbService {
   /// с сервера при синхронизации сообщает [transactionsChanged]).
   static final ValueNotifier<int> budgetsChanged = ValueNotifier(0);
 
+  /// Растёт при любом изменении регулярных платежей: правка пользователем,
+  /// пропуск месяца, загрузка с сервера.
+  static final ValueNotifier<int> recurringPaymentsChanged = ValueNotifier(0);
+
   /// Растёт, когда синхронизация меняет отметки выгрузки записей
   /// ([putTransactions], [putBudgets]). Списки на него не подписаны — только
   /// счётчик неотправленных изменений в Профиле.
@@ -51,10 +55,12 @@ class LocalDbService {
   late final Store _store;
   late final Box<Transaction> _transactionBox;
   late final Box<Budget> _budgetBox;
+  late final Box<RecurringPayment> _recurringBox;
 
   LocalDbService._create(this._store) {
     _transactionBox = Box<Transaction>(_store);
     _budgetBox = Box<Budget>(_store);
+    _recurringBox = Box<RecurringPayment>(_store);
   }
 
   /// Проверяет наличие транзакций в локальной базе.
@@ -65,6 +71,9 @@ class LocalDbService {
 
   /// Проверяет наличие бюджетов в локальной базе.
   bool get hasBudgets => !_budgetBox.isEmpty();
+
+  /// Есть ли регулярные платежи в локальной базе.
+  bool get hasRecurringPayments => !_recurringBox.isEmpty();
 
   /// Количество бюджетов в локальной базе.
   int get budgetsCount => _budgetBox.count();
@@ -727,8 +736,9 @@ class LocalDbService {
   /// Возвращает лимиты бюджета, ещё не отправленные на сервер (`serverId == null`
   /// или `isModified == true`).
   /// Используется при синхронизации гостевых/локальных данных после входа/редактирования.
-  /// Число операций и лимитов, ещё не отправленных на сервер (см.
-  /// [getUnsyncedTransactions], [getUnsyncedBudgets]) — без загрузки строк.
+  /// Число операций, лимитов и регулярных платежей, ещё не отправленных на
+  /// сервер (см. [getUnsyncedTransactions], [getUnsyncedBudgets],
+  /// [getUnsyncedRecurringPayments]) — без загрузки строк.
   int get unsyncedCount {
     final transactions = _transactionBox
         .query(Transaction_.serverId
@@ -738,9 +748,12 @@ class LocalDbService {
     final budgets = _budgetBox
         .query(Budget_.serverId.isNull().or(Budget_.isModified.equals(true)))
         .build();
-    final count = transactions.count() + budgets.count();
+    final recurring =
+        _recurringBox.query(RecurringPayment_.isModified.equals(true)).build();
+    final count = transactions.count() + budgets.count() + recurring.count();
     transactions.close();
     budgets.close();
+    recurring.close();
     return count;
   }
 
@@ -843,14 +856,138 @@ class LocalDbService {
     }
   }
 
-  /// Удаляет все операции и лимиты (выход и удаление аккаунта). Вкладки и
-  /// счётчик неотправленных изменений узнают об этом сразу, иначе на экране
-  /// остались бы данные прошлого пользователя.
+  // --- Регулярные платежи ---
+
+  /// Все регулярные платежи по дню месяца.
+  List<RecurringPayment> getRecurringPayments() {
+    final query = _recurringBox
+        .query()
+        .order(RecurringPayment_.dayOfMonth)
+        .order(RecurringPayment_.localId)
+        .build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  /// Регулярный платёж по локальному ID или `null`, если строки нет.
+  RecurringPayment? getRecurringPayment(int localId) =>
+      localId > 0 ? _recurringBox.get(localId) : null;
+
+  /// Свежие строки по локальным ID в том же порядке (см.
+  /// [getTransactionsByLocalIds]).
+  List<RecurringPayment?> getRecurringPaymentsByLocalIds(List<int> localIds) =>
+      _recurringBox.getMany(localIds);
+
+  /// Сохраняет платёж пользователя (создание, правка, пропуск месяца).
+  void saveRecurringPayment(RecurringPayment payment) {
+    _linkRecurringPayment(payment);
+    _recurringBox.put(payment);
+    recurringPaymentsChanged.value++;
+  }
+
+  /// Удаляет платёж по локальному ID; записи прошлых месяцев остаются.
+  bool deleteRecurringPayment(int localId) {
+    final removed = _recurringBox.remove(localId);
+    if (removed) recurringPaymentsChanged.value++;
+    return removed;
+  }
+
+  /// Платежи, изменения которых ещё не подтвердил сервер.
+  List<RecurringPayment> getUnsyncedRecurringPayments() {
+    final query =
+        _recurringBox.query(RecurringPayment_.isModified.equals(true)).build();
+    final results = query.find();
+    query.close();
+    return results;
+  }
+
+  /// Сохраняет отметки синхронизации по ответу `/sync/` (см. [putTransactions]).
+  void putRecurringPayments(List<RecurringPayment> payments) {
+    if (payments.isEmpty) return;
+    _recurringBox.putMany(payments);
+    syncStateChanged.value++;
+  }
+
+  /// Приводит платежи в соответствие со списком сервера (он всегда полный).
+  ///
+  /// Платёж с неотправленной правкой не перезаписывается. Платёж, который
+  /// сервер уже подтверждал, но которого нет в списке, удалён на другом
+  /// устройстве. Новые, ещё не отправленные платежи остаются. Возвращает
+  /// число удалённых.
+  int reconcileRecurringPayments(List<RecurringPayment> remote) {
+    final removed = _store.runInTransaction(TxMode.write, () {
+      final toPut = <RecurringPayment>[];
+      for (final payment in remote) {
+        final existing = _findRecurringPayment(payment.uid);
+        if (existing != null) {
+          if (existing.isModified) continue;
+          payment.localId = existing.localId;
+        }
+        toPut.add(payment);
+      }
+      _recurringBox.putMany(toPut);
+
+      final remoteIds = remote.map((p) => p.uid).toSet();
+      final query = _recurringBox
+          .query(RecurringPayment_.isOnServer
+              .equals(true)
+              .and(RecurringPayment_.isModified.equals(false)))
+          .build();
+      final stale = query
+          .find()
+          .where((p) => !remoteIds.contains(p.uid))
+          .map((p) => p.localId)
+          .toList();
+      query.close();
+      _recurringBox.removeMany(stale);
+      return stale.length;
+    });
+    recurringPaymentsChanged.value++;
+    return removed;
+  }
+
+  RecurringPayment? _findRecurringPayment(String uid) {
+    final query =
+        _recurringBox.query(RecurringPayment_.uid.equals(uid)).build();
+    final found = query.findFirst();
+    query.close();
+    return found;
+  }
+
+  /// Правка с экрана может прийти со старым объектом: строка по `uid` уже
+  /// есть — обновляется она, а не создаётся вторая (уникальный `uid`).
+  void _linkRecurringPayment(RecurringPayment payment) {
+    if (payment.localId > 0) return;
+    final existing = _findRecurringPayment(payment.uid);
+    if (existing != null) payment.localId = existing.localId;
+  }
+
+  /// Записи по `serverId` — например, «Оплачено» регулярных платежей за
+  /// месяц (их ID детерминированы). Отсутствующих в результате нет.
+  Map<String, Transaction> getTransactionsByServerIds(Iterable<String> ids) {
+    final wanted = ids.toList();
+    if (wanted.isEmpty) return const {};
+    final query =
+        _transactionBox.query(Transaction_.serverId.oneOf(wanted)).build();
+    final results = query.find();
+    query.close();
+    return {
+      for (final t in results)
+        if (t.serverId != null) t.serverId!: t,
+    };
+  }
+
+  /// Удаляет все операции, лимиты и регулярные платежи (выход и удаление
+  /// аккаунта). Вкладки и счётчик неотправленных изменений узнают об этом
+  /// сразу, иначе на экране остались бы данные прошлого пользователя.
   Future<void> clearAllData() async {
     _transactionBox.removeAll();
     _budgetBox.removeAll();
+    _recurringBox.removeAll();
     transactionsChanged.value++;
     budgetsChanged.value++;
+    recurringPaymentsChanged.value++;
     syncStateChanged.value++;
   }
 }

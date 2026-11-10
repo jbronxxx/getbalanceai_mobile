@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show mapEquals, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show listEquals, mapEquals, visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
@@ -68,11 +69,12 @@ class _TransactionChanges {
   });
 }
 
-class _RemoteBudgetsFetchResult {
-  final List<Budget>? budgets;
+/// Ответ GET списка с ETag: [items] `null` — список не изменился (304).
+class _RemoteListResult {
+  final List<Map<String, dynamic>>? items;
   final String? newEtag;
 
-  const _RemoteBudgetsFetchResult({this.budgets, this.newEtag});
+  const _RemoteListResult({this.items, this.newEtag});
 }
 
 /// Сервис синхронизации локальных данных с сервером.
@@ -100,6 +102,7 @@ class SyncService {
   static const _changesPageSize = 500;
 
   String? _budgetsEtag;
+  String? _recurringEtag;
 
   /// `server_time` прошлой полной загрузки изменений: с него сервер отдаёт
   /// только изменённые и удалённые операции. `null` — загрузить всё.
@@ -121,6 +124,7 @@ class SyncService {
         _storage = storage;
 
   String get _budgetsEtagKey => _etagKey('budgets');
+  String get _recurringEtagKey => _etagKey('recurring_payments');
   String get _changesSinceKey => _etagKey('transactions_since');
 
   String _etagKey(String entity, [String? userId]) {
@@ -144,6 +148,7 @@ class SyncService {
     stored ??= await _storage.readAll();
     _changesSince = DateTime.tryParse(stored[_changesSinceKey] ?? '');
     _budgetsEtag = stored[_budgetsEtagKey];
+    _recurringEtag = stored[_recurringEtagKey];
     _localDataOwner = stored[_localDataOwnerKey];
   }
 
@@ -154,9 +159,11 @@ class SyncService {
   Future<void> clearEtags({String? userId}) async {
     _changesSince = null;
     _budgetsEtag = null;
+    _recurringEtag = null;
     try {
       await _storage.delete(key: _etagKey('transactions_since', userId));
       await _storage.delete(key: _etagKey('budgets', userId));
+      await _storage.delete(key: _etagKey('recurring_payments', userId));
       // Прежние ключи: ETag списка операций до перехода на /sync/changes
       await _storage.delete(key: _etagKey('transactions', userId));
       await _storage.delete(key: 'transactions_etag');
@@ -267,26 +274,35 @@ class SyncService {
           LocalDbService.instance.getUnsyncedTransactions();
       _assignClientTransactionIds(localTransactions);
       final localBudgets = LocalDbService.instance.getUnsyncedBudgets();
+      final localRecurring =
+          LocalDbService.instance.getUnsyncedRecurringPayments();
       final pendingBudgets = PendingDeletionsStore.instance.budgetIds.toList();
       final pendingTransactions =
           PendingDeletionsStore.instance.transactionIds.toList();
+      final pendingRecurring =
+          PendingDeletionsStore.instance.recurringPaymentIds.toList();
 
       if (localTransactions.isEmpty &&
           localBudgets.isEmpty &&
+          localRecurring.isEmpty &&
           pendingBudgets.isEmpty &&
-          pendingTransactions.isEmpty) {
+          pendingTransactions.isEmpty &&
+          pendingRecurring.isEmpty) {
         return {'message': 'Нет данных для синхронизации'};
       }
 
       final batches = [
         localTransactions.length,
         localBudgets.length,
+        localRecurring.length,
         pendingBudgets.length,
         pendingTransactions.length,
+        pendingRecurring.length,
       ].map((n) => (n / syncBatchSize).ceil()).reduce(math.max);
 
       var syncedTransactions = 0;
       var syncedBudgets = 0;
+      var syncedRecurring = 0;
       final rejected = <Map<String, dynamic>>[];
 
       // Каждый батч фиксируется в базе сразу после ответа: если упадёт
@@ -298,8 +314,12 @@ class SyncService {
         final sentBudgets = {
           for (final b in _batch(localBudgets, i)) b.localId: b.toJson(),
         };
+        final sentRecurring = {
+          for (final p in _batch(localRecurring, i)) p.localId: p.toJson(),
+        };
         final deletedBudgets = _batch(pendingBudgets, i);
         final deletedTransactions = _batch(pendingTransactions, i);
+        final deletedRecurring = _batch(pendingRecurring, i);
 
         // Удаление лимитов — только через `deleted_budget_ids`: элемент
         // `budgets` без категории и периода сервер отклоняет 422 вместе со
@@ -307,8 +327,10 @@ class SyncService {
         final payload = SyncModel(
           transactions: sentTransactions.values.toList(),
           budgets: sentBudgets.values.toList(),
+          recurringPayments: sentRecurring.values.toList(),
           deletedBudgetIds: deletedBudgets,
           deletedTransactionIds: deletedTransactions,
+          deletedRecurringPaymentIds: deletedRecurring,
         );
 
         final response = await _dio.post(
@@ -324,6 +346,16 @@ class SyncService {
             sentTransactions, data['synced_transactions'], batchRejected);
         syncedBudgets +=
             _confirmBudgets(sentBudgets, data['synced_budgets'], batchRejected);
+        // Сервер без регулярных платежей поля не вернёт — они останутся
+        // в очереди до обновления сервера.
+        if (data['synced_recurring_payments'] is List) {
+          syncedRecurring += _confirmRecurringPayments(
+              sentRecurring, data['synced_recurring_payments'], batchRejected);
+          if (deletedRecurring.isNotEmpty) {
+            await PendingDeletionsStore.instance
+                .removeRecurringPayments(deletedRecurring);
+          }
+        }
         rejected.addAll(batchRejected);
 
         if (deletedBudgets.isNotEmpty) {
@@ -341,10 +373,12 @@ class SyncService {
       }
       AppLogger.i('[SyncService] Sync local -> backend success: '
           'T($syncedTransactions/${localTransactions.length}), '
-          'B($syncedBudgets/${localBudgets.length}), batches: $batches');
+          'B($syncedBudgets/${localBudgets.length}), '
+          'R($syncedRecurring/${localRecurring.length}), batches: $batches');
       return {
         'synced_transactions': syncedTransactions,
         'synced_budgets': syncedBudgets,
+        'synced_recurring_payments': syncedRecurring,
         'rejected': rejected,
       };
     } on DioException catch (e) {
@@ -388,8 +422,18 @@ class SyncService {
         since: since,
         maxPages: maxPages,
       );
-      final remoteBudgetsResult = await _fetchRemoteBudgets();
-      final remoteBudgets = remoteBudgetsResult.budgets;
+      final remoteBudgetsResult = await _fetchRemoteList(
+        path: ApiConfig.budgets,
+        etagKey: _budgetsEtagKey,
+        etag: _budgetsEtag,
+        hasLocal: db.hasBudgets,
+        entity: 'budgets',
+      );
+      final remoteBudgets = remoteBudgetsResult.items
+          ?.map(Budget.fromJson)
+          .where((b) => b.isValidPeriod)
+          .toList();
+      final remoteRecurringResult = await _fetchRecurringPayments();
 
       // Отметка и ETag сохраняются только после того, как данные легли в
       // базу: если загрузка или сверка оборвётся раньше, следующий синк
@@ -415,11 +459,23 @@ class SyncService {
       if (remoteBudgets != null) {
         removedBudgets = db.reconcileBudgets(remoteBudgets);
         budgetsLength = remoteBudgets.length;
-        await _saveBudgetsEtag(remoteBudgetsResult.newEtag);
+        await _saveEtag(_budgetsEtagKey, remoteBudgetsResult.newEtag);
+        _budgetsEtag = remoteBudgetsResult.newEtag ?? _budgetsEtag;
       } else {
         AppLogger.i(
             '[SyncService] Budgets not modified (304). Skipping reconciliation.');
         budgetsLength = db.budgetsCount;
+      }
+
+      var removedRecurring = 0;
+      final remoteRecurring = remoteRecurringResult?.items;
+      if (remoteRecurring != null) {
+        removedRecurring = db.reconcileRecurringPayments(remoteRecurring
+            .map(RecurringPayment.fromJson)
+            .where((p) => p.isValid)
+            .toList());
+        await _saveEtag(_recurringEtagKey, remoteRecurringResult!.newEtag);
+        _recurringEtag = remoteRecurringResult.newEtag ?? _recurringEtag;
       }
 
       final transactionsChanged = changes.transactions.isNotEmpty ||
@@ -429,7 +485,8 @@ class SyncService {
           '(${since == null ? 'full' : 'changes'}): '
           'T(${changes.transactions.length}, '
           'deleted ${changes.deletedServerIds.length}), B($budgetsLength); '
-          'Removed: T($removedTransactions), B($removedBudgets)');
+          'Removed: T($removedTransactions), B($removedBudgets), '
+          'R($removedRecurring)');
 
       // Один сигнал на загрузку, и только если с сервера пришли изменения:
       // экраны перечитают данные, но не на каждой записи в базу.
@@ -443,6 +500,7 @@ class SyncService {
         'budgets': budgetsLength,
         'removed_transactions': removedTransactions,
         'removed_budgets': removedBudgets,
+        'removed_recurring_payments': removedRecurring,
       };
     } on DioException catch (e) {
       AppLogger.e('[SyncService] Load error: ${e.response?.statusCode}', e);
@@ -462,10 +520,9 @@ class SyncService {
     );
   }
 
-  Future<void> _saveBudgetsEtag(String? etag) async {
+  Future<void> _saveEtag(String key, String? etag) async {
     if (etag == null) return;
-    _budgetsEtag = etag;
-    await _storage.write(key: _budgetsEtagKey, value: etag);
+    await _storage.write(key: key, value: etag);
   }
 
   /// Забирает изменения операций с [since] (без него — все операции)
@@ -534,39 +591,53 @@ class SyncService {
     );
   }
 
-  Future<_RemoteBudgetsFetchResult> _fetchRemoteBudgets() async {
+  /// GET полного списка с ETag: [etag] уходит в `If-None-Match`, только
+  /// если локально уже есть данные (иначе 304 оставил бы базу пустой).
+  Future<_RemoteListResult> _fetchRemoteList({
+    required String path,
+    required String etagKey,
+    required String? etag,
+    required bool hasLocal,
+    required String entity,
+  }) async {
     final options = _authOptions();
     options.validateStatus = (status) =>
         status != null && ((status >= 200 && status < 300) || status == 304);
 
-    final hasLocalBudgets =
-        LocalDbService.isInitialized && LocalDbService.instance.hasBudgets;
-    if (!hasLocalBudgets) {
-      _budgetsEtag = null;
-    } else {
-      _budgetsEtag ??= await _storage.read(key: _budgetsEtagKey);
-      if (_budgetsEtag != null) {
-        options.headers?['If-None-Match'] = _budgetsEtag;
-      }
+    if (hasLocal) {
+      etag ??= await _storage.read(key: etagKey);
+      if (etag != null) options.headers?['If-None-Match'] = etag;
     }
 
-    final response = await _dio.get(
-      ApiConfig.budgets,
-      options: options,
-    );
-
-    if (response.statusCode == 304) {
-      return const _RemoteBudgetsFetchResult();
-    }
+    final response = await _dio.get(path, options: options);
+    if (response.statusCode == 304) return const _RemoteListResult();
 
     final data = response.data is Map ? response.data['data'] : null;
-    return _RemoteBudgetsFetchResult(
-      budgets: _requireJsonList(data, 'budgets')
-          .map(Budget.fromJson)
-          .where((b) => b.isValidPeriod)
-          .toList(),
+    return _RemoteListResult(
+      items: _requireJsonList(data, entity),
       newEtag: response.headers.value('etag'),
     );
+  }
+
+  /// Регулярные платежи с сервера; `null` — сервер ещё без регулярных
+  /// платежей (404, приложение обновили раньше сервера): загрузка остального
+  /// не должна из-за этого падать.
+  Future<_RemoteListResult?> _fetchRecurringPayments() async {
+    try {
+      return await _fetchRemoteList(
+        path: ApiConfig.recurringPayments,
+        etagKey: _recurringEtagKey,
+        etag: _recurringEtag,
+        hasLocal: LocalDbService.instance.hasRecurringPayments,
+        entity: 'recurring_payments',
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        AppLogger.w('[SyncService] Server without recurring payments (404)');
+        return null;
+      }
+      rethrow;
+    }
   }
 
   /// Присваивает UUID новым транзакциям до отправки и сохраняет его локально.
@@ -733,6 +804,62 @@ class SyncService {
     LocalDbService.instance.putBudgets(toPut);
     AppLogger.d('[SyncService] Confirmed budgets: $confirmed/${sent.length}');
     return confirmed;
+  }
+
+  /// То же, что [_confirmTransactions], для регулярных платежей: ID создаёт
+  /// устройство и сервер его не меняет; при конфликте ID платёж получает
+  /// новый `uid` и уйдёт снова.
+  int _confirmRecurringPayments(
+    Map<int, Map<String, dynamic>> sent,
+    dynamic synced,
+    List<Map<String, dynamic>> rejected,
+  ) {
+    if (sent.isEmpty) return 0;
+    final confirmedIds = _asJsonList(synced)
+        .map((json) => json['id'])
+        .whereType<String>()
+        .toSet();
+    final rejectedCodes = _rejectedCodes(rejected);
+
+    final localIds = sent.keys.toList();
+    final stored =
+        LocalDbService.instance.getRecurringPaymentsByLocalIds(localIds);
+    final toPut = <RecurringPayment>[];
+    var confirmed = 0;
+
+    for (var i = 0; i < localIds.length; i++) {
+      final row = stored[i];
+      final snapshot = sent[localIds[i]]!;
+      if (row == null || row.uid != snapshot['id']) continue;
+
+      if (confirmedIds.contains(row.uid)) {
+        confirmed++;
+        row.isOnServer = true;
+        if (_sameRecurringPayment(row.toJson(), snapshot)) {
+          row.isModified = false;
+        }
+        toPut.add(row);
+      } else if (rejectedCodes[row.uid] == _idConflictCode) {
+        row
+          ..uid = _uuid.v4()
+          ..isModified = true
+          ..isOnServer = false;
+        toPut.add(row);
+      }
+    }
+
+    LocalDbService.instance.putRecurringPayments(toPut);
+    return confirmed;
+  }
+
+  /// Тело платежа не менялось после отправки (список пропусков — по
+  /// содержимому: `mapEquals` сравнивает списки по ссылке).
+  static bool _sameRecurringPayment(
+      Map<String, dynamic> current, Map<String, dynamic> sent) {
+    const skipped = 'skipped_periods';
+    return mapEquals(
+            Map.of(current)..remove(skipped), Map.of(sent)..remove(skipped)) &&
+        listEquals(current[skipped] as List?, sent[skipped] as List?);
   }
 
   static String _budgetKey(Map<String, dynamic> json) =>

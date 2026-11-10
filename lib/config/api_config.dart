@@ -15,6 +15,7 @@ class ApiConfig {
 
   static const String transactions = '/transactions/';
   static const String budgets = '/budgets/';
+  static const String recurringPayments = '/recurring-payments/';
   static const String sync = '/sync/';
   static const String syncChanges = '/sync/changes';
   static const String insights = '/insights/';

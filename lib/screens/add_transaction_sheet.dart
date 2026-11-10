@@ -6,18 +6,62 @@ import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme/app_colors.dart';
 
-/// Модальная форма создания/редактирования транзакции.
+/// Модальная форма записи и регулярного платежа.
 ///
-/// Если [transactionToEdit] передан — форма предзаполняется его данными и
-/// сохранение обновляет существующую запись (сохраняя `localId`),
-/// иначе создаётся новая запись. День операции выбирается в форме
-/// (по умолчанию — сегодня), время берётся текущее либо исходное при
-/// редактировании.
+/// Режимы:
+/// - новая запись (по умолчанию); чип «Каждый месяц» в строке дат делает
+///   её регулярным платежом — с днём выбранной даты;
+/// - [transactionToEdit] — правка записи (сохраняется `localId`);
+/// - [occurrence] — «Оплачено» за месяц регулярного платежа: форма
+///   заполнена платежом, сумму можно исправить;
+/// - [recurringToEdit] — правка регулярного платежа.
+///
+/// День операции выбирается в форме (по умолчанию — сегодня), время
+/// берётся текущее либо исходное при редактировании.
 class AddTransactionSheet extends StatefulWidget {
   final Transaction? transactionToEdit;
+  final RecurringOccurrence? occurrence;
+  final RecurringPayment? recurringToEdit;
 
-  const AddTransactionSheet({super.key, this.transactionToEdit});
+  const AddTransactionSheet({
+    super.key,
+    this.transactionToEdit,
+    this.occurrence,
+    this.recurringToEdit,
+  }) : assert((transactionToEdit == null ? 0 : 1) +
+                (occurrence == null ? 0 : 1) +
+                (recurringToEdit == null ? 0 : 1) <=
+            1);
+
+  /// Открывает форму поверх экрана; `true` — что-то сохранено.
+  static Future<bool?> show(
+    BuildContext context, {
+    Transaction? transactionToEdit,
+    RecurringOccurrence? occurrence,
+    RecurringPayment? recurringToEdit,
+  }) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.transparent,
+      builder: (_) => AddTransactionSheet(
+        transactionToEdit: transactionToEdit,
+        occurrence: occurrence,
+        recurringToEdit: recurringToEdit,
+      ),
+    );
+  }
+
+  /// Дата записи «Оплачено» за месяц [period]: в текущем месяце — сейчас,
+  /// за прошлый (оплата задним числом) — день платежа того месяца, чтобы
+  /// запись попала в свой месяц.
+  static DateTime paidDateFor(RecurringOccurrence occurrence, DateTime now) {
+    if (!occurrence.period.isBefore(MonthPeriod.current(now))) return now;
+    final due = occurrence.dueDate;
+    return DateTime(due.year, due.month, due.day, now.hour, now.minute);
+  }
 
   /// Дата новой операции: в открытом прошлом месяце — его последний день
   /// (иначе запись молча уходила в «сегодня» и не появлялась на экране),
@@ -51,28 +95,64 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   late Currency _selectedCurrency;
   String? _amountError;
 
+  /// Повторять каждый месяц (регулярный платёж) и дата последнего платежа.
+  late bool _repeat;
+  DateTime? _repeatEnd;
+
+  /// Платёж, по которому заполнена форма: оплачиваемый или изменяемый.
+  RecurringPayment? get _template =>
+      widget.recurringToEdit ?? widget.occurrence?.payment;
+
+  bool get _isNewRecord =>
+      widget.transactionToEdit == null &&
+      widget.occurrence == null &&
+      widget.recurringToEdit == null;
+
+  /// Запись можно сделать регулярной: новая или правка обычной записи (не
+  /// оплаты уже существующего регулярного платежа).
+  late final bool _canRepeat = _isNewRecord ||
+      (widget.transactionToEdit != null &&
+          LocalDbService.isInitialized &&
+          RecurringPaymentService.instance
+                  .occurrenceForRecord(widget.transactionToEdit!) ==
+              null);
+
+  /// Форма задаёт расписание: новый регулярный платёж или его правка.
+  bool get _editsSchedule => widget.recurringToEdit != null || _repeat;
+
   @override
   void initState() {
     super.initState();
     final t = widget.transactionToEdit;
-    _type = t?.type ?? TransactionType.expense;
+    final template = _template;
+    _type = t?.type ?? template?.type ?? TransactionType.expense;
     _category = t?.category ??
+        template?.category ??
         (_type == TransactionType.income ? Category.salary : Category.food);
+    final occurrence = widget.occurrence;
     _date = t?.date ??
-        AddTransactionSheet.defaultDateFor(
-          SelectedPeriodService.instance.period,
-          DateTime.now(),
-        );
+        widget.recurringToEdit?.start ??
+        (occurrence != null
+            ? AddTransactionSheet.paidDateFor(occurrence, DateTime.now())
+            : AddTransactionSheet.defaultDateFor(
+                SelectedPeriodService.instance.period,
+                DateTime.now(),
+              ));
+    _repeat = widget.recurringToEdit != null;
+    _repeatEnd = widget.recurringToEdit?.end;
     _frequentCategories = _loadFrequentCategories(_type);
-    _selectedCurrency = t?.currency ?? CurrencyFormatter.currentCurrency;
+    _selectedCurrency =
+        t?.currency ?? template?.currency ?? CurrencyFormatter.currentCurrency;
+    final amount = t?.amount ?? template?.amount;
     _amountController = TextEditingController(
-      text: t != null
-          ? CurrencyFormatter.formatForInput(t.amount, _selectedCurrency)
+      text: amount != null
+          ? CurrencyFormatter.formatForInput(amount, _selectedCurrency)
           : '',
     );
     _amountController.addListener(_onAmountChanged);
-    _descriptionController = TextEditingController(text: t?.description ?? '');
-    if (t == null) {
+    _descriptionController = TextEditingController(
+        text: t?.description ?? template?.description ?? '');
+    if (t == null && template == null) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _focusAmountAfterOpen());
     }
@@ -144,8 +224,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   /// Переносит выбранный день, сохраняя время: исходное при редактировании,
   /// текущее для новой записи — так порядок операций внутри дня не ломается.
+  /// Срок регулярного платежа сдвигается вместе с днём: «12 платежей»
+  /// остаются двенадцатью.
   void _onDayChanged(DateTime day) {
     final time = widget.transactionToEdit?.date ?? DateTime.now();
+    final end = _repeatEnd;
+    final count =
+        end == null ? null : RecurringSchedule.paymentsCount(_date, end);
     setState(() {
       _date = DateTime(
         day.year,
@@ -155,6 +240,22 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         time.minute,
         time.second,
       );
+      if (count != null && count > 0) {
+        _repeatEnd = RecurringSchedule.lastPaymentDate(_date, count);
+      }
+    });
+  }
+
+  /// Повтор выключается — дата снова не позже сегодня (запись не бывает
+  /// в будущем).
+  void _onRepeatChanged(bool repeat) {
+    setState(() {
+      _repeat = repeat;
+      if (!repeat) {
+        _repeatEnd = null;
+        final now = DateTime.now();
+        if (_date.isAfter(now)) _date = now;
+      }
     });
   }
 
@@ -222,44 +323,73 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       to: CurrencyFormatter.currentCurrency,
     );
 
-    if (widget.transactionToEdit != null) {
-      final t = widget.transactionToEdit!;
-      // serverId и дату создания обязательно переносим в новый объект.
-      // Если у транзакции уже есть serverId, выставляем isModified = true,
-      // чтобы изменения были отправлены на бэкенд при следующей синхронизации.
-      final updated = Transaction(
-        localId: t.localId,
-        serverId: t.serverId,
+    final record = Transaction(
+      dbType: _type.name,
+      dbCategory: _category.name,
+      amount: amount,
+      currencyCode: _selectedCurrency.code,
+      exchangeRate: rate,
+      baseAmount: baseAmount,
+      dateMilliseconds: _date.millisecondsSinceEpoch,
+      description: _descriptionController.text.trim(),
+      dateCreatedMilliseconds: 0,
+    );
+
+    final recurring = RecurringPaymentService.instance;
+    final occurrence = widget.occurrence;
+    final recurringToEdit = widget.recurringToEdit;
+    if (occurrence != null) {
+      LocalDbService.instance
+          .saveTransaction(recurring.asPaidRecord(occurrence, record));
+    } else if (recurringToEdit != null) {
+      final start = DateUtils.dateOnly(_date);
+      recurring.save(recurringToEdit.copyWith(
         dbType: _type.name,
-        // Категория и тип не менялись — сохраняем исходную строку: категория,
-        // неизвестная этой версии клиента, показана как «Прочее», но не
-        // должна им перезаписаться.
-        dbCategory: _category == t.category && _type == t.type
-            ? t.dbCategory
+        // Неизвестная этой версии категория не превращается в «Прочее»
+        dbCategory: _category == recurringToEdit.category &&
+                _type == recurringToEdit.type
+            ? recurringToEdit.dbCategory
             : _category.name,
         amount: amount,
         currencyCode: _selectedCurrency.code,
-        exchangeRate: rate,
-        baseAmount: baseAmount,
-        dateMilliseconds: _date.millisecondsSinceEpoch,
-        description: _descriptionController.text.trim(),
-        dateCreatedMilliseconds: t.dateCreatedMilliseconds,
-        isModified: t.serverId != null,
-      );
-      LocalDbService.instance.saveTransaction(updated);
+        description: record.description,
+        dayOfMonth: start.day,
+        startDate: formatDateOnly(start),
+        endDate: () => _repeatEnd == null ? null : formatDateOnly(_repeatEnd!),
+      ));
     } else {
-      final newTransaction = Transaction(
-        dbType: _type.name,
-        dbCategory: _category.name,
-        amount: amount,
-        currencyCode: _selectedCurrency.code,
-        exchangeRate: rate,
-        baseAmount: baseAmount,
-        dateMilliseconds: _date.millisecondsSinceEpoch,
-        description: _descriptionController.text.trim(),
-        dateCreatedMilliseconds: 0,
-      );
-      LocalDbService.instance.saveTransaction(newTransaction);
+      final t = widget.transactionToEdit;
+      // Правка: localId, serverId и дата создания переносятся в новый объект;
+      // запись с serverId помечается изменённой, чтобы правка ушла на сервер.
+      final saved = t == null
+          ? record
+          : Transaction(
+              localId: t.localId,
+              serverId: t.serverId,
+              dbType: _type.name,
+              // Категория и тип не менялись — сохраняем исходную строку:
+              // категория, неизвестная этой версии клиента, показана как
+              // «Прочее», но не должна им перезаписаться.
+              dbCategory: _category == t.category && _type == t.type
+                  ? t.dbCategory
+                  : _category.name,
+              amount: amount,
+              currencyCode: _selectedCurrency.code,
+              exchangeRate: rate,
+              baseAmount: baseAmount,
+              dateMilliseconds: _date.millisecondsSinceEpoch,
+              description: _descriptionController.text.trim(),
+              dateCreatedMilliseconds: t.dateCreatedMilliseconds,
+              isModified: t.serverId != null,
+            );
+      if (_repeat) {
+        recurring.startFrom(saved,
+            start: DateUtils.dateOnly(_date), end: _repeatEnd);
+        // Разрешение на напоминания — когда они впервые понадобились
+        unawaited(RecurringReminderService.instance.requestPermission());
+      } else {
+        LocalDbService.instance.saveTransaction(saved);
+      }
     }
 
     ApiService.instance.pushLocalChangesInBackground();
@@ -267,9 +397,42 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     Navigator.pop(context, true);
   }
 
+  String _title(BuildContext context) {
+    final l10n = context.l10n;
+    final isIncome = _type == TransactionType.income;
+    if (widget.occurrence != null) {
+      return isIncome ? l10n.recurring_receive_title : l10n.recurring_pay_title;
+    }
+    if (widget.recurringToEdit != null) {
+      return isIncome
+          ? l10n.recurring_income_title
+          : l10n.recurring_payment_title;
+    }
+    return widget.transactionToEdit != null
+        ? l10n.edit_transaction
+        : l10n.new_transaction;
+  }
+
+  String _submitLabel(BuildContext context) {
+    final l10n = context.l10n;
+    if (widget.occurrence != null) {
+      return _type == TransactionType.income
+          ? l10n.recurring_received_btn
+          : l10n.recurring_paid_btn;
+    }
+    if (widget.recurringToEdit != null) return l10n.save_btn;
+    if (_repeat) {
+      return widget.transactionToEdit != null
+          ? l10n.save_btn
+          : l10n.recurring_add_btn;
+    }
+    return widget.transactionToEdit != null
+        ? l10n.save_changes_btn
+        : l10n.add_btn;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.transactionToEdit != null;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -305,24 +468,25 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                           child: SheetHandle(),
                         ),
                         WholeWordsText(
-                          isEditing
-                              ? context.l10n.edit_transaction
-                              : context.l10n.new_transaction,
+                          _title(context),
                           style: textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        // Тип часто выбирают до или во время ввода суммы:
-                        // для «тапа вне поля» переключатель — часть поля,
-                        // клавиатура при смене типа не закрывается.
-                        TextFieldTapRegion(
-                          child: TransactionTypeToggle(
-                            type: _type,
-                            onChanged: _onTypeChanged,
+                        // Тип оплачиваемого платежа задан расписанием
+                        if (widget.occurrence == null) ...[
+                          const SizedBox(height: 16),
+                          // Тип часто выбирают до или во время ввода суммы:
+                          // для «тапа вне поля» переключатель — часть поля,
+                          // клавиатура при смене типа не закрывается.
+                          TextFieldTapRegion(
+                            child: TransactionTypeToggle(
+                              type: _type,
+                              onChanged: _onTypeChanged,
+                            ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 20),
                         TransactionAmountField(
                           controller: _amountController,
@@ -335,6 +499,23 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         TransactionDateSelector(
                           date: _date,
                           onChanged: _onDayChanged,
+                          // Будущий день — только у расписания: у правки
+                          // существующей записи дата остаётся датой записи
+                          allowFuture: widget.recurringToEdit != null ||
+                              (_repeat && _isNewRecord),
+                          extraChips:
+                              _canRepeat || widget.recurringToEdit != null
+                                  ? recurrenceChips(
+                                      context,
+                                      enabled: _editsSchedule,
+                                      start: _date,
+                                      end: _repeatEnd,
+                                      onToggle:
+                                          _canRepeat ? _onRepeatChanged : null,
+                                      onEndChanged: (end) =>
+                                          setState(() => _repeatEnd = end),
+                                    )
+                                  : const [],
                         ),
                         const SizedBox(height: 20),
                         CategoryChipsSelector(
@@ -371,9 +552,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: SheetPrimaryButton(
                   key: const ValueKey('add_transaction_submit'),
-                  label: isEditing
-                      ? context.l10n.save_changes_btn
-                      : context.l10n.add_btn,
+                  label: _submitLabel(context),
                   onPressed: _save,
                 ),
               ),

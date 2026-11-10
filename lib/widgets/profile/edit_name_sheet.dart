@@ -113,17 +113,7 @@ class _EditNameSheetState extends State<EditNameSheet> {
                 SheetPrimaryButton(
                   key: const ValueKey('edit_name_save'),
                   label: context.l10n.save_btn,
-                  icon: _saving
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color:
-                                colorScheme.onSurface.withValues(alpha: 0.38),
-                          ),
-                        )
-                      : null,
+                  busy: _saving,
                   onPressed: _canSave ? _save : null,
                 ),
               ],

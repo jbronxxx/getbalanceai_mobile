@@ -994,4 +994,133 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get edit_name_error => 'Атты сақтау мүмкін болмады';
+
+  @override
+  String get recurring_every_month => 'Ай сайын';
+
+  @override
+  String recurring_every_day(int day) {
+    return 'Ай сайын, $day-күні';
+  }
+
+  @override
+  String get recurring_end_none => 'Мерзімсіз';
+
+  @override
+  String recurring_end_until(String date) {
+    return '$date дейін';
+  }
+
+  @override
+  String recurring_end_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count төлем',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurring_end_title => 'Қанша қайталау';
+
+  @override
+  String get recurring_end_pick_date => 'Аяқталу күнін таңдау';
+
+  @override
+  String get recurring_add_btn => 'Тұрақты қосу';
+
+  @override
+  String get recurring_expected => 'Күтілуде';
+
+  @override
+  String get recurring_not_paid => 'Төленбеген';
+
+  @override
+  String get recurring_payment_title => 'Тұрақты төлем';
+
+  @override
+  String get recurring_income_title => 'Тұрақты кіріс';
+
+  @override
+  String get recurring_pay_title => 'Төлемді белгілеу';
+
+  @override
+  String get recurring_receive_title => 'Түскенін белгілеу';
+
+  @override
+  String get recurring_paid_btn => 'Төленді';
+
+  @override
+  String get recurring_received_btn => 'Түсті';
+
+  @override
+  String get recurring_skip_btn => 'Осы айды өткізу';
+
+  @override
+  String get recurring_stop_btn => 'Тоқтату';
+
+  @override
+  String get recurring_skipped_toast => 'Осы айда өткізілді';
+
+  @override
+  String get recurring_stopped_toast => 'Тұрақты төлем тоқтатылды';
+
+  @override
+  String get recurring_repeat_label => 'Қайталау';
+
+  @override
+  String get recurring_due_label => 'Төлем күні';
+
+  @override
+  String recurring_progress(int number, int total) {
+    return '$total төлемнің $number-і';
+  }
+
+  @override
+  String daily_allowance_reserved(int count, String amount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count төлемді ескергенде · $amount',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reminder_channel_name => 'Тұрақты төлемдер';
+
+  @override
+  String get reminder_channel_description =>
+      'Тұрақты төлем немесе кіріс күні еске салу';
+
+  @override
+  String reminder_payment_title(String name) {
+    return 'Бүгін төлем: $name';
+  }
+
+  @override
+  String reminder_income_title(String name) {
+    return 'Бүгін күтілуде: $name';
+  }
+
+  @override
+  String reminder_payment_body(String amount) {
+    return '$amount — төлемді белгілеу үшін басыңыз';
+  }
+
+  @override
+  String reminder_income_body(String amount) {
+    return '$amount — түскенін белгілеу үшін басыңыз';
+  }
+
+  @override
+  String get debug_test_reminder => '10 секундтан кейін еске салу';
+
+  @override
+  String get debug_reminder_scheduled =>
+      'Еске салу 10 секундтан кейін келеді — қолданбаны жабуға болады';
+
+  @override
+  String get debug_reminder_none => 'Күтілетін тұрақты төлемдер жоқ';
 }

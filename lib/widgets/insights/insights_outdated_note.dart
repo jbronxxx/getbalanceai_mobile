@@ -54,14 +54,13 @@ class InsightsOutdatedNote extends StatelessWidget {
           if (onRefresh != null)
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton.icon(
+              child: TextButton(
                 key: const ValueKey('insights_outdated_refresh'),
                 onPressed: onRefresh,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(l10n.insights_outdated_refresh),
                 style: TextButton.styleFrom(
                   foregroundColor: colors.accentText,
                 ),
+                child: Text(l10n.insights_outdated_refresh),
               ),
             )
           else

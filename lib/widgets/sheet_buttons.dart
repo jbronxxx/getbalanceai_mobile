@@ -15,21 +15,32 @@ abstract final class SheetButtons {
 
   static BorderSide _side(Color color) =>
       BorderSide(color: color.withValues(alpha: 0.5));
+
+  /// Индикатор загрузки в кнопке на месте иконки.
+  static Widget spinner(Color color) => SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: color.withValues(alpha: 0.6),
+        ),
+      );
 }
 
 /// Основное действие листа: «Сохранить», «Добавить», «Скачать отчёт».
+/// Кнопки действий — без иконок, только подпись.
 class SheetPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
 
-  /// Иконка слева от подписи (например, индикатор загрузки).
-  final Widget? icon;
+  /// Идёт действие: слева от подписи — индикатор загрузки.
+  final bool busy;
 
   const SheetPrimaryButton({
     super.key,
     required this.label,
     required this.onPressed,
-    this.icon,
+    this.busy = false,
   });
 
   @override
@@ -53,23 +64,22 @@ class SheetPrimaryButton extends StatelessWidget {
       padding: SheetButtons._padding,
       shape: SheetButtons._shape,
     );
-    final icon = this.icon;
-    if (icon == null) {
+    if (!busy) {
       return ElevatedButton(onPressed: onPressed, style: style, child: text);
     }
     return ElevatedButton.icon(
       onPressed: onPressed,
       style: style,
-      icon: icon,
+      icon: SheetButtons.spinner(
+          enabled ? colorScheme.onPrimary : colorScheme.onSurface),
       label: text,
     );
   }
 }
 
-/// Второе действие листа с контуром: «Удалить» (цвет ошибки).
+/// Второе действие листа с контуром: «Удалить» (цвет ошибки). Без иконки.
 class SheetOutlinedButton extends StatelessWidget {
   final String label;
-  final Widget icon;
   final VoidCallback? onPressed;
 
   /// Цвет подписи и контура; по умолчанию — основной цвет темы.
@@ -78,7 +88,6 @@ class SheetOutlinedButton extends StatelessWidget {
   const SheetOutlinedButton({
     super.key,
     required this.label,
-    required this.icon,
     required this.onPressed,
     this.color,
   });
@@ -86,10 +95,8 @@ class SheetOutlinedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = this.color ?? Theme.of(context).colorScheme.primary;
-    return OutlinedButton.icon(
+    return OutlinedButton(
       onPressed: onPressed,
-      icon: icon,
-      label: OneLineLabel(label),
       style: OutlinedButton.styleFrom(
         foregroundColor: color,
         side: SheetButtons._side(color),
@@ -97,6 +104,7 @@ class SheetOutlinedButton extends StatelessWidget {
         padding: SheetButtons._padding,
         shape: SheetButtons._shape,
       ),
+      child: OneLineLabel(label),
     );
   }
 }

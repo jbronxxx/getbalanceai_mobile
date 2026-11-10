@@ -85,7 +85,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     height: 52,
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
@@ -95,8 +95,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
                         ),
                       ),
                       onPressed: onRetry,
-                      icon: const Icon(Icons.refresh_rounded, size: 20),
-                      label: Text(
+                      child: Text(
                         context.l10n.service_unavailable_retry,
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,

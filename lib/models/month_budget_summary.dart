@@ -18,20 +18,30 @@ class MonthBudgetSummary {
   /// Дней до конца месяца, включая сегодняшний (только для текущего месяца).
   final int daysLeft;
 
+  /// Ожидающие оплаты регулярные платежи в категориях с лимитом: эти деньги
+  /// ещё уйдут, поэтому в «можно тратить в день» они уже отложены.
+  final double reservedAmount;
+  final int reservedCount;
+
   const MonthBudgetSummary({
     required this.totalLimit,
     required this.totalSpent,
     required this.periodState,
     required this.daysLeft,
+    this.reservedAmount = 0,
+    this.reservedCount = 0,
   });
 
   /// [spentByCategory] — расходы месяца по категориям (ключ —
   /// [Budget.dbCategory]); учитываются только категории, на которые задан
-  /// лимит.
+  /// лимит. [reservedByCategory] — ожидающие оплаты регулярные платежи
+  /// текущего месяца по категориям (сумма в базовой валюте и их число);
+  /// так же учитываются только категории с лимитом.
   factory MonthBudgetSummary.calculate({
     required List<Budget> budgets,
     required Map<String, double> spentByCategory,
     required MonthPeriod period,
+    Map<String, ({double amount, int count})> reservedByCategory = const {},
     DateTime? now,
   }) {
     final today = now ?? DateTime.now();
@@ -44,9 +54,16 @@ class MonthBudgetSummary {
 
     var totalLimit = 0.0;
     var totalSpent = 0.0;
+    var reservedAmount = 0.0;
+    var reservedCount = 0;
     for (final b in budgets) {
       totalLimit += b.limitInBaseCurrency;
       totalSpent += spentByCategory[b.dbCategory] ?? 0;
+      if (state == BudgetPeriodState.current) {
+        final reserved = reservedByCategory[b.dbCategory];
+        reservedAmount += reserved?.amount ?? 0;
+        reservedCount += reserved?.count ?? 0;
+      }
     }
 
     final daysInMonth = DateTime(period.year, period.month + 1, 0).day;
@@ -58,6 +75,8 @@ class MonthBudgetSummary {
       totalSpent: totalSpent,
       periodState: state,
       daysLeft: daysLeft,
+      reservedAmount: reservedAmount,
+      reservedCount: reservedCount,
     );
   }
 
@@ -74,9 +93,11 @@ class MonthBudgetSummary {
   double get spentRatio => totalLimit > 0 ? totalSpent / totalLimit : 0;
 
   /// Сколько можно тратить в день до конца текущего месяца, чтобы уложиться
-  /// в лимиты; 0 при перерасходе и для нетекущих месяцев.
+  /// в лимиты, с учётом отложенного на регулярные платежи; 0 при перерасходе
+  /// и для нетекущих месяцев.
   double get dailyAllowance {
     if (periodState != BudgetPeriodState.current || daysLeft <= 0) return 0;
-    return remaining > 0 ? remaining / daysLeft : 0;
+    final free = remaining - reservedAmount;
+    return free > 0 ? free / daysLeft : 0;
   }
 }

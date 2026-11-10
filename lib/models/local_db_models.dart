@@ -45,6 +45,25 @@ int parseInteger(dynamic value, [int fallback = 0]) {
   return fallback;
 }
 
+/// Дата без времени из строки `YYYY-MM-DD` (как на сервере); `null` —
+/// строка не в этом формате.
+DateTime? parseDateOnly(String value) {
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+  if (match == null) return null;
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final date = DateTime(year, month, day);
+  // 2026-02-31 не превращается в 3 марта
+  return date.month == month && date.day == day ? date : null;
+}
+
+/// Дата без времени в формате сервера `YYYY-MM-DD`.
+String formatDateOnly(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
 /// Тип операции: доход или расход.
 enum TransactionType {
   income,
@@ -455,4 +474,157 @@ class Budget {
       if (isDeleted) 'is_deleted': true,
     };
   }
+}
+
+/// Регулярный платёж или доход (ЖКХ, кредит, связь, зарплата) — расписание,
+/// а не операция.
+///
+/// В день платежа приложение напоминает о нём, а запись создаёт сам
+/// пользователь («Оплачено»), поправив сумму, если она другая. Запись месяца
+/// получает детерминированный `serverId` (см. `RecurringSchedule`): оплата
+/// с двух устройств не даёт дублей, а оплаченный месяц узнаётся по ней.
+///
+/// [uid] создаётся на устройстве и сразу служит ID на сервере. Даты — строки
+/// `YYYY-MM-DD` без времени и часового пояса, как на сервере.
+@Entity()
+class RecurringPayment {
+  @Id()
+  int localId;
+
+  @Unique()
+  String uid;
+
+  final String dbType;
+  final String dbCategory;
+  final double amount;
+  final String currencyCode;
+  final String description;
+
+  /// День месяца 1–31; в коротком месяце — его последний день.
+  final int dayOfMonth;
+
+  /// Первый день платежа, `YYYY-MM-DD`.
+  final String startDate;
+
+  /// Последний день платежа, `YYYY-MM-DD`; `null` — без срока.
+  final String? endDate;
+
+  /// Пропущенные месяцы `YYYY-MM` — о них не напоминать.
+  List<String> skippedPeriods;
+
+  /// Изменение ещё не подтверждено сервером.
+  bool isModified;
+
+  /// Сервер хотя бы раз подтвердил платёж: если его нет в списке с сервера,
+  /// значит, он удалён на другом устройстве.
+  bool isOnServer;
+
+  RecurringPayment({
+    this.localId = 0,
+    required this.uid,
+    required this.dbType,
+    required this.dbCategory,
+    required this.amount,
+    required this.currencyCode,
+    this.description = '',
+    required this.dayOfMonth,
+    required this.startDate,
+    this.endDate,
+    List<String>? skippedPeriods,
+    this.isModified = true,
+    this.isOnServer = false,
+  }) : skippedPeriods = skippedPeriods ?? [];
+
+  @Transient()
+  TransactionType get type => TransactionType.fromString(dbType);
+
+  @Transient()
+  Category get category => Category.fromString(dbCategory);
+
+  @Transient()
+  Currency get currency => Currency.values.firstWhere(
+        (c) => c.code.toUpperCase() == currencyCode.toUpperCase(),
+        orElse: () => CurrencyFormatter.currentCurrency,
+      );
+
+  @Transient()
+  DateTime get start => parseDateOnly(startDate) ?? DateTime(1970);
+
+  @Transient()
+  DateTime? get end => endDate == null ? null : parseDateOnly(endDate!);
+
+  /// Название для экрана: своё или название категории.
+  String displayName([BuildContext? context]) => description.trim().isNotEmpty
+      ? description.trim()
+      : category.getLocalizedName(context);
+
+  /// Копия с изменёнными полями расписания; [localId], [uid] и признаки
+  /// синхронизации сохраняются, правка помечается неотправленной.
+  RecurringPayment copyWith({
+    String? dbType,
+    String? dbCategory,
+    double? amount,
+    String? currencyCode,
+    String? description,
+    int? dayOfMonth,
+    String? startDate,
+    String? Function()? endDate,
+    List<String>? skippedPeriods,
+  }) {
+    return RecurringPayment(
+      localId: localId,
+      uid: uid,
+      dbType: dbType ?? this.dbType,
+      dbCategory: dbCategory ?? this.dbCategory,
+      amount: amount ?? this.amount,
+      currencyCode: currencyCode ?? this.currencyCode,
+      description: description ?? this.description,
+      dayOfMonth: dayOfMonth ?? this.dayOfMonth,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate != null ? endDate() : this.endDate,
+      skippedPeriods: [...(skippedPeriods ?? this.skippedPeriods)],
+      isModified: true,
+      isOnServer: isOnServer,
+    );
+  }
+
+  /// Разбирает ответ сервера; подтверждённый сервером платёж не изменён.
+  factory RecurringPayment.fromJson(Map<String, dynamic> json) {
+    return RecurringPayment(
+      uid: json['id'] as String? ?? '',
+      dbType: json['type'] as String? ?? TransactionType.expense.name,
+      dbCategory: json['category'] as String? ?? Category.other.name,
+      amount: parseAmount(json['amount']),
+      currencyCode: (json['currency'] as String? ??
+              CurrencyFormatter.currentCurrency.code)
+          .toUpperCase(),
+      description: json['description'] as String? ?? '',
+      dayOfMonth: parseInteger(json['day_of_month'], 1).clamp(1, 31),
+      startDate: json['start_date'] as String? ?? '',
+      endDate: json['end_date'] as String?,
+      skippedPeriods:
+          (json['skipped_periods'] as List?)?.whereType<String>().toList() ??
+              [],
+      isModified: false,
+      isOnServer: true,
+    );
+  }
+
+  /// Платёж в разборе ответа годен: есть id и дата начала.
+  @Transient()
+  bool get isValid => uid.isNotEmpty && parseDateOnly(startDate) != null;
+
+  /// Тело для `recurring_payments` в `/sync/`.
+  Map<String, dynamic> toJson() => {
+        'id': uid,
+        'type': dbType,
+        'category': dbCategory,
+        'amount': amount,
+        'currency': currencyCode,
+        'description': description,
+        'day_of_month': dayOfMonth,
+        'start_date': startDate,
+        'end_date': endDate,
+        'skipped_periods': [...skippedPeriods]..sort(),
+      };
 }

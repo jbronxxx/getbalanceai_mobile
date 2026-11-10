@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
-import '../category_style.dart';
+import '../category_icon_badge.dart';
 import '../one_line_label.dart';
 import '../swipe_to_delete.dart';
 import '../../theme/app_colors.dart';
@@ -23,6 +23,9 @@ class TransactionItemTile extends StatelessWidget {
   final VoidCallback? onHintShown;
   final bool showDate;
 
+  /// Запись «Оплачено» регулярного платежа — рядом с названием значок ⟳.
+  final bool isRecurring;
+
   const TransactionItemTile({
     super.key,
     required this.transaction,
@@ -32,6 +35,7 @@ class TransactionItemTile extends StatelessWidget {
     required this.onDelete,
     this.onHintShown,
     this.showDate = false,
+    this.isRecurring = false,
   });
 
   /// Непрозрачный фон строки: сквозь него не просвечивает красная подложка
@@ -39,26 +43,31 @@ class TransactionItemTile extends StatelessWidget {
   static Color backgroundColor(BuildContext context) =>
       AppColors.of(context).cardBackground;
 
-  static const _iconSize = 40.0;
+  static const _iconSize = CategoryIconBadge.size;
   static const _gap = 16.0; // ListTile.horizontalTitleGap по умолчанию
   static const _groupIndent = 72.0;
 
-  /// Сколько места отдать сумме: название категории (или день) получает
-  /// свою ширину — при крупном шрифте не «Пита…», сумма — остальное, но не
-  /// меньше 40% строки.
-  double _amountMaxWidth(
-    BuildContext context,
-    double tileWidth,
-    String title,
-    TextStyle? style,
-  ) =>
+  /// Сколько места отдать сумме в строке ленты: название категории (или
+  /// день) получает свою ширину — при крупном шрифте не «Пита…», сумма —
+  /// остальное, но не меньше 40% строки. [titleExtra] — ширина значка
+  /// рядом с названием. [withIcon] — строка с иконкой
+  /// категории слева, иначе — с отступом под текст заголовка группы.
+  static double amountMaxWidth(
+    BuildContext context, {
+    required double tileWidth,
+    required String title,
+    required TextStyle? titleStyle,
+    double titleExtra = 0,
+    bool withIcon = true,
+  }) =>
       OneLineLabel.spaceBeside(
         context,
         available: tileWidth -
-            (showDate ? _groupIndent + _gap : 2 * _gap + _iconSize + _gap) -
+            (withIcon ? 2 * _gap + _iconSize + _gap : _groupIndent + _gap) -
             _gap,
         title: title,
-        titleStyle: style,
+        titleStyle: titleStyle,
+        titleExtra: titleExtra,
       );
 
   @override
@@ -68,7 +77,6 @@ class TransactionItemTile extends StatelessWidget {
     final textTheme = theme.textTheme;
     final isExpense = transaction.type == TransactionType.expense;
     final category = transaction.category;
-    final categoryColor = CategoryStyle.color(category);
     final categoryName = category.getLocalizedName(context);
     final hasDescription = transaction.description.trim().isNotEmpty;
     final title = showDate
@@ -95,31 +103,29 @@ class TransactionItemTile extends StatelessWidget {
             contentPadding: showDate
                 ? const EdgeInsets.only(left: _groupIndent, right: _gap)
                 : const EdgeInsets.symmetric(horizontal: _gap),
-            leading: showDate
-                ? null
-                : Container(
-                    width: _iconSize,
-                    height: _iconSize,
-                    decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: categoryColor.withValues(alpha: 0.25),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Icon(
-                      CategoryStyle.icon(category),
-                      color: categoryColor,
-                      size: 20,
-                    ),
-                  ),
+            leading: showDate ? null : CategoryIconBadge(category: category),
             // Длинное название при крупном шрифте слегка уменьшается,
             // а не обрезается «…»
-            title: OneLineLabel(
-              title,
-              alignment: AlignmentDirectional.centerStart,
-              style: titleStyle,
+            title: Row(
+              children: [
+                Flexible(
+                  child: OneLineLabel(
+                    title,
+                    alignment: AlignmentDirectional.centerStart,
+                    style: titleStyle,
+                  ),
+                ),
+                if (isRecurring)
+                  Padding(
+                    key: const ValueKey('transaction_recurring_mark'),
+                    padding: const EdgeInsetsDirectional.only(start: 4),
+                    child: Icon(
+                      Icons.repeat_rounded,
+                      size: AppFontSize.hint,
+                      color: colorScheme.outline,
+                    ),
+                  ),
+              ],
             ),
             subtitle: hasDescription
                 ? Text(
@@ -134,8 +140,13 @@ class TransactionItemTile extends StatelessWidget {
                 : null,
             trailing: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: _amountMaxWidth(
-                    context, constraints.maxWidth, title, titleStyle),
+                maxWidth: amountMaxWidth(
+                  context,
+                  tileWidth: constraints.maxWidth,
+                  title: title,
+                  titleStyle: titleStyle,
+                  withIcon: !showDate,
+                ),
               ),
               // Сумма и «≈ в основной валюте» при крупном шрифте могут не
               // поместиться и по высоте строки — тогда обе слегка уменьшаются

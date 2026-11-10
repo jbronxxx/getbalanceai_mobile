@@ -344,7 +344,6 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         child: SheetOutlinedButton(
                           key: const ValueKey('budget_sheet_delete'),
                           label: context.l10n.delete_btn,
-                          icon: const Icon(Icons.delete_outline_rounded),
                           color: colorScheme.error,
                           onPressed: _deleteBudget,
                         ),

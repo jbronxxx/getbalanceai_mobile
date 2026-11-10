@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
+import '../whole_words_text.dart';
 
 /// Главная карточка вкладки «Бюджет» в стиле карточки баланса дашборда.
 ///
@@ -125,6 +126,20 @@ class _SummaryContent extends StatelessWidget {
             style: textTheme.bodySmall?.copyWith(color: white82),
           ),
         ],
+        // Относится к «Можно тратить в день»: при перерасходе её нет
+        if (summary.periodState == BudgetPeriodState.current &&
+            !summary.isExceeded &&
+            summary.reservedCount > 0) ...[
+          const SizedBox(height: 2),
+          WholeWordsText(
+            l10n.daily_allowance_reserved(
+              summary.reservedCount,
+              CurrencyFormatter.format(summary.reservedAmount),
+            ),
+            key: const ValueKey('month_budget_reserved'),
+            style: textTheme.bodySmall?.copyWith(color: white82),
+          ),
+        ],
         if (showProgress) ...[
           const SizedBox(height: 16),
           ClipRRect(
@@ -184,11 +199,9 @@ class _EmptyContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        FilledButton.icon(
+        FilledButton(
           key: const ValueKey('month_budget_add_limit'),
           onPressed: onAddLimit,
-          icon: const Icon(Icons.add_rounded),
-          label: Text(context.l10n.add_limit_cta),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.onBrandBase,
             foregroundColor: AppColors.of(context).brandGradientStart,
@@ -196,14 +209,13 @@ class _EmptyContent extends StatelessWidget {
             shape: const StadiumBorder(),
             textStyle: buttonTextStyle,
           ),
+          child: Text(context.l10n.add_limit_cta),
         ),
         if (copyFrom != null) ...[
           const SizedBox(height: 10),
-          OutlinedButton.icon(
+          OutlinedButton(
             key: const ValueKey('month_budget_copy_limits'),
             onPressed: onCopyLimits,
-            icon: const Icon(Icons.content_copy_rounded, size: 20),
-            label: Text(context.l10n.copy_limits_cta('m${copyFrom.month}')),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.onBrandBase,
               side: BorderSide(
@@ -214,6 +226,7 @@ class _EmptyContent extends StatelessWidget {
               shape: const StadiumBorder(),
               textStyle: buttonTextStyle,
             ),
+            child: Text(context.l10n.copy_limits_cta('m${copyFrom.month}')),
           ),
         ],
       ],

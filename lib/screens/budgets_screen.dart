@@ -41,6 +41,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
   /// лимитам они уже не учитываются.
   final _transactionDeletions = UndoableDeletions.transactions;
 
+  /// Остановленные регулярные платежи (ждут отмены) уже не откладываются.
+  final _recurringDeletions = UndoableDeletions.recurringPayments;
+
+  /// Ожидающие оплаты регулярные платежи текущего месяца по категориям.
+  Map<String, ({double amount, int count})> _reserved = const {};
+
   @override
   void initState() {
     super.initState();
@@ -49,8 +55,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
     CurrencyFormatter.currencyNotifier.addListener(_onDataChanged);
     SelectedPeriodService.instance.periodNotifier.addListener(_onDataChanged);
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
+    LocalDbService.recurringPaymentsChanged.addListener(_onDataChanged);
     _deletions.addListener(_onDataChanged);
     _transactionDeletions.addListener(_onDataChanged);
+    _recurringDeletions.addListener(_onDataChanged);
   }
 
   /// Перечитывает лимиты и расходы при смене валюты, периода или операций
@@ -66,7 +74,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onDataChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
+    LocalDbService.recurringPaymentsChanged.removeListener(_onDataChanged);
     _transactionDeletions.removeListener(_onDataChanged);
+    _recurringDeletions.removeListener(_onDataChanged);
     // Очередь общая: при уходе с экрана скрытые лимиты удаляются сразу
     _deletions
       ..removeListener(_onDataChanged)
@@ -82,6 +92,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
         _shouldShowSwipeHint = true;
       });
     }
+  }
+
+  /// Отложенное на регулярные платежи — только для текущего месяца и без
+  /// остановленных платежей, ожидающих отмены.
+  Map<String, ({double amount, int count})> _loadReserved() {
+    final period = SelectedPeriodService.instance.period;
+    if (period != MonthPeriod.current()) return const {};
+    return RecurringPaymentService.instance
+        .pendingByCategory(exclude: _recurringDeletions.isPending);
   }
 
   /// Загружает лимиты и расходы по категориям за выбранный месяц: один
@@ -111,7 +130,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
       if (currency == base) continue;
       foreign[currency] = db.categoryExpensesFor(transactions, currency);
     }
+    final reserved = _loadReserved();
     setState(() {
+      _reserved = reserved;
       _budgets = budgets;
       _previousBudgets = previousBudgets;
       _categoryExpenses = catExpenses;
@@ -251,6 +272,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> with ReloadWhenVisible {
                           budgets: _budgets,
                           spentByCategory: _categoryExpenses,
                           period: SelectedPeriodService.instance.period,
+                          reservedByCategory: _reserved,
                         ),
                         onAddLimit: () => _openAddBudgetSheet(),
                         copyLimitsFrom: _previousBudgets.isEmpty

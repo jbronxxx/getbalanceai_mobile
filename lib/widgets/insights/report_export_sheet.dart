@@ -236,12 +236,6 @@ class _ExportButtons extends StatelessWidget {
         );
   }
 
-  Widget _spinner() => const SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      );
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -258,9 +252,7 @@ class _ExportButtons extends StatelessWidget {
               onPressed: state.canExport
                   ? () => _export(buttonContext, ReportDeliveryMode.save)
                   : null,
-              icon: busy(ReportDeliveryMode.save)
-                  ? _spinner()
-                  : const Icon(Icons.download_rounded),
+              busy: busy(ReportDeliveryMode.save),
             ),
           ),
         ),
@@ -273,7 +265,7 @@ class _ExportButtons extends StatelessWidget {
                 ? () => _export(buttonContext, ReportDeliveryMode.share)
                 : null,
             icon: busy(ReportDeliveryMode.share)
-                ? _spinner()
+                ? SheetButtons.spinner(Theme.of(context).colorScheme.primary)
                 : const Icon(Icons.ios_share_rounded),
           ),
         ),

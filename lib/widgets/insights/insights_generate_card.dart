@@ -56,17 +56,16 @@ class InsightsGenerateCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.icon(
+            child: FilledButton(
               key: const ValueKey('insights_generate_button'),
               onPressed: onGenerate,
-              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-              label: Text(context.l10n.insights_generate_btn),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
+              child: Text(context.l10n.insights_generate_btn),
             ),
           ),
         ],

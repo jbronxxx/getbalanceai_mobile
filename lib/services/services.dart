@@ -13,6 +13,8 @@ export 'local_db_service.dart';
 export 'pdf_report_generator.dart';
 export 'pending_deletions_store.dart';
 export 'preferences_service.dart';
+export 'recurring_payment_service.dart';
+export 'recurring_reminder_service.dart';
 export 'report_data_service.dart';
 export 'report_export_service.dart';
 export 'selected_period_service.dart';

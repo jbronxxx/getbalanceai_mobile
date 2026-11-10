@@ -994,4 +994,133 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get edit_name_error => 'Ismni saqlab bo\'lmadi';
+
+  @override
+  String get recurring_every_month => 'Har oy';
+
+  @override
+  String recurring_every_day(int day) {
+    return 'Har oy, $day-kun';
+  }
+
+  @override
+  String get recurring_end_none => 'Muddatsiz';
+
+  @override
+  String recurring_end_until(String date) {
+    return '$date gacha';
+  }
+
+  @override
+  String recurring_end_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta to\'lov',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurring_end_title => 'Qancha takrorlash';
+
+  @override
+  String get recurring_end_pick_date => 'Tugash sanasini tanlash';
+
+  @override
+  String get recurring_add_btn => 'Doimiy qo\'shish';
+
+  @override
+  String get recurring_expected => 'Kutilmoqda';
+
+  @override
+  String get recurring_not_paid => 'To\'lanmagan';
+
+  @override
+  String get recurring_payment_title => 'Doimiy to\'lov';
+
+  @override
+  String get recurring_income_title => 'Doimiy daromad';
+
+  @override
+  String get recurring_pay_title => 'To\'lovni belgilash';
+
+  @override
+  String get recurring_receive_title => 'Olinganini belgilash';
+
+  @override
+  String get recurring_paid_btn => 'To\'landi';
+
+  @override
+  String get recurring_received_btn => 'Olindi';
+
+  @override
+  String get recurring_skip_btn => 'Bu oyni o\'tkazish';
+
+  @override
+  String get recurring_stop_btn => 'To\'xtatish';
+
+  @override
+  String get recurring_skipped_toast => 'Bu oyda o\'tkazildi';
+
+  @override
+  String get recurring_stopped_toast => 'Doimiy to\'lov to\'xtatildi';
+
+  @override
+  String get recurring_repeat_label => 'Takrorlash';
+
+  @override
+  String get recurring_due_label => 'To\'lov sanasi';
+
+  @override
+  String recurring_progress(int number, int total) {
+    return '$total tadan $number-to\'lov';
+  }
+
+  @override
+  String daily_allowance_reserved(int count, String amount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta to\'lov hisobga olingan · $amount',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reminder_channel_name => 'Doimiy to\'lovlar';
+
+  @override
+  String get reminder_channel_description =>
+      'Doimiy to\'lov yoki daromad kunida eslatma';
+
+  @override
+  String reminder_payment_title(String name) {
+    return 'Bugun to\'lov: $name';
+  }
+
+  @override
+  String reminder_income_title(String name) {
+    return 'Bugun kutilmoqda: $name';
+  }
+
+  @override
+  String reminder_payment_body(String amount) {
+    return '$amount — to\'lovni belgilash uchun bosing';
+  }
+
+  @override
+  String reminder_income_body(String amount) {
+    return '$amount — olinganini belgilash uchun bosing';
+  }
+
+  @override
+  String get debug_test_reminder => '10 soniyadan keyin eslatma';
+
+  @override
+  String get debug_reminder_scheduled =>
+      'Eslatma 10 soniyadan keyin keladi — ilovani yopish mumkin';
+
+  @override
+  String get debug_reminder_none => 'Kutilayotgan doimiy to\'lovlar yo\'q';
 }

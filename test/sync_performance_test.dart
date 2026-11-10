@@ -8,6 +8,7 @@ import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/services/sync_service.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/config/api_config.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 
 void main() {
@@ -85,7 +86,8 @@ void main() {
         if (options.path == '/sync/changes') {
           return handler.resolve(onChanges(options));
         }
-        if (options.path.contains('/budgets')) {
+        if ((options.path.contains('/budgets') ||
+            options.path == ApiConfig.recurringPayments)) {
           return handler.resolve(noBudgets(options));
         }
         return handler.next(options);
@@ -219,7 +221,8 @@ void main() {
           if (options.path == '/sync/changes') {
             return handler.resolve(changes(options, const []));
           }
-          if (options.path.contains('/budgets')) {
+          if ((options.path.contains('/budgets') ||
+              options.path == ApiConfig.recurringPayments)) {
             return handler
                 .resolve(Response(requestOptions: options, statusCode: 304));
           }

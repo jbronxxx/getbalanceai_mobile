@@ -84,6 +84,7 @@ void main() {
     db = _MockLocalDbService();
     LocalDbService.instance = db;
     when(() => db.getUnsyncedBudgets()).thenReturn([]);
+    when(() => db.getUnsyncedRecurringPayments()).thenReturn([]);
     when(() => db.putTransactions(any())).thenReturn(null);
     when(() => db.putBudgets(any())).thenReturn(null);
     _rows.clear();

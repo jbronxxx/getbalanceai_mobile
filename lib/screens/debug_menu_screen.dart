@@ -128,6 +128,20 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
             },
             child: Text(l10n.debug_clear_cache),
           ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            key: const ValueKey('debug_test_reminder'),
+            onPressed: () async {
+              final reminders = RecurringReminderService.instance;
+              await reminders.requestPermission();
+              final scheduled = await reminders.debugRemindSoon();
+              if (!context.mounted) return;
+              scheduled
+                  ? AppAlerts.success(context, l10n.debug_reminder_scheduled)
+                  : AppAlerts.warning(context, l10n.debug_reminder_none);
+            },
+            child: Text(l10n.debug_test_reminder),
+          ),
         ],
       ),
     );

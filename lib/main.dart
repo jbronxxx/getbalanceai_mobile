@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/main_shell.dart';
+import 'screens/record_actions.dart';
 import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
 import 'screens/startup_error_screen.dart';
@@ -132,6 +133,11 @@ void _runFinanceApp() {
   runApp(const FinanceApp());
   AutoSyncService.instance.start();
   SelectedPeriodService.instance.start();
+  // Тап на напоминание о регулярном платеже открывает его карточку
+  unawaited(RecurringReminderService.instance.start(onOpen: (occurrence) {
+    final context = navigatorKey.currentContext;
+    if (context != null) RecordActions.openRecurring(context, occurrence);
+  }));
 }
 
 Future<void> _setPreferredOrientations() async {
