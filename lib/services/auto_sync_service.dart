@@ -45,10 +45,7 @@ class AutoSyncService {
     return AutoSyncService(
       sync: () => ApiService.instance.syncAll(),
       isAuthenticated: () => ApiService.instance.isAuthenticated,
-      flushDeletions: () => Future.wait([
-        UndoableDeletions.transactions.flush(),
-        UndoableDeletions.budgets.flush(),
-      ]),
+      flushDeletions: UndoableDeletions.flushAll,
       connectivityChanges: connectivity.onConnectivityChanged,
       checkConnectivity: connectivity.checkConnectivity,
     );

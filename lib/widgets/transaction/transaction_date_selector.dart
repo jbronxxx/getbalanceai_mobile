@@ -14,22 +14,34 @@ class TransactionDateSelector extends StatelessWidget {
   /// Текущий момент; параметр нужен для детерминированных тестов.
   final DateTime? now;
 
+  /// Можно выбрать дату позже сегодняшней (первый день регулярного платежа).
+  final bool allowFuture;
+
+  /// Чипы в той же строке после дат (повтор регулярного платежа).
+  final List<Widget> extraChips;
+
+  /// Насколько вперёд можно выбрать дату при [allowFuture].
+  static const futureRange = Duration(days: 366);
+
   const TransactionDateSelector({
     super.key,
     required this.date,
     required this.onChanged,
     this.now,
+    this.allowFuture = false,
+    this.extraChips = const [],
   });
 
   Future<void> _pickDate(BuildContext context, DateTime today) async {
     final first = SelectedPeriodService.instance.firstDate;
+    final lastDate = allowFuture ? today.add(futureRange) : today;
     final picked = await showDatePicker(
       context: context,
-      initialDate: date.isAfter(today) ? today : date,
+      initialDate: date.isAfter(lastDate) ? lastDate : date,
       // Операция старше диапазона (например, пришла с сервера) всё равно
       // открывается в календаре на своей дате.
       firstDate: date.isBefore(first) ? DateUtils.dateOnly(date) : first,
-      lastDate: today,
+      lastDate: lastDate,
     );
     if (picked != null) onChanged(DateUtils.dateOnly(picked));
   }
@@ -64,6 +76,7 @@ class TransactionDateSelector extends StatelessWidget {
           isSelected: isCustom,
           onTap: () => _pickDate(context, today),
         ),
+        ...extraChips,
       ],
     );
   }

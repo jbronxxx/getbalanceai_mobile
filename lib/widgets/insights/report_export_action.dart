@@ -22,20 +22,11 @@ class ReportExportAction extends StatelessWidget {
 
     return Tooltip(
       message: context.l10n.report_export_title,
-      child: TextButton.icon(
+      child: TextButton(
         onPressed: () => ReportExportSheet.show(
           context,
           month: selectedMonth,
           year: selectedYear,
-        ),
-        icon: const Icon(Icons.file_download_outlined, size: 18),
-        label: Text(
-          context.l10n.report_btn_short,
-          maxLines: 1,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.of(context).accentText,
-          ),
         ),
         style: TextButton.styleFrom(
           foregroundColor: AppColors.of(context).accentText,
@@ -43,6 +34,14 @@ class ReportExportAction extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          context.l10n.report_btn_short,
+          maxLines: 1,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.of(context).accentText,
           ),
         ),
       ),

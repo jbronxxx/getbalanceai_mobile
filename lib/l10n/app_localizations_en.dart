@@ -1002,4 +1002,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get edit_name_error => 'Couldn\'t save the name';
+
+  @override
+  String get recurring_every_month => 'Every month';
+
+  @override
+  String recurring_every_day(int day) {
+    return 'Every month on day $day';
+  }
+
+  @override
+  String get recurring_end_none => 'No end date';
+
+  @override
+  String recurring_end_until(String date) {
+    return 'Until $date';
+  }
+
+  @override
+  String recurring_end_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count payments',
+      one: '$count payment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurring_end_title => 'How long to repeat';
+
+  @override
+  String get recurring_end_pick_date => 'Pick an end date';
+
+  @override
+  String get recurring_add_btn => 'Add recurring';
+
+  @override
+  String get recurring_expected => 'Expected';
+
+  @override
+  String get recurring_not_paid => 'Not paid yet';
+
+  @override
+  String get recurring_payment_title => 'Recurring payment';
+
+  @override
+  String get recurring_income_title => 'Recurring income';
+
+  @override
+  String get recurring_pay_title => 'Mark as paid';
+
+  @override
+  String get recurring_receive_title => 'Mark as received';
+
+  @override
+  String get recurring_paid_btn => 'Paid';
+
+  @override
+  String get recurring_received_btn => 'Received';
+
+  @override
+  String get recurring_skip_btn => 'Skip this month';
+
+  @override
+  String get recurring_stop_btn => 'Stop';
+
+  @override
+  String get recurring_skipped_toast => 'Skipped this month';
+
+  @override
+  String get recurring_stopped_toast => 'Recurring payment stopped';
+
+  @override
+  String get recurring_repeat_label => 'Repeats';
+
+  @override
+  String get recurring_due_label => 'Due date';
+
+  @override
+  String recurring_progress(int number, int total) {
+    return 'Payment $number of $total';
+  }
+
+  @override
+  String daily_allowance_reserved(int count, String amount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Incl. $count upcoming payments · $amount',
+      one: 'Incl. $count upcoming payment · $amount',
+    );
+    return '$_temp0';
+  }
 }

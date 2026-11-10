@@ -123,6 +123,7 @@ void main() {
   late Transaction foreign;
   late Transaction rejected;
   late Budget budget;
+  late RecurringOccurrence occurrence;
 
   setUpAll(() async {
     FlutterSecureStorage.setMockInitialValues({});
@@ -210,6 +211,30 @@ void main() {
       spent: 0,
       remaining: 50,
     ));
+
+    // Ожидаемые сегодня регулярные платежи: строка в «Балансе» и
+    // отложенное в «Бюджете» (категория с лимитом)
+    final today = DateUtils.dateOnly(now);
+    RecurringPayment recurring(String uid, Category category, String name,
+            {DateTime? end}) =>
+        RecurringPayment(
+          uid: uid,
+          dbType: TransactionType.expense.name,
+          dbCategory: category.name,
+          amount: 350000000,
+          currencyCode: 'UZS',
+          description: name,
+          dayOfMonth: today.day,
+          startDate: formatDateOnly(today),
+          endDate: end == null ? null : formatDateOnly(end),
+        );
+    db.saveRecurringPayment(recurring('wrap-food', Category.food, 'Обеды'));
+    occurrence = RecurringOccurrence(
+      payment: recurring(
+          'wrap-loan', Category.housing, 'Ипотека за квартиру на Чиланзаре',
+          end: RecurringSchedule.lastPaymentDate(today, 24)),
+      period: MonthPeriod.current(today),
+    );
   });
 
   setUp(() {
@@ -632,6 +657,30 @@ void main() {
               onDelete: () {},
             )),
         open: tapOpen);
+    audit('Регулярный платёж',
+        () => sheetHost(() => RecurringOccurrenceSheet(occurrence: occurrence)),
+        open: tapOpen);
+    audit('Отметить оплату',
+        () => sheetHost(() => AddTransactionSheet(occurrence: occurrence)),
+        open: tapOpen);
+    audit('Новая запись: каждый месяц',
+        () => sheetHost(() => const AddTransactionSheet()),
+        open: (tester) async {
+      await tapOpen(tester);
+      await tester.tap(find.byKey(const ValueKey('recurrence_toggle')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+    });
+    audit(
+        'Сколько повторять', () => sheetHost(() => const AddTransactionSheet()),
+        open: (tester) async {
+      await tapOpen(tester);
+      await tester.tap(find.byKey(const ValueKey('recurrence_toggle')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('recurrence_end')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+    });
     audit('Карточка операции в валюте',
         () => sheetHost(() => TransactionDetailsSheet(transaction: foreign)),
         open: tapOpen);
@@ -673,7 +722,6 @@ void main() {
               confirmText: context.l10n.logout,
               cancelText: context.l10n.cancel,
               isDestructive: true,
-              icon: Icons.logout_rounded,
             )),
         open: tapOpen);
     audit(
@@ -685,7 +733,6 @@ void main() {
               confirmText: context.l10n.delete_account_confirm_btn,
               cancelText: context.l10n.cancel,
               isDestructive: true,
-              icon: Icons.delete_forever_rounded,
             )),
         open: tapOpen);
     audit(

@@ -1007,4 +1007,102 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get edit_name_error => 'Не удалось сохранить имя';
+
+  @override
+  String get recurring_every_month => 'Каждый месяц';
+
+  @override
+  String recurring_every_day(int day) {
+    return 'Каждое $day-е';
+  }
+
+  @override
+  String get recurring_end_none => 'Без срока';
+
+  @override
+  String recurring_end_until(String date) {
+    return 'До $date';
+  }
+
+  @override
+  String recurring_end_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count платежа',
+      many: '$count платежей',
+      few: '$count платежа',
+      one: '$count платёж',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recurring_end_title => 'Сколько повторять';
+
+  @override
+  String get recurring_end_pick_date => 'Выбрать дату окончания';
+
+  @override
+  String get recurring_add_btn => 'Добавить регулярный';
+
+  @override
+  String get recurring_expected => 'Ожидается';
+
+  @override
+  String get recurring_not_paid => 'Не оплачено';
+
+  @override
+  String get recurring_payment_title => 'Регулярный платёж';
+
+  @override
+  String get recurring_income_title => 'Регулярный доход';
+
+  @override
+  String get recurring_pay_title => 'Отметить оплату';
+
+  @override
+  String get recurring_receive_title => 'Отметить получение';
+
+  @override
+  String get recurring_paid_btn => 'Оплачено';
+
+  @override
+  String get recurring_received_btn => 'Получено';
+
+  @override
+  String get recurring_skip_btn => 'Пропустить месяц';
+
+  @override
+  String get recurring_stop_btn => 'Остановить';
+
+  @override
+  String get recurring_skipped_toast => 'Пропущено в этом месяце';
+
+  @override
+  String get recurring_stopped_toast => 'Регулярный платёж остановлен';
+
+  @override
+  String get recurring_repeat_label => 'Повтор';
+
+  @override
+  String get recurring_due_label => 'Дата платежа';
+
+  @override
+  String recurring_progress(int number, int total) {
+    return 'Платёж $number из $total';
+  }
+
+  @override
+  String daily_allowance_reserved(int count, String amount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'С учётом $count платежа · $amount',
+      many: 'С учётом $count платежей · $amount',
+      few: 'С учётом $count платежей · $amount',
+      one: 'С учётом $count платежа · $amount',
+    );
+    return '$_temp0';
+  }
 }

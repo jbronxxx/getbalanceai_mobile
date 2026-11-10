@@ -5,7 +5,7 @@ import '../theme/theme.dart';
 import '../utils/utils.dart';
 import '../widgets/dashboard/dashboard.dart';
 import '../widgets/widgets.dart';
-import 'add_transaction_sheet.dart';
+import 'record_actions.dart';
 
 /// Поиск операций по всей истории: текст (описание или категория), тип и
 /// валюта. Результаты по дням, как в ленте «Баланса»; тап открывает
@@ -83,23 +83,9 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen>
 
   void _update(TransactionSearch search) => setState(() => _search = search);
 
-  Future<void> _openTransactionDetails(Transaction transaction) async {
-    final action = await TransactionDetailsSheet.show(context, transaction);
-    if (!mounted || action == null) return;
-    switch (action) {
-      case TransactionDetailsAction.edit:
-        showModalBottomSheet<bool>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: AppColors.transparent,
-          builder: (context) => AddTransactionSheet(
-            transactionToEdit: transaction,
-          ),
-        );
-      case TransactionDetailsAction.delete:
-        _deleteTransaction(transaction);
-    }
-  }
+  Future<void> _openTransactionDetails(Transaction transaction) =>
+      RecordActions.openTransaction(context, transaction,
+          onDelete: _deleteTransaction);
 
   void _deleteTransaction(Transaction transaction) {
     _deletions.schedule(transaction);

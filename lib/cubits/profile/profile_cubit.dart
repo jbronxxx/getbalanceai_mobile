@@ -96,19 +96,14 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Есть ли что выгрузить перед выходом: неотправленные изменения или
   /// записи, ожидающие удаления после «Отменить».
   bool get hasChangesToUpload =>
-      _countPendingSync() > 0 ||
-      UndoableDeletions.transactions.hasPending ||
-      UndoableDeletions.budgets.hasPending;
+      _countPendingSync() > 0 || UndoableDeletions.anyPending;
 
   /// Готовит выход: выполняет отложенные удаления и пробует выгрузить
   /// неотправленные изменения. Ошибки синхронизации не показываются —
   /// возвращается число изменений, которые останутся только на устройстве
   /// и будут удалены при выходе.
   Future<int> prepareLogout() async {
-    await Future.wait([
-      UndoableDeletions.transactions.flush(),
-      UndoableDeletions.budgets.flush(),
-    ]);
+    await UndoableDeletions.flushAll();
     if (_countPendingSync() == 0) return 0;
 
     try {

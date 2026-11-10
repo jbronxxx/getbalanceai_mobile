@@ -17,8 +17,9 @@ import '../utils/app_logger.dart';
 /// Сюда попадают `serverId` записей, удалённых пока приложение было без
 /// сети или без авторизации (гостевой режим после выхода из аккаунта), и на
 /// время онлайн-удаления. Очередь уходит на сервер в выгрузке
-/// [SyncService] — в `deleted_transaction_ids`/`deleted_budget_ids` запроса
-/// `/sync/`, без отдельного DELETE на каждую запись.
+/// [SyncService] — в `deleted_transaction_ids`/`deleted_budget_ids`/
+/// `deleted_recurring_payment_ids` запроса `/sync/`, без отдельного DELETE
+/// на каждую запись.
 ///
 /// Хранится файлом в каталоге документов приложения, а не в локальной БД:
 /// для новой ObjectBox-сущности потребовалась бы перегенерация
@@ -29,14 +30,20 @@ import '../utils/app_logger.dart';
 class PendingDeletionsStore {
   static PendingDeletionsStore? _instance;
   static PendingDeletionsStore get instance =>
-      _instance ??= PendingDeletionsStore._(null, {}, {});
+      _instance ??= PendingDeletionsStore._(null, {}, {}, {});
   static set instance(PendingDeletionsStore value) => _instance = value;
 
   final File? _file;
   final Set<String> _transactionIds;
   final Set<String> _budgetIds;
+  final Set<String> _recurringIds;
 
-  PendingDeletionsStore._(this._file, this._transactionIds, this._budgetIds);
+  PendingDeletionsStore._(
+    this._file,
+    this._transactionIds,
+    this._budgetIds,
+    this._recurringIds,
+  );
 
   /// Читает очередь с диска и инициализирует [instance]. Вызывается один раз
   /// при старте приложения. Повреждённый или нечитаемый файл не считается
@@ -47,6 +54,7 @@ class PendingDeletionsStore {
     final file = File(p.join(docsDir.path, 'pending_deletions.json'));
     final transactionIds = <String>{};
     final budgetIds = <String>{};
+    final recurringIds = <String>{};
 
     try {
       if (await file.exists()) {
@@ -58,6 +66,11 @@ class PendingDeletionsStore {
 
           final bgts = decoded['budgets'];
           if (bgts is List) budgetIds.addAll(bgts.whereType<String>());
+
+          final recurring = decoded['recurring_payments'];
+          if (recurring is List) {
+            recurringIds.addAll(recurring.whereType<String>());
+          }
         } else if (decoded is List) {
           // Миграция со старого формата, где был только список ID транзакций.
           transactionIds.addAll(decoded.whereType<String>());
@@ -67,7 +80,8 @@ class PendingDeletionsStore {
       AppLogger.w('Не удалось прочитать очередь удалений: $e');
     }
 
-    instance = PendingDeletionsStore._(file, transactionIds, budgetIds);
+    instance =
+        PendingDeletionsStore._(file, transactionIds, budgetIds, recurringIds);
   }
 
   /// `serverId` транзакций, удаление которых ещё нужно повторить на сервере.
@@ -76,10 +90,15 @@ class PendingDeletionsStore {
   /// `serverId` бюджетов, удаление которых ещё нужно повторить на сервере.
   Set<String> get budgetIds => Set.unmodifiable(_budgetIds);
 
-  bool get isEmpty => _transactionIds.isEmpty && _budgetIds.isEmpty;
+  /// `uid` регулярных платежей, удаление которых ещё нужно повторить.
+  Set<String> get recurringPaymentIds => Set.unmodifiable(_recurringIds);
+
+  bool get isEmpty =>
+      _transactionIds.isEmpty && _budgetIds.isEmpty && _recurringIds.isEmpty;
 
   /// Сколько удалений ждёт отправки на сервер.
-  int get count => _transactionIds.length + _budgetIds.length;
+  int get count =>
+      _transactionIds.length + _budgetIds.length + _recurringIds.length;
 
   /// Растёт при каждом изменении очереди — по нему Профиль пересчитывает
   /// число неотправленных изменений.
@@ -91,6 +110,10 @@ class PendingDeletionsStore {
 
   Future<void> addBudget(String serverId) async {
     if (_budgetIds.add(serverId)) await _flush();
+  }
+
+  Future<void> addRecurringPayment(String uid) async {
+    if (_recurringIds.add(uid)) await _flush();
   }
 
   /// Убирает из очереди удаления, доехавшие до сервера.
@@ -109,6 +132,14 @@ class PendingDeletionsStore {
     if (_budgetIds.length != sizeBefore) await _flush();
   }
 
+  /// Убирает из очереди удаления регулярных платежей, доехавшие до сервера.
+  Future<void> removeRecurringPayments(Iterable<String> uids) async {
+    final sizeBefore = _recurringIds.length;
+    _recurringIds.removeAll(uids.toSet());
+
+    if (_recurringIds.length != sizeBefore) await _flush();
+  }
+
   Future<void> _flush() async {
     changed.value++;
     final file = _file;
@@ -117,6 +148,7 @@ class PendingDeletionsStore {
       await file.writeAsString(jsonEncode({
         'transactions': _transactionIds.toList(),
         'budgets': _budgetIds.toList(),
+        'recurring_payments': _recurringIds.toList(),
       }));
     } catch (e) {
       // Запись не удалась — очередь останется только в памяти и будет
@@ -130,6 +162,7 @@ class PendingDeletionsStore {
   Future<void> clear() async {
     _transactionIds.clear();
     _budgetIds.clear();
+    _recurringIds.clear();
     await _flush();
   }
 }

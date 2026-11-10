@@ -104,6 +104,7 @@ void main() {
     await CurrencyFormatter.setCurrency(base);
     mockDb = _MockLocalDbService();
     when(() => mockDb.getFrequentCategories(any())).thenReturn(const []);
+    when(() => mockDb.getRecurringPayments()).thenReturn(const []);
     when(() => mockDb.saveTransaction(any())).thenReturn(null);
     when(() => mockDb.saveBudget(any())).thenReturn(null);
     when(() => mockDb.getSpentForCategory(any(), any(), any(), any()))

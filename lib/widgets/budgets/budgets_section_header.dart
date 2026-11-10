@@ -27,17 +27,16 @@ class BudgetsSectionHeader extends StatelessWidget {
               ),
             ),
           ),
-          TextButton.icon(
+          TextButton(
             key: const ValueKey('budgets_add_button'),
             onPressed: onAdd,
-            icon: const Icon(Icons.add_rounded, size: 20),
-            label: Text(context.l10n.add_limit_btn),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.of(context).accentText,
               backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 14),
             ),
+            child: Text(context.l10n.add_limit_btn),
           ),
         ],
       ),

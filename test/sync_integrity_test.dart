@@ -221,8 +221,10 @@ void main() {
         '/sync/',
         '/sync/changes',
         '/budgets/',
+        '/recurring-payments/',
         '/sync/changes',
         '/budgets/',
+        '/recurring-payments/',
       ]);
       expect(results, hasLength(2));
     });

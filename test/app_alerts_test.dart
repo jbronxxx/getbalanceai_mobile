@@ -20,8 +20,7 @@ void main() {
     );
   }
 
-  testWidgets(
-      'AppAlerts.success shows SnackBar with check_circle_rounded icon and text',
+  testWidgets('AppAlerts.success shows SnackBar with text and no icon',
       (WidgetTester tester) async {
     await tester.pumpWidget(buildTestApp(
       Builder(
@@ -42,10 +41,11 @@ void main() {
 
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Успешная операция'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    // Сообщения без иконок
+    expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
   });
 
-  testWidgets('AppAlerts.error shows SnackBar with error_rounded icon',
+  testWidgets('AppAlerts.error shows SnackBar without icon',
       (WidgetTester tester) async {
     await tester.pumpWidget(buildTestApp(
       Builder(
@@ -67,7 +67,8 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Внимание'), findsOneWidget); // Title should be visible
     expect(find.text('Ошибка сервера'), findsOneWidget);
-    expect(find.byIcon(Icons.error_rounded), findsOneWidget);
+    // Сообщения без иконок
+    expect(find.byIcon(Icons.error_rounded), findsNothing);
   });
 
   testWidgets('AppAlerts.noInternet shows unified network error message',
@@ -94,7 +95,8 @@ void main() {
     // Check if the unified text from LanguageManager is shown
     final expectedText = LanguageManager.l10n.no_internet_connection;
     expect(find.text(expectedText), findsOneWidget);
-    expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+    // Сообщения без иконок
+    expect(find.byIcon(Icons.warning_rounded), findsNothing);
   });
 
   testWidgets(
@@ -113,7 +115,6 @@ void main() {
                 message: 'Вы уверены, что хотите выйти?',
                 confirmText: 'Выйти',
                 cancelText: 'Отмена',
-                icon: Icons.logout_rounded,
               );
             },
             child: const Text('Show Dialog'),
@@ -130,7 +131,8 @@ void main() {
     expect(find.text('Вы уверены, что хотите выйти?'), findsOneWidget);
     expect(find.text('Отмена'), findsOneWidget);
     expect(find.text('Выйти'), findsOneWidget);
-    expect(find.byIcon(Icons.logout_rounded), findsOneWidget);
+    // Сообщения без иконок
+    expect(find.byIcon(Icons.logout_rounded), findsNothing);
 
     // Нажатие Отмена
     await tester.tap(find.text('Отмена'));
@@ -166,7 +168,6 @@ void main() {
                 message: 'Это действие необратимо.',
                 confirmText: 'Удалить',
                 isDestructive: true,
-                icon: Icons.delete_forever_rounded,
               );
             },
             child: const Text('Show Destructive Dialog'),
@@ -180,7 +181,8 @@ void main() {
 
     expect(find.text('Удалить аккаунт?'), findsOneWidget);
     expect(find.text('Это действие необратимо.'), findsOneWidget);
-    expect(find.byIcon(Icons.delete_forever_rounded), findsOneWidget);
+    // Сообщения без иконок
+    expect(find.byIcon(Icons.delete_forever_rounded), findsNothing);
 
     await tester.tap(find.text('Удалить'));
     await tester.pumpAndSettle();
@@ -204,7 +206,6 @@ void main() {
                 message: 'Вы уверены, что хотите выйти из аккаунта?',
                 confirmText: 'Выйти из аккаунта',
                 cancelText: 'Отмена',
-                icon: Icons.logout_rounded,
               );
             },
             child: const Text('Show Long Text Dialog'),

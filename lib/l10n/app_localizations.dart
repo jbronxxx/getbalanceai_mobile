@@ -1883,6 +1883,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save the name'**
   String get edit_name_error;
+
+  /// No description provided for @recurring_every_month.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month'**
+  String get recurring_every_month;
+
+  /// Repeat chip in the record form when monthly repeat is on: the payment day of month (1-31).
+  ///
+  /// In en, this message translates to:
+  /// **'Every month on day {day}'**
+  String recurring_every_day(int day);
+
+  /// No description provided for @recurring_end_none.
+  ///
+  /// In en, this message translates to:
+  /// **'No end date'**
+  String get recurring_end_none;
+
+  /// No description provided for @recurring_end_until.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}'**
+  String recurring_end_until(String date);
+
+  /// How many monthly payments in total (a loan for 12 months).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} payment} other{{count} payments}}'**
+  String recurring_end_count(int count);
+
+  /// No description provided for @recurring_end_title.
+  ///
+  /// In en, this message translates to:
+  /// **'How long to repeat'**
+  String get recurring_end_title;
+
+  /// No description provided for @recurring_end_pick_date.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an end date'**
+  String get recurring_end_pick_date;
+
+  /// No description provided for @recurring_add_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add recurring'**
+  String get recurring_add_btn;
+
+  /// No description provided for @recurring_expected.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected'**
+  String get recurring_expected;
+
+  /// No description provided for @recurring_not_paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not paid yet'**
+  String get recurring_not_paid;
+
+  /// No description provided for @recurring_payment_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring payment'**
+  String get recurring_payment_title;
+
+  /// No description provided for @recurring_income_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring income'**
+  String get recurring_income_title;
+
+  /// No description provided for @recurring_pay_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as paid'**
+  String get recurring_pay_title;
+
+  /// No description provided for @recurring_receive_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as received'**
+  String get recurring_receive_title;
+
+  /// No description provided for @recurring_paid_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get recurring_paid_btn;
+
+  /// No description provided for @recurring_received_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get recurring_received_btn;
+
+  /// No description provided for @recurring_skip_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip this month'**
+  String get recurring_skip_btn;
+
+  /// No description provided for @recurring_stop_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get recurring_stop_btn;
+
+  /// No description provided for @recurring_skipped_toast.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped this month'**
+  String get recurring_skipped_toast;
+
+  /// No description provided for @recurring_stopped_toast.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring payment stopped'**
+  String get recurring_stopped_toast;
+
+  /// No description provided for @recurring_repeat_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get recurring_repeat_label;
+
+  /// No description provided for @recurring_due_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get recurring_due_label;
+
+  /// No description provided for @recurring_progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment {number} of {total}'**
+  String recurring_progress(int number, int total);
+
+  /// Under the daily allowance on the Budget card: upcoming recurring payments in limited categories already set aside.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Incl. {count} upcoming payment · {amount}} other{Incl. {count} upcoming payments · {amount}}}'**
+  String daily_allowance_reserved(int count, String amount);
 }
 
 class _AppLocalizationsDelegate

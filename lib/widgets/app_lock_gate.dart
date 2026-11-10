@@ -98,8 +98,6 @@ class _AppLockScreenState extends State<AppLockScreen> {
               SheetPrimaryButton(
                 key: const ValueKey('app_unlock_button'),
                 label: context.l10n.app_unlock,
-                icon: Icon(Icons.fingerprint_rounded,
-                    color: colorScheme.onPrimary),
                 onPressed: _unlock,
               ),
             ],

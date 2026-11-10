@@ -254,7 +254,8 @@ void main() {
           unauthorized++;
           return _error(401, 'INVALID_TOKEN');
         }
-        if (options.path == ApiConfig.budgets) {
+        if (options.path == ApiConfig.budgets ||
+            options.path == ApiConfig.recurringPayments) {
           return _json({'status': 'success', 'data': <Object>[]});
         }
         final page = cursor == null ? 1 : int.parse(cursor as String);

@@ -141,10 +141,86 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "3:7763942003062970371",
+      "lastPropertyId": "13:2397507860431193943",
+      "name": "RecurringPayment",
+      "properties": [
+        {
+          "id": "1:5180859435250188094",
+          "name": "localId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8817398361588270069",
+          "name": "uid",
+          "indexId": "4:1790438962874727629",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:4963963299462895836",
+          "name": "dbType",
+          "type": 9
+        },
+        {
+          "id": "4:3453229520381796133",
+          "name": "dbCategory",
+          "type": 9
+        },
+        {
+          "id": "5:3411401379790062701",
+          "name": "amount",
+          "type": 8
+        },
+        {
+          "id": "6:6831351362658374150",
+          "name": "currencyCode",
+          "type": 9
+        },
+        {
+          "id": "7:3218839547639508405",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "8:3420662877416477128",
+          "name": "dayOfMonth",
+          "type": 6
+        },
+        {
+          "id": "9:597829826838645644",
+          "name": "startDate",
+          "type": 9
+        },
+        {
+          "id": "10:833539233488453604",
+          "name": "endDate",
+          "type": 9
+        },
+        {
+          "id": "11:8055162322987285634",
+          "name": "skippedPeriods",
+          "type": 30
+        },
+        {
+          "id": "12:4153575816068874835",
+          "name": "isModified",
+          "type": 1
+        },
+        {
+          "id": "13:2397507860431193943",
+          "name": "isOnServer",
+          "type": 1
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "2:4394803372386859630",
-  "lastIndexId": "3:6924193905683547091",
+  "lastEntityId": "3:7763942003062970371",
+  "lastIndexId": "4:1790438962874727629",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

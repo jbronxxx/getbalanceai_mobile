@@ -96,7 +96,7 @@ class _StartupErrorScreenState extends State<StartupErrorScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 52,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
@@ -108,7 +108,8 @@ class _StartupErrorScreenState extends State<StartupErrorScreen> {
                       ),
                     ),
                     onPressed: _retrying ? null : _retry,
-                    icon: _retrying
+                    // Пока идёт повтор — индикатор загрузки вместо подписи
+                    child: _retrying
                         ? SizedBox.square(
                             dimension: 20,
                             child: CircularProgressIndicator(
@@ -116,8 +117,7 @@ class _StartupErrorScreenState extends State<StartupErrorScreen> {
                               color: colorScheme.onPrimary,
                             ),
                           )
-                        : const Icon(Icons.refresh_rounded, size: 20),
-                    label: Text(context.l10n.service_unavailable_retry),
+                        : Text(context.l10n.service_unavailable_retry),
                   ),
                 ),
               ],

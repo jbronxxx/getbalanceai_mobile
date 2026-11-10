@@ -34,17 +34,19 @@ class OneLineLabel extends StatelessWidget {
   }
 
   /// Место для суммы рядом с названием в строке шириной [available]:
-  /// название получает свою ширину, сумма — остальное, но не меньше
-  /// [minShare] строки (тогда уменьшается и название).
+  /// название получает свою ширину (плюс [titleExtra] — значок рядом с
+  /// ним), сумма — остальное, но не меньше [minShare] строки (тогда
+  /// уменьшается и название).
   static double spaceBeside(
     BuildContext context, {
     required double available,
     required String title,
     TextStyle? titleStyle,
+    double titleExtra = 0,
     double minShare = 0.4,
   }) =>
       math.max(
-        available - widthOf(context, title, titleStyle),
+        available - widthOf(context, title, titleStyle) - titleExtra,
         available * minShare,
       );
 

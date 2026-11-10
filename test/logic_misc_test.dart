@@ -197,7 +197,7 @@ void main() {
       await tester.pumpWidget(_app(
         ReportExportAction(selectedMonth: 12, selectedYear: year),
       ));
-      await tester.tap(find.byIcon(Icons.file_download_outlined));
+      await tester.tap(find.text('Отчёт'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.calendar_today_rounded));
@@ -269,6 +269,7 @@ void main() {
       setUp(() {
         mockDb = _MockLocalDbService();
         when(() => mockDb.getFrequentCategories(any())).thenReturn(const []);
+        when(() => mockDb.getRecurringPayments()).thenReturn(const []);
         when(() => mockDb.saveTransaction(any())).thenReturn(null);
         LocalDbService.instance = mockDb;
       });
