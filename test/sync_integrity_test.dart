@@ -159,7 +159,7 @@ void main() {
             .add(Duration(minutes: dayOffset++))
             .millisecondsSinceEpoch,
         dateCreatedMilliseconds: DateTime(2026, 1, 1).millisecondsSinceEpoch,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
       );
 
   Transaction addTransaction({double amount = 50000}) {
@@ -172,7 +172,7 @@ void main() {
     final b = Budget(
       dbCategory: category,
       limitAmount: limit,
-      currencyCode: 'UZS',
+      currencyCode: 'EUR',
       month: 11,
       year: 2026,
       spent: 0,
@@ -560,8 +560,8 @@ void main() {
             'rejected': [
               {
                 'id': sent['id'],
-                'reason':
-                    'Идентификатор транзакции отклонен (конфликт идентификатора)',
+                'code': 'ID_CONFLICT',
+                'reason': 'id conflict',
               },
             ],
           },

@@ -183,14 +183,14 @@ void main() {
         tx('Зарплата', Category.salary, type: TransactionType.income));
     db.saveTransaction(tx('Подписка', Category.subscriptions,
         currency: 'EUR', amount: 12.99, daysAgo: 1));
-    db.saveTransaction(tx('Обед', Category.food, currency: 'KZT', daysAgo: 2));
+    db.saveTransaction(tx('Обед', Category.food, currency: 'USD', daysAgo: 2));
     for (final c in Category.expenseCategories) {
       db.saveTransaction(tx('', c, amount: 300, daysAgo: 3));
     }
     foreign =
         db.getAllTransactions().firstWhere((t) => t.description == 'Подписка');
-    // Сумма в сотни миллионов сумов рядом с датой и описанием
-    rejected = tx('Кофе', Category.food, currency: 'UZS', amount: 350000000)
+    // Сумма в сотни миллионов рядом с датой и описанием
+    rejected = tx('Кофе', Category.food, currency: 'EUR', amount: 350000000)
       ..syncRejectCode = 'INVALID_CURRENCY';
     budget = Budget(
       dbCategory: Category.food.name,
@@ -222,7 +222,7 @@ void main() {
           dbType: TransactionType.expense.name,
           dbCategory: category.name,
           amount: 350000000,
-          currencyCode: 'UZS',
+          currencyCode: 'EUR',
           description: name,
           dayOfMonth: today.day,
           startDate: formatDateOnly(today),
@@ -397,12 +397,12 @@ void main() {
     audit('Профиль', () => const MainShell(),
         open: (tester) => tapText(tester, LanguageManager.l10n.profile));
     // Длинные значения настроек и адрес — найдено на телефоне (×1.5):
-    // «Валют / а» рядом с «Узбекский сум», «gmail.co / m».
-    audit('Профиль: сум и длинный адрес', () => const MainShell(),
+    // «Валют / а» рядом с длинным названием валюты, «gmail.co / m».
+    audit('Профиль: валюта и длинный адрес', () => const MainShell(),
         open: (tester) async {
       when(() => authCubit.state).thenReturn(Authenticated(
           email: 'firstname.lastname.work@gmail.com', name: 'Евгений'));
-      await tester.runAsync(() => CurrencyFormatter.setCurrency(Currency.uzs));
+      await tester.runAsync(() => CurrencyFormatter.setCurrency(Currency.eur));
       addTearDown(() => CurrencyFormatter.setCurrency(Currency.usd));
       await tapText(tester, LanguageManager.l10n.profile);
     });
@@ -447,11 +447,11 @@ void main() {
     );
   });
 
-  group('UX-12: карточка лимита с суммами в сотни миллионов сумов', () {
-    final uzs = Budget(
+  group('UX-12: карточка лимита с суммами в сотни миллионов', () {
+    final bigBudget = Budget(
       dbCategory: Category.entertainment.name,
       limitAmount: 999999999,
-      currencyCode: 'UZS',
+      currencyCode: 'EUR',
       month: 11,
       year: 2026,
       spent: 0,
@@ -500,7 +500,7 @@ void main() {
                 body: Padding(
                   padding: const EdgeInsets.all(16),
                   child: BudgetItemCard(
-                    budget: uzs,
+                    budget: bigBudget,
                     currentSpent: spent,
                     isFirst: false,
                     showSwipeHint: false,
@@ -515,15 +515,15 @@ void main() {
             String nbsp(String s) => s.replaceAll(' ', '\u00A0');
             final line = l10n.budget_spent_of(
               nbsp(CurrencyFormatter.format(spent,
-                  showSymbol: false, currency: Currency.uzs)),
-              nbsp(CurrencyFormatter.format(999999999, currency: Currency.uzs)),
+                  showSymbol: false, currency: Currency.eur)),
+              nbsp(CurrencyFormatter.format(999999999, currency: Currency.eur)),
             );
             final p = tester.renderObject<RenderParagraph>(find.text(line));
             final config = '${language.name} ×$scale';
             if (p.didExceedMaxLines) problems.add('$config: обрезано «$line»');
             if (scale == 1.0) {
               final left = CurrencyFormatter.format((999999999 - spent).abs(),
-                      currency: Currency.uzs)
+                      currency: Currency.eur)
                   .replaceAll('-', CurrencyFormatter.typographicMinus);
               for (final s in _shrunkAmounts(tester, [left])) {
                 problems.add('$config: $s');
@@ -551,7 +551,7 @@ void main() {
     ]) {
       testWidgets(category.name, (tester) async {
         final problems = <String>[];
-        await CurrencyFormatter.setCurrency(Currency.uzs);
+        await CurrencyFormatter.setCurrency(Currency.eur);
         final transactions = [
           for (var i = 0; i < 3; i++)
             Transaction(
@@ -562,7 +562,7 @@ void main() {
               dateMilliseconds:
                   DateTime(2026, 11, i + 1).millisecondsSinceEpoch,
               dateCreatedMilliseconds: 0,
-              currencyCode: 'UZS',
+              currencyCode: 'EUR',
               baseAmount: 250000000,
             ),
         ];

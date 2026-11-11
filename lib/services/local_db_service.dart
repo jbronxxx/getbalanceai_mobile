@@ -78,63 +78,6 @@ class LocalDbService {
   /// Количество бюджетов в локальной базе.
   int get budgetsCount => _budgetBox.count();
 
-  /// Мигрирует старые транзакции, созданные до внедрения мультивалютности или с устаревшей валютой RUB.
-  /// Если baseAmount равен 0, заполняет его на основе amount и текущей валюты.
-  /// Если currencyCode равен RUB, переводит его в текущую базовую валюту —
-  /// поэтому вызывается после загрузки сохранённой валюты.
-  ///
-  /// Оба запроса — полный проход по таблице, поэтому при старте миграция
-  /// выполняется один раз (флаг в `PreferencesService`). Возвращает `false`,
-  /// если миграция не удалась и её нужно повторить.
-  bool migrateLegacyTransactions() {
-    try {
-      final legacyQuery = _transactionBox
-          .query(Transaction_.baseAmount
-              .lessOrEqual(0.0)
-              .and(Transaction_.amount.greaterThan(0.0)))
-          .build();
-      final legacy = legacyQuery.find();
-      legacyQuery.close();
-
-      if (legacy.isNotEmpty) {
-        final updated = <Transaction>[];
-        for (final tx in legacy) {
-          tx.baseAmount = tx.amount;
-          tx.exchangeRate = 1.0;
-          if (tx.currencyCode.isEmpty) {
-            tx.currencyCode = 'USD';
-          }
-          updated.add(tx);
-        }
-        _transactionBox.putMany(updated);
-        AppLogger.i(
-          '[LocalDbService] Migrated ${updated.length} legacy transactions with baseAmount',
-        );
-      }
-
-      final rubQuery = _transactionBox
-          .query(Transaction_.currencyCode.equals('RUB', caseSensitive: false))
-          .build();
-      final rubTxs = rubQuery.find();
-      rubQuery.close();
-
-      if (rubTxs.isNotEmpty) {
-        final currentCode = CurrencyFormatter.currentCurrency.code;
-        for (final tx in rubTxs) {
-          tx.currencyCode = currentCode;
-        }
-        _transactionBox.putMany(rubTxs);
-        AppLogger.i(
-          '[LocalDbService] Migrated ${rubTxs.length} legacy RUB transactions to $currentCode',
-        );
-      }
-      return true;
-    } catch (e) {
-      AppLogger.w('[LocalDbService] Legacy transactions migration skipped: $e');
-      return false;
-    }
-  }
-
   /// Открывает (или создаёт) файл базы данных в директории документов
   /// приложения и инициализирует [instance]. Должен быть вызван один раз
   /// при старте приложения, до первого обращения к [instance].

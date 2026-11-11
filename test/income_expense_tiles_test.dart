@@ -14,7 +14,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     LanguageManager.initFallback();
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
-    CurrencyFormatter.setCurrency(Currency.uzs);
+    CurrencyFormatter.setCurrency(Currency.eur);
   });
 
   tearDown(() => CurrencyFormatter.setCurrency(Currency.usd));

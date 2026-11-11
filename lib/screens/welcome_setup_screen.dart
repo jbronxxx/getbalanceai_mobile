@@ -51,8 +51,6 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
 
   static Currency _defaultCurrencyFor(AppLanguage language) =>
       switch (language) {
-        AppLanguage.uz => Currency.uzs,
-        AppLanguage.kk => Currency.kzt,
         AppLanguage.ru || AppLanguage.en => Currency.usd,
       };
 

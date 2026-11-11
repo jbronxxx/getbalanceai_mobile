@@ -35,7 +35,6 @@ class PreferencesService {
   static const _keyThemeMode = 'settings_theme_mode';
   static const _keyExchangeRates = 'cached_exchange_rates';
   static const _keyExchangeRatesUpdated = 'cached_exchange_rates_updated';
-  static const _keyLegacyTransactionsMigrated = 'legacy_transactions_migrated';
   static const _keyAppLockEnabled = 'privacy_app_lock_enabled';
   static const _keyHideBalance = 'privacy_hide_balance';
 
@@ -233,16 +232,6 @@ class PreferencesService {
     } catch (e, stack) {
       AppLogger.e('Ошибка при сохранении скрытия сумм', e, stack);
     }
-  }
-
-  /// Старые операции уже приведены к текущему формату
-  /// (`LocalDbService.migrateLegacyTransactions`).
-  Future<bool> isLegacyTransactionsMigrated() async {
-    return (await _prefs).getBool(_keyLegacyTransactionsMigrated) ?? false;
-  }
-
-  Future<void> setLegacyTransactionsMigrated() async {
-    await (await _prefs).setBool(_keyLegacyTransactionsMigrated, true);
   }
 
   // Храним идентификаторы экранов, где хинт уже был показан в этой сессии

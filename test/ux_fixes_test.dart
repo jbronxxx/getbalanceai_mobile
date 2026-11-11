@@ -313,8 +313,8 @@ void main() {
     test('первый поддерживаемый язык системы', () {
       expect(
         LanguageManager.languageForLocales(
-            const [Locale('de'), Locale('uz', 'UZ'), Locale('ru')]),
-        AppLanguage.uz,
+            const [Locale('de'), Locale('en', 'GB'), Locale('ru')]),
+        AppLanguage.en,
       );
       expect(
         LanguageManager.languageForLocales(const [Locale('de')]),
@@ -324,16 +324,25 @@ void main() {
 
     test('без сохранённого языка берётся язык системы', () async {
       await LanguageManager.loadSavedLanguage(
-        systemLocales: const [Locale('kk', 'KZ')],
+        systemLocales: const [Locale('ru', 'RU')],
       );
-      expect(LanguageManager.currentLanguage, AppLanguage.kk);
+      expect(LanguageManager.currentLanguage, AppLanguage.ru);
     });
 
     test('сохранённый язык важнее системного', () async {
       SharedPreferences.setMockInitialValues({});
       await PreferencesService.instance.saveLanguage('en');
       await LanguageManager.loadSavedLanguage(
-        systemLocales: const [Locale('kk')],
+        systemLocales: const [Locale('ru')],
+      );
+      expect(LanguageManager.currentLanguage, AppLanguage.en);
+    });
+
+    test('язык системы, которого нет в приложении, — английский', () async {
+      SharedPreferences.setMockInitialValues({});
+      LanguageManager.setLanguage(AppLanguage.ru, save: false);
+      await LanguageManager.loadSavedLanguage(
+        systemLocales: const [Locale('de'), Locale('uz')],
       );
       expect(LanguageManager.currentLanguage, AppLanguage.en);
     });

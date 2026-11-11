@@ -119,13 +119,13 @@ void main() {
         equals('https://api.getbalanceai.app/terms?lang=ru'),
       );
       expect(
-        LegalLinks.url(LegalPage.privacy, 'kk', baseUrl: prodBase).toString(),
-        equals('https://api.getbalanceai.app/privacy?lang=kk'),
+        LegalLinks.url(LegalPage.privacy, 'en', baseUrl: prodBase).toString(),
+        equals('https://api.getbalanceai.app/privacy?lang=en'),
       );
       expect(
-        LegalLinks.url(LegalPage.deleteAccount, 'uz', baseUrl: prodBase)
+        LegalLinks.url(LegalPage.deleteAccount, 'ru', baseUrl: prodBase)
             .toString(),
-        equals('https://api.getbalanceai.app/delete-account?lang=uz'),
+        equals('https://api.getbalanceai.app/delete-account?lang=ru'),
       );
     });
 

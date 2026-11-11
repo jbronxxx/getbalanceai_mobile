@@ -656,9 +656,8 @@ class SyncService {
     LocalDbService.instance.putTransactions(fresh);
   }
 
-  /// Код причины отказа по ID записи: `code` из `rejected`, а если сервер
-  /// его не прислал — [Transaction.unknownRejectCode] или [_idConflictCode],
-  /// распознанный по тексту `reason`.
+  /// Код причины отказа по ID записи: `code` из `rejected`, а если его нет —
+  /// [Transaction.unknownRejectCode].
   Map<String, String> _rejectedCodes(List<Map<String, dynamic>> rejected) {
     return {
       for (final json in rejected)
@@ -672,12 +671,9 @@ class SyncService {
 
   static String _rejectCode(Map<String, dynamic> json) {
     final code = json['code'];
-    if (code is String && code.isNotEmpty) return code;
-    final reason = json['reason'];
-    if (reason is String && reason.contains('конфликт идентификатора')) {
-      return _idConflictCode;
-    }
-    return Transaction.unknownRejectCode;
+    return code is String && code.isNotEmpty
+        ? code
+        : Transaction.unknownRejectCode;
   }
 
   /// Фиксирует в базе ответ `/sync/` для отправленных транзакций.

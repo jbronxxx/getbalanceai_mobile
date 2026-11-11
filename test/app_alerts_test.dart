@@ -5,7 +5,8 @@ import 'package:getbalanceai_mobile/utils/language_manager.dart';
 
 void main() {
   setUpAll(() {
-    LanguageManager.initFallback();
+    // Тексты в проверках — русские; язык по умолчанию — английский
+    LanguageManager.setLanguage(AppLanguage.ru, save: false);
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 

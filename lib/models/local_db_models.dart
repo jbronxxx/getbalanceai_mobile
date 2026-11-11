@@ -280,10 +280,8 @@ class Transaction {
   DateTime get date => DateTime.fromMillisecondsSinceEpoch(dateMilliseconds);
 
   @Transient()
-  Currency get currency => Currency.values.firstWhere(
-        (c) => c.code.toUpperCase() == currencyCode.toUpperCase(),
-        orElse: () => CurrencyFormatter.currentCurrency,
-      );
+  Currency get currency =>
+      Currency.fromCode(currencyCode) ?? CurrencyFormatter.currentCurrency;
 
   @Transient()
   double get effectiveBaseAmount {
@@ -416,13 +414,8 @@ class Budget {
   Category get category => Category.fromString(dbCategory);
 
   @Transient()
-  Currency get currency {
-    final code = currencyCode?.toUpperCase();
-    return Currency.values.firstWhere(
-      (c) => c.code == code,
-      orElse: () => CurrencyFormatter.currentCurrency,
-    );
-  }
+  Currency get currency =>
+      Currency.fromCode(currencyCode) ?? CurrencyFormatter.currentCurrency;
 
   /// Лимит в базовой валюте по текущему курсу — для сводки по всем лимитам.
   @Transient()
@@ -542,10 +535,8 @@ class RecurringPayment {
   Category get category => Category.fromString(dbCategory);
 
   @Transient()
-  Currency get currency => Currency.values.firstWhere(
-        (c) => c.code.toUpperCase() == currencyCode.toUpperCase(),
-        orElse: () => CurrencyFormatter.currentCurrency,
-      );
+  Currency get currency =>
+      Currency.fromCode(currencyCode) ?? CurrencyFormatter.currentCurrency;
 
   @Transient()
   DateTime get start => parseDateOnly(startDate) ?? DateTime(1970);

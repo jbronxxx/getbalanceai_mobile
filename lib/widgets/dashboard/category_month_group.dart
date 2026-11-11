@@ -138,7 +138,7 @@ class _CategoryMonthGroupState extends State<CategoryMonthGroup> {
                         const SizedBox(width: 16),
                         // Название — во всю ширину, сумма — второй строкой
                         // справа от числа операций: суммы в сотни миллионов
-                        // сумов в одной строке с названием обрезали его.
+                        // в одной строке с названием обрезали его.
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

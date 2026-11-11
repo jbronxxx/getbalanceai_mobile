@@ -34,7 +34,8 @@ void main() {
   final service = SelectedPeriodService.instance;
 
   setUpAll(() {
-    LanguageManager.initFallback();
+    // Тексты в проверках — русские; язык по умолчанию — английский
+    LanguageManager.setLanguage(AppLanguage.ru, save: false);
     registerFallbackValue(CancelToken());
   });
 

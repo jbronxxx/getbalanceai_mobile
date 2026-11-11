@@ -81,7 +81,8 @@ void main() {
         isFalse,
       );
       expect(CurrencyFormatter.roundToCurrency(19.999), 20);
-      expect(CurrencyFormatter.roundToCurrency(1234.6, Currency.uzs), 1235);
+      expect(
+          CurrencyFormatter.roundToCurrency(1234.567, Currency.eur), 1234.57);
     });
 
     test('format со знаком: почти ноль — без «+» и «−»', () {
@@ -359,10 +360,10 @@ void main() {
     });
 
     test('обратный отсчёт: единица секунд на языке интерфейса', () async {
-      final uz = await AppLocalizations.delegate.load(const Locale('uz'));
-      final kk = await AppLocalizations.delegate.load(const Locale('kk'));
-      expect(uz.rate_limit_countdown(5), contains('5 soniya'));
-      expect(kk.rate_limit_countdown(5), contains('5 сек.'));
+      final ru = await AppLocalizations.delegate.load(const Locale('ru'));
+      final en = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(ru.rate_limit_countdown(5), contains('5 сек.'));
+      expect(en.rate_limit_countdown(5), contains('5 sec'));
     });
   });
 }

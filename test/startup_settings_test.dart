@@ -25,24 +25,24 @@ void main() {
         () async {
       FlutterSecureStorage.setMockInitialValues({
         AuthApiService.sessionStorageKey: session,
-        'selected_currency': 'UZS',
-        'selected_language': 'uz',
+        'selected_currency': 'EUR',
+        'selected_language': 'en',
         'onboarding_setup_completed': 'true',
         'settings_theme_mode': 'light',
         'settings_dark_mode': 'false',
         'settings_notifications': 'true',
-        'cached_exchange_rates': '{"UZS":12500}',
+        'cached_exchange_rates': '{"EUR":0.92}',
         'cached_exchange_rates_updated': '1730000000000',
         'ux_hint_sessions_completed': '3',
       });
 
       await prefs.init();
 
-      expect(await prefs.getCurrency(), 'UZS');
-      expect(await prefs.getLanguage(), 'uz');
+      expect(await prefs.getCurrency(), 'EUR');
+      expect(await prefs.getLanguage(), 'en');
       expect(await prefs.loadSavedOnboardingStatus(), isTrue);
       expect(await prefs.getThemeMode(), ThemeMode.light);
-      expect(await prefs.getExchangeRates(), '{"UZS":12500}');
+      expect(await prefs.getExchangeRates(), '{"EUR":0.92}');
       expect(await prefs.getExchangeRatesUpdated(), 1730000000000);
       expect(await prefs.shouldShowSwipeHint('dashboard'), isFalse);
       expect(
@@ -66,22 +66,22 @@ void main() {
     }
 
     test('выполняется один раз', () async {
-      FlutterSecureStorage.setMockInitialValues({'selected_currency': 'UZS'});
+      FlutterSecureStorage.setMockInitialValues({'selected_currency': 'EUR'});
       await prefs.init();
 
-      await storage.write(key: 'selected_currency', value: 'KZT');
+      await storage.write(key: 'selected_currency', value: 'USD');
       await prefs.init();
 
-      expect(await prefs.getCurrency(), 'UZS');
+      expect(await prefs.getCurrency(), 'EUR');
     });
 
     test('не перезаписывает значение, уже сохранённое в настройках', () async {
-      SharedPreferences.setMockInitialValues({'selected_currency': 'KZT'});
-      FlutterSecureStorage.setMockInitialValues({'selected_currency': 'UZS'});
+      SharedPreferences.setMockInitialValues({'selected_currency': 'USD'});
+      FlutterSecureStorage.setMockInitialValues({'selected_currency': 'EUR'});
 
       await prefs.init();
 
-      expect(await prefs.getCurrency(), 'KZT');
+      expect(await prefs.getCurrency(), 'USD');
       expect(await storage.readAll(), isEmpty);
     });
 
@@ -95,7 +95,7 @@ void main() {
 
   group('Онбординг', () {
     test('без отметки считается пройденным, если язык уже выбран', () async {
-      SharedPreferences.setMockInitialValues({'selected_language': 'kk'});
+      SharedPreferences.setMockInitialValues({'selected_language': 'en'});
 
       expect(await prefs.loadSavedOnboardingStatus(), isTrue);
     });
@@ -104,16 +104,6 @@ void main() {
       await prefs.setOnboardingCompleted();
 
       expect(await prefs.loadSavedOnboardingStatus(), isTrue);
-    });
-  });
-
-  group('Миграция старых операций', () {
-    test('флаг выполнения сохраняется', () async {
-      expect(await prefs.isLegacyTransactionsMigrated(), isFalse);
-
-      await prefs.setLegacyTransactionsMigrated();
-
-      expect(await prefs.isLegacyTransactionsMigrated(), isTrue);
     });
   });
 

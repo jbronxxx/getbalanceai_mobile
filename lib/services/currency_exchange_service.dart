@@ -25,8 +25,6 @@ class CurrencyExchangeService {
   static const Map<String, double> _fallbackRatesToUsd = {
     'USD': 1.0,
     'EUR': 0.92,
-    'UZS': 12800.0,
-    'KZT': 495.0,
   };
 
   /// Текущие актуальные курсы к USD в оперативной памяти.
@@ -162,17 +160,17 @@ class CurrencyExchangeService {
   }
 
   /// Формирует читаемую строку курса для отображения в интерфейсе.
-  /// Например: `1 UZS ≈ 0.000078 $` или `1 $ ≈ 12800 сум`.
+  /// Например: `1 € ≈ 1.09 $` или `1 $ ≈ 0.92 €`.
   String formatRateDescription({
     required Currency from,
     required Currency to,
   }) {
     final rate = getRate(from: from, to: to);
     if (rate >= 1) {
-      return '1 ${from.localizedSymbol} ≈ ${rate.toStringAsFixed(2)} ${to.localizedSymbol}';
+      return '1 ${from.symbol} ≈ ${rate.toStringAsFixed(2)} ${to.symbol}';
     } else {
-      // Для мелких значений (например, 1 UZS в USD) выводим больше знаков
-      return '1 ${from.localizedSymbol} ≈ ${rate.toStringAsFixed(4)} ${to.localizedSymbol}';
+      // Для мелких значений выводим больше знаков
+      return '1 ${from.symbol} ≈ ${rate.toStringAsFixed(4)} ${to.symbol}';
     }
   }
 

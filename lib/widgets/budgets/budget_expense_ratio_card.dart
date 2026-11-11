@@ -486,7 +486,7 @@ class _CategoryLegendRow extends StatelessWidget {
           const SizedBox(height: 1.5),
           Padding(
             padding: const EdgeInsets.only(left: 13.0),
-            // Длинная сумма в сумах при крупном шрифте слегка уменьшается,
+            // Длинная сумма при крупном шрифте слегка уменьшается,
             // а не обрезается «…»
             child: OneLineLabel(
               CurrencyFormatter.format(amount, showSymbol: true),

@@ -52,10 +52,6 @@ void main() {
       expect(formatValue('10,0', '10,00').text, '10,00');
       expect(formatValue('10,00', '10,005').text,
           '10,00'); // should reject 3rd decimal place
-
-      CurrencyFormatter.setCurrency(Currency.uzs); // 0 decimal places
-      expect(formatValue('10', '10,').text, '10'); // should reject comma
-      expect(formatValue('10', '10,5').text, '10'); // should reject decimal
     });
 
     test('adds spaces as thousand separators', () {
@@ -128,17 +124,15 @@ void main() {
     test('знаки — по валюте суммы, а не по базовой', () {
       expect(CurrencyFormatter.formatForInput(19.99, Currency.usd), '19,99');
       expect(CurrencyFormatter.formatForInput(0.45, Currency.eur), '0,45');
-      expect(CurrencyFormatter.formatForInput(50000, Currency.uzs), '50 000');
-      expect(
-          CurrencyFormatter.formatForInput(1500000, Currency.kzt), '1 500 000');
+      expect(CurrencyFormatter.formatForInput(1500000, Currency.eur),
+          '1 500 000,00');
     });
 
     test('не зависит от языка и читается обратно без потерь', () {
       LanguageManager.setLanguage(AppLanguage.en, save: false);
 
       for (final (amount, currency) in [
-        (1500.0, Currency.uzs),
-        (1500000.0, Currency.kzt),
+        (1500000.0, Currency.eur),
         (1500.0, Currency.usd),
         (1234567.89, Currency.eur),
       ]) {
@@ -179,19 +173,17 @@ void main() {
     }
 
     test('неразрывный и узкий пробел, символ валюты', () {
-      expect(paste(Currency.uzs, '15\u00A0000 сум').text, '15 000');
-      expect(paste(Currency.uzs, '15\u202F000\u00A0сум').text, '15 000');
-      expect(paste(Currency.uzs, "15 000 so'm").text, '15 000');
-      expect(paste(Currency.uzs, '15 000 UZS').text, '15 000');
-      expect(paste(Currency.kzt, '2 500 ₸').text, '2 500');
+      expect(paste(Currency.eur, '15\u00A0000 €').text, '15 000');
+      expect(paste(Currency.eur, '15\u202F000\u00A0€').text, '15 000');
+      expect(paste(Currency.eur, '15 000 EUR').text, '15 000');
+      expect(paste(Currency.usd, '2 500 USD').text, '2 500');
       expect(paste(Currency.usd, r'$19.99').text, '19,99');
       expect(paste(Currency.eur, '€12,5').text, '12,5');
     });
 
     test('разделители тысяч EN и европейский формат', () {
-      expect(paste(Currency.uzs, '1,500,000').text, '1 500 000');
-      expect(paste(Currency.uzs, '1,500').text, '1 500');
-      expect(paste(Currency.uzs, '1.500').text, '1 500');
+      expect(paste(Currency.eur, '1,500,000').text, '1 500 000');
+      expect(paste(Currency.eur, '1.500,00').text, '1 500,00');
       expect(paste(Currency.usd, r'$1,500.00').text, '1 500,00');
       expect(paste(Currency.usd, '1.500,50').text, '1 500,50');
       expect(paste(Currency.usd, '12,345,678.9').text, '12 345 678,9');
@@ -200,17 +192,8 @@ void main() {
     test('неоднозначный ввод отклоняется, а не угадывается', () {
       // У доллара «1,500» — это 1,5 с лишним знаком, а не 1500
       expect(paste(Currency.usd, '1,500', old: '7').text, '7');
-      expect(paste(Currency.uzs, '1,5', old: '7').text, '7');
-      expect(paste(Currency.uzs, '15 000,00', old: '7').text, '7');
-      expect(paste(Currency.uzs, '1,500.00', old: '7').text, '7');
       expect(paste(Currency.usd, '1,50,0', old: '7').text, '7');
       expect(paste(Currency.usd, '15 abc', old: '7').text, '7');
-    });
-
-    test('запятая в пустом поле валюты без копеек ничего не ставит', () {
-      expect(paste(Currency.uzs, ',').text, '');
-      expect(paste(Currency.uzs, '.').text, '');
-      expect(paste(Currency.kzt, '10,', old: '10').text, '10');
     });
 
     test('копейки без целой части получают ведущий ноль', () {

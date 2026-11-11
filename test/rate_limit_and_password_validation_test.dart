@@ -70,7 +70,8 @@ void main() {
               'Превышен лимит запросов. Пожалуйста, повторите попытку позже.'));
     });
 
-    test('AppErrorHandler.getMessage handles VALIDATION_ERROR field message',
+    test(
+        'AppErrorHandler.getMessage: ошибка поля с сервера не показывается, сообщение — из l10n',
         () {
       final reqOptions = RequestOptions(path: '/api/v1/auth/register');
       final err = DioException(
@@ -93,10 +94,7 @@ void main() {
       );
 
       final msg = AppErrorHandler.getMessage(err);
-      expect(
-          msg,
-          equals(
-              'Пароль должен содержать минимум 6 символов, 1 букву и 1 цифру'));
+      expect(msg, equals(LanguageManager.l10n.http_400));
     });
 
     testWidgets(
@@ -140,7 +138,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Dialog), findsOneWidget);
-      expect(find.text('Слишком много попыток входа.'), findsOneWidget);
+      // Текст сервера не показывается — сообщение из l10n
+      expect(find.text('Слишком много попыток входа.'), findsNothing);
+      expect(find.text(LanguageManager.l10n.http_429), findsOneWidget);
       expect(find.textContaining('15'), findsOneWidget);
     });
 

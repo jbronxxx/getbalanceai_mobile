@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 /// Поддерживаемые языки интерфейса приложения.
 enum AppLanguage {
   ru('ru', 'Русский', '🇷🇺'),
-  uz('uz', "O'zbekcha", '🇺🇿'),
-  kk('kk', 'Қазақша', '🇰🇿'),
   en('en', 'English', '🇬🇧');
 
   final String code;
@@ -22,7 +20,9 @@ enum AppLanguage {
 /// Обеспечивает хранение текущего языка, реактивное переключение и доступ
 /// к сгенерированным строкам [AppLocalizations].
 class LanguageManager {
-  static AppLanguage _currentLanguage = AppLanguage.ru;
+  /// До загрузки сохранённого языка — английский, как и для языка системы,
+  /// которого нет в приложении.
+  static AppLanguage _currentLanguage = AppLanguage.en;
   static AppLocalizations? _l10n;
 
   static AppLocalizations get l10n {
@@ -35,7 +35,7 @@ class LanguageManager {
   }
 
   static final ValueNotifier<AppLanguage> languageNotifier =
-      ValueNotifier(AppLanguage.ru);
+      ValueNotifier(AppLanguage.en);
 
   static void setLanguage(AppLanguage language, {bool save = true}) {
     _currentLanguage = language;
@@ -47,16 +47,16 @@ class LanguageManager {
   }
 
   /// Загружает сохранённый язык. При первом запуске (язык ещё не выбран)
-  /// берёт язык системы, если приложение его поддерживает; сохраняется
-  /// выбор только в онбординге. [systemLocales] — для тестов.
+  /// берёт язык системы, если приложение его поддерживает, иначе английский;
+  /// сохраняется выбор только в онбординге. [systemLocales] — для тестов.
   static Future<void> loadSavedLanguage({List<Locale>? systemLocales}) async {
     final code = await PreferencesService.instance.getLanguage();
-    final language = code != null
-        ? AppLanguage.values.where((l) => l.code == code).firstOrNull
-        : languageForLocales(
-            systemLocales ?? PlatformDispatcher.instance.locales,
-          );
-    if (language == null) return;
+    final language = (code != null
+            ? AppLanguage.values.where((l) => l.code == code).firstOrNull
+            : languageForLocales(
+                systemLocales ?? PlatformDispatcher.instance.locales,
+              )) ??
+        AppLanguage.en;
     _currentLanguage = language;
     _l10n = lookupAppLocalizations(Locale(language.code));
     languageNotifier.value = language;
@@ -161,10 +161,6 @@ class LanguageManager {
     switch (_currentLanguage) {
       case AppLanguage.ru:
         return '$day $monthGen';
-      case AppLanguage.uz:
-        return '$day-$monthGen';
-      case AppLanguage.kk:
-        return '$day $monthGen';
       case AppLanguage.en:
         return '$monthGen $day';
     }
@@ -185,10 +181,6 @@ class LanguageManager {
     switch (_currentLanguage) {
       case AppLanguage.ru:
         return '$dayMonth ${date.year}';
-      case AppLanguage.uz:
-        return '${date.year}-yil $dayMonth';
-      case AppLanguage.kk:
-        return '${date.year} ж. $dayMonth';
       case AppLanguage.en:
         return '$dayMonth, ${date.year}';
     }

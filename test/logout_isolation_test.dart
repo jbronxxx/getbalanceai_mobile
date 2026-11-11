@@ -163,7 +163,7 @@ void main() {
           .add(Duration(minutes: minuteOffset++))
           .millisecondsSinceEpoch,
       dateCreatedMilliseconds: DateTime(2026, 11, 1).millisecondsSinceEpoch,
-      currencyCode: 'UZS',
+      currencyCode: 'EUR',
     );
     LocalDbService.instance.saveTransaction(t);
     return t;
@@ -279,7 +279,7 @@ void main() {
           dbType: 'expense',
           dateMilliseconds: DateTime(2026, 11, 2).millisecondsSinceEpoch,
           dateCreatedMilliseconds: DateTime(2026, 11, 2).millisecondsSinceEpoch,
-          currencyCode: 'UZS',
+          currencyCode: 'EUR',
         ).toJson(),
         'created_at': DateTime(2026, 11, 2).toIso8601String(),
       });

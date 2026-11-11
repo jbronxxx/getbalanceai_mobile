@@ -13,7 +13,7 @@ import 'support/app_fonts.dart';
 
 /// UX-15: в строке операции на «Балансе» и в карточке лимита на «Бюджете»
 /// название категории видно целиком и при крупном шрифте (не «Пита…»,
-/// «Здор…»), а длинная сумма в сумах уменьшается.
+/// «Здор…»), а длинная сумма уменьшается.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -24,7 +24,7 @@ void main() {
     await loadAppFonts();
   });
 
-  setUp(() => CurrencyFormatter.setCurrency(Currency.uzs));
+  setUp(() => CurrencyFormatter.setCurrency(Currency.eur));
   tearDown(() {
     CurrencyFormatter.setCurrency(Currency.usd);
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
@@ -38,7 +38,7 @@ void main() {
         dbType: TransactionType.expense.name,
         dateMilliseconds: DateTime(2026, 11, 9).millisecondsSinceEpoch,
         dateCreatedMilliseconds: 0,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
         baseAmount: amount,
       );
 
@@ -108,7 +108,7 @@ void main() {
           budget: Budget(
             dbCategory: category.name,
             limitAmount: remaining + 1000,
-            currencyCode: 'UZS',
+            currencyCode: 'EUR',
             month: 11,
             year: 2026,
             spent: 1000,
@@ -184,14 +184,14 @@ void main() {
   testWidgets('лимит при ×2: ни один текст не обрезан «…»', (tester) async {
     final cut = <String>[];
     for (final language in AppLanguage.values) {
-      // Перерасход в десятки миллионов сумов — самые длинные строки
+      // Перерасход в десятки миллионов — самые длинные строки
       await pumpRow(
         tester,
         BudgetItemCard(
           budget: Budget(
             dbCategory: Category.food.name,
             limitAmount: 35891556,
-            currencyCode: 'UZS',
+            currencyCode: 'EUR',
             month: 11,
             year: 2026,
             spent: 35983616,

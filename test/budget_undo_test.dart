@@ -84,7 +84,8 @@ void main() {
   late LocalDbService db;
 
   setUpAll(() async {
-    LanguageManager.initFallback();
+    // Тексты в проверках — русские; язык по умолчанию — английский
+    LanguageManager.setLanguage(AppLanguage.ru, save: false);
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
     await CurrencyFormatter.setCurrency(Currency.usd);
