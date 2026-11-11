@@ -7,6 +7,7 @@ import '../config/environment.dart';
 import '../config/secure_storage_config.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
+import '../utils/currency_formatter.dart';
 import 'auth_api_service.dart';
 import 'budget_api_service.dart';
 import 'report_export_service.dart';
@@ -345,6 +346,38 @@ class ApiService {
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
       AppLogger.e('[ApiService] Get insights error', e);
+      rethrow;
+    }
+  }
+
+  // Voice input
+
+  /// Разбирает распознанную фразу на черновики записей (сервер их не
+  /// сохраняет). [currency] — валюта записи, если в фразе её нет; [locale] —
+  /// язык интерфейса. Пустой список — в фразе нет ни одной суммы. Ошибки —
+  /// как есть: 429 `AI_QUOTA_EXCEEDED` (квота на сутки), 503, сеть.
+  Future<List<Transaction>> parseVoice({
+    required String text,
+    required String locale,
+    required Currency currency,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.voiceParse,
+        data: {'text': text, 'locale': locale, 'currency': currency.code},
+        options: Options(
+          // Бэкенд ждёт ИИ до AI_REQUEST_TIMEOUT (30 с), затем отвечает 503
+          receiveTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+        cancelToken: cancelToken,
+      );
+      return VoiceDrafts.fromJson(
+          response.data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      // Текст фразы в журнал не пишется: в нём траты пользователя
+      AppLogger.e('[ApiService] Voice parse error', e);
       rethrow;
     }
   }

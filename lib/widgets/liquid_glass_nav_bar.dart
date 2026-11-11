@@ -27,10 +27,16 @@ class LiquidGlassNavAction {
   final String tooltip;
   final VoidCallback onPressed;
 
+  /// Долгое нажатие и его подпись для TalkBack («надиктовать запись»).
+  final VoidCallback? onLongPress;
+  final String? longPressHint;
+
   const LiquidGlassNavAction({
     this.icon = Icons.add_rounded,
     required this.tooltip,
     required this.onPressed,
+    this.onLongPress,
+    this.longPressHint,
   });
 }
 
@@ -221,6 +227,8 @@ class LiquidGlassNavBar extends StatelessWidget {
                         fillOpacity: 0.82,
                         tooltip: centerAction!.tooltip,
                         onPressed: centerAction!.onPressed,
+                        onLongPress: centerAction!.onLongPress,
+                        longPressHint: centerAction!.longPressHint,
                       ),
                     ),
                   ),

@@ -1130,4 +1130,83 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get debug_reminder_none => 'Нет ожидающих регулярных платежей';
+
+  @override
+  String get done_btn => 'Готово';
+
+  @override
+  String get voice_input_title => 'Голосовой ввод';
+
+  @override
+  String get voice_listening_title => 'Говорите';
+
+  @override
+  String get voice_listening_example =>
+      'Например: «кофе 4 евро и такси 12 вчера»';
+
+  @override
+  String get voice_parsing => 'Разбираю фразу…';
+
+  @override
+  String get voice_retry_btn => 'Сказать ещё раз';
+
+  @override
+  String get voice_close_btn => 'Закрыть';
+
+  @override
+  String get voice_error_nothing_heard =>
+      'Ничего не услышал. Скажите, например: «кофе 4 евро»';
+
+  @override
+  String get voice_error_no_amount =>
+      'Не нашёл в фразе суммы. Скажите, например: «кофе 4 евро»';
+
+  @override
+  String get voice_error_mic_permission =>
+      'Нет доступа к микрофону. Разрешите его приложению в настройках телефона';
+
+  @override
+  String get voice_error_unavailable =>
+      'Распознавание речи недоступно на этом телефоне';
+
+  @override
+  String get voice_error_recognition =>
+      'Не удалось распознать речь. Проверьте интернет и попробуйте ещё раз';
+
+  @override
+  String get voice_error_quota =>
+      'Лимит голосового ввода на сегодня исчерпан. Добавьте запись вручную или попробуйте завтра';
+
+  @override
+  String get voice_error_busy =>
+      'Не удалось разобрать фразу. Попробуйте ещё раз чуть позже';
+
+  @override
+  String get voice_sign_in_required =>
+      'Голосовой ввод доступен после входа в аккаунт';
+
+  @override
+  String voice_drafts_title(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Распознано $count записи',
+      many: 'Распознано $count записей',
+      few: 'Распознано $count записи',
+      one: 'Распознана $count запись',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String voice_save_all_btn(int count) {
+    return 'Сохранить все ($count)';
+  }
+
+  @override
+  String get voice_hint_message =>
+      'Удерживайте «+», чтобы надиктовать запись: «кофе 4 евро и такси 12»';
+
+  @override
+  String get voice_fab_long_press_hint => 'надиктовать запись';
 }

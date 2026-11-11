@@ -1121,4 +1121,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debug_reminder_none => 'No pending recurring payments';
+
+  @override
+  String get done_btn => 'Done';
+
+  @override
+  String get voice_input_title => 'Voice input';
+
+  @override
+  String get voice_listening_title => 'Speak now';
+
+  @override
+  String get voice_listening_example =>
+      'For example: “coffee 4 euros and taxi 12 yesterday”';
+
+  @override
+  String get voice_parsing => 'Reading your phrase…';
+
+  @override
+  String get voice_retry_btn => 'Try again';
+
+  @override
+  String get voice_close_btn => 'Close';
+
+  @override
+  String get voice_error_nothing_heard =>
+      'Didn\'t catch that. Try saying “coffee 4 euros”';
+
+  @override
+  String get voice_error_no_amount =>
+      'No amount found in the phrase. Try saying “coffee 4 euros”';
+
+  @override
+  String get voice_error_mic_permission =>
+      'No microphone access. Allow it for the app in your phone settings';
+
+  @override
+  String get voice_error_unavailable =>
+      'Speech recognition is not available on this phone';
+
+  @override
+  String get voice_error_recognition =>
+      'Couldn\'t recognize speech. Check your internet connection and try again';
+
+  @override
+  String get voice_error_quota =>
+      'Today\'s voice input limit is reached. Add the record manually or try again tomorrow';
+
+  @override
+  String get voice_error_busy =>
+      'Couldn\'t read the phrase. Please try again a bit later';
+
+  @override
+  String get voice_sign_in_required =>
+      'Voice input is available after you sign in';
+
+  @override
+  String voice_drafts_title(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records recognized',
+      one: '1 record recognized',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String voice_save_all_btn(int count) {
+    return 'Save all ($count)';
+  }
+
+  @override
+  String get voice_hint_message =>
+      'Hold “+” to dictate a record: “coffee 4 euros and taxi 12”';
+
+  @override
+  String get voice_fab_long_press_hint => 'dictate a record';
 }

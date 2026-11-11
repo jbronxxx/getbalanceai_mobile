@@ -16,7 +16,10 @@ import '../theme/app_colors.dart';
 /// - [transactionToEdit] — правка записи (сохраняется `localId`);
 /// - [occurrence] — «Оплачено» за месяц регулярного платежа: форма
 ///   заполнена платежом, сумму можно исправить;
-/// - [recurringToEdit] — правка регулярного платежа.
+/// - [recurringToEdit] — правка регулярного платежа;
+/// - [draft] — новая запись, заполненная голосовым вводом; с [returnsDraft]
+///   форма ничего не сохраняет, а возвращает исправленный черновик
+///   ([editDraft]) — для списка распознанных записей.
 ///
 /// День операции выбирается в форме (по умолчанию — сегодня), время
 /// берётся текущее либо исходное при редактировании.
@@ -24,16 +27,22 @@ class AddTransactionSheet extends StatefulWidget {
   final Transaction? transactionToEdit;
   final RecurringOccurrence? occurrence;
   final RecurringPayment? recurringToEdit;
+  final Transaction? draft;
+  final bool returnsDraft;
 
   const AddTransactionSheet({
     super.key,
     this.transactionToEdit,
     this.occurrence,
     this.recurringToEdit,
-  }) : assert((transactionToEdit == null ? 0 : 1) +
+    this.draft,
+    this.returnsDraft = false,
+  })  : assert((transactionToEdit == null ? 0 : 1) +
                 (occurrence == null ? 0 : 1) +
-                (recurringToEdit == null ? 0 : 1) <=
-            1);
+                (recurringToEdit == null ? 0 : 1) +
+                (draft == null ? 0 : 1) <=
+            1),
+        assert(!returnsDraft || draft != null);
 
   /// Открывает форму поверх экрана; `true` — что-то сохранено.
   static Future<bool?> show(
@@ -41,6 +50,7 @@ class AddTransactionSheet extends StatefulWidget {
     Transaction? transactionToEdit,
     RecurringOccurrence? occurrence,
     RecurringPayment? recurringToEdit,
+    Transaction? draft,
   }) {
     return showModalBottomSheet<bool>(
       context: context,
@@ -50,7 +60,22 @@ class AddTransactionSheet extends StatefulWidget {
         transactionToEdit: transactionToEdit,
         occurrence: occurrence,
         recurringToEdit: recurringToEdit,
+        draft: draft,
       ),
+    );
+  }
+
+  /// Правка черновика без сохранения: исправленный черновик (с тем же
+  /// `localId`) или `null`, если форму закрыли.
+  static Future<Transaction?> editDraft(
+    BuildContext context,
+    Transaction draft,
+  ) {
+    return showModalBottomSheet<Transaction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.transparent,
+      builder: (_) => AddTransactionSheet(draft: draft, returnsDraft: true),
     );
   }
 
@@ -106,7 +131,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   bool get _isNewRecord =>
       widget.transactionToEdit == null &&
       widget.occurrence == null &&
-      widget.recurringToEdit == null;
+      widget.recurringToEdit == null &&
+      !widget.returnsDraft;
 
   /// Запись можно сделать регулярной: новая или правка обычной записи (не
   /// оплаты уже существующего регулярного платежа).
@@ -123,7 +149,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   @override
   void initState() {
     super.initState();
-    final t = widget.transactionToEdit;
+    // Поля заполняются из изменяемой записи или распознанного черновика
+    final t = widget.transactionToEdit ?? widget.draft;
     final template = _template;
     _type = t?.type ?? template?.type ?? TransactionType.expense;
     _category = t?.category ??
@@ -313,27 +340,20 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       return;
     }
 
-    final rate = CurrencyExchangeService.instance.getRate(
-      from: _selectedCurrency,
-      to: CurrencyFormatter.currentCurrency,
-    );
-    final baseAmount = CurrencyExchangeService.instance.convert(
-      amount,
-      from: _selectedCurrency,
-      to: CurrencyFormatter.currentCurrency,
+    final record = Transaction.newRecord(
+      type: _type,
+      category: _category,
+      amount: amount,
+      currency: _selectedCurrency,
+      date: _date,
+      description: _descriptionController.text.trim(),
     );
 
-    final record = Transaction(
-      dbType: _type.name,
-      dbCategory: _category.name,
-      amount: amount,
-      currencyCode: _selectedCurrency.code,
-      exchangeRate: rate,
-      baseAmount: baseAmount,
-      dateMilliseconds: _date.millisecondsSinceEpoch,
-      description: _descriptionController.text.trim(),
-      dateCreatedMilliseconds: 0,
-    );
+    if (widget.returnsDraft) {
+      record.localId = widget.draft!.localId;
+      Navigator.pop(context, record);
+      return;
+    }
 
     final recurring = RecurringPaymentService.instance;
     final occurrence = widget.occurrence;
@@ -375,10 +395,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   : _category.name,
               amount: amount,
               currencyCode: _selectedCurrency.code,
-              exchangeRate: rate,
-              baseAmount: baseAmount,
-              dateMilliseconds: _date.millisecondsSinceEpoch,
-              description: _descriptionController.text.trim(),
+              exchangeRate: record.exchangeRate,
+              baseAmount: record.baseAmount,
+              dateMilliseconds: record.dateMilliseconds,
+              description: record.description,
               dateCreatedMilliseconds: t.dateCreatedMilliseconds,
               isModified: t.serverId != null,
             );
@@ -408,7 +428,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           ? l10n.recurring_income_title
           : l10n.recurring_payment_title;
     }
-    return widget.transactionToEdit != null
+    return widget.transactionToEdit != null || widget.returnsDraft
         ? l10n.edit_transaction
         : l10n.new_transaction;
   }
@@ -421,6 +441,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           : l10n.recurring_paid_btn;
     }
     if (widget.recurringToEdit != null) return l10n.save_btn;
+    if (widget.returnsDraft) return l10n.done_btn;
     if (_repeat) {
       return widget.transactionToEdit != null
           ? l10n.save_btn

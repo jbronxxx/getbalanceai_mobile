@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -20,8 +21,10 @@ import 'package:getbalanceai_mobile/screens/main_shell.dart';
 import 'package:getbalanceai_mobile/screens/service_unavailable_screen.dart';
 import 'package:getbalanceai_mobile/screens/startup_error_screen.dart';
 import 'package:getbalanceai_mobile/screens/transaction_search_screen.dart';
+import 'package:getbalanceai_mobile/screens/voice_input_flow.dart';
 import 'package:getbalanceai_mobile/screens/welcome_setup_screen.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
+import 'package:getbalanceai_mobile/services/speech_input_service.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/app_lock_gate.dart';
@@ -32,6 +35,7 @@ import 'package:getbalanceai_mobile/widgets/insights/report_export_sheet.dart';
 import 'package:getbalanceai_mobile/widgets/period/period.dart';
 import 'package:getbalanceai_mobile/widgets/profile/profile.dart';
 import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
+import 'package:getbalanceai_mobile/widgets/voice_listening_sheet.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:mocktail/mocktail.dart';
@@ -39,6 +43,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'support/app_fonts.dart';
 import 'support/fake_local_auth.dart';
+import 'support/fake_speech_recognizer.dart';
 
 /// Переносы текста на всех экранах (UX-08, UX-09, UX-10): ни одно слово не
 /// рвётся посреди («Редактиров / ать») на телефоне 360 dp при обычном и
@@ -710,6 +715,92 @@ void main() {
     audit('Отклонённые записи',
         () => sheetHost(() => SyncRejectedSheet(transactions: [rejected])),
         open: tapOpen);
+
+    // Голосовой ввод: длинная фраза в две-три строки и самые длинные
+    // сообщения об ошибках
+    const phrase = 'капучино с собой четыре евро пятьдесят, такси до '
+        'аэропорта тридцать два евро вчера и продукты в супермаркете';
+    Widget listening({
+      String? partial,
+      String? finalPhrase,
+      SpeechFailure? prepareFailure,
+      VoicePhraseParser? parse,
+    }) {
+      SpeechInput.recognizer = FakeSpeechRecognizer()
+        ..partialOnListen = partial
+        ..finalOnListen = finalPhrase
+        ..prepareFailure = prepareFailure;
+      return sheetHost(() => VoiceListeningSheet(parse: parse));
+    }
+
+    Transaction voiceDraft(int id, String name, double amount, DateTime date) =>
+        Transaction.newRecord(
+          localId: id,
+          type: TransactionType.expense,
+          category: Category.entertainment,
+          amount: amount,
+          currency: Currency.eur,
+          date: date,
+          description: name,
+        );
+    final draftDay = DateTime.now();
+    // Описание в строке ленты по дизайну — одна строка с «…»: здесь
+    // названия, которые помещаются, как в ленте «Баланса»
+    final drafts = [
+      voiceDraft(1, 'Капучино', 4.5, draftDay),
+      voiceDraft(2, 'Такси', 32, draftDay.subtract(const Duration(days: 1))),
+    ];
+
+    audit('Голосовой ввод: говорите', () => listening(partial: phrase),
+        open: tapOpen);
+    audit(
+        'Голосовой ввод: разбираю',
+        () => listening(
+            finalPhrase: phrase,
+            parse: (_) => Completer<List<Transaction>>().future),
+        open: tapOpen);
+    audit(
+        'Голосовой ввод: ошибка с повтором',
+        () => listening(
+            finalPhrase: phrase,
+            parse: (_) async => throw DioException(
+                  requestOptions: RequestOptions(path: '/voice/parse'),
+                  response: Response(
+                    requestOptions: RequestOptions(path: '/voice/parse'),
+                    statusCode: 503,
+                    data: {'code': 'SERVICE_UNAVAILABLE'},
+                  ),
+                )),
+        open: tapOpen);
+    audit(
+        'Голосовой ввод: лимит на сутки',
+        () => listening(
+            finalPhrase: phrase,
+            parse: (_) async => throw DioException(
+                  requestOptions: RequestOptions(path: '/voice/parse'),
+                  response: Response(
+                    requestOptions: RequestOptions(path: '/voice/parse'),
+                    statusCode: 429,
+                    data: {'code': 'AI_QUOTA_EXCEEDED'},
+                  ),
+                )),
+        open: tapOpen);
+    audit('Голосовой ввод: нет микрофона',
+        () => listening(prepareFailure: SpeechFailure.permissionDenied),
+        open: tapOpen);
+    audit('Голосовой ввод: нет суммы',
+        () => listening(finalPhrase: phrase, parse: (_) async => const []),
+        open: tapOpen);
+    audit(
+        'Распознанные записи',
+        () => sheetHost(() => VoiceDraftsSheet(
+            result: VoiceInputResult(phrase: phrase, drafts: drafts))),
+        open: tapOpen);
+    audit(
+        'Правка распознанной записи',
+        () => sheetHost(
+            () => AddTransactionSheet(draft: drafts.first, returnsDraft: true)),
+        open: tapOpen);
   });
 
   group('Диалоги и тосты', () {
@@ -750,6 +841,19 @@ void main() {
         () => actionHost((context) => AppAlerts.showErrorDialog(context,
             title: context.l10n.sync_error,
             message: context.l10n.sync_login_required)),
+        open: tapOpen);
+    audit(
+        'Подсказка голосового ввода',
+        () => actionHost((context) => AppAlerts.showToast(
+              context,
+              title: context.l10n.voice_input_title,
+              message: context.l10n.voice_hint_message,
+            )),
+        open: tapOpen);
+    audit(
+        'Голосовой ввод для гостя',
+        () => actionHost(
+            (context) => VoiceInputFlow.start(context, signedIn: false)),
         open: tapOpen);
     audit('Тост «Нет интернета»',
         () => actionHost((context) => AppAlerts.noInternet(context)),

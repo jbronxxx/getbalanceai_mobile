@@ -7,3 +7,4 @@ export 'recurring_schedule.dart';
 export 'report_model.dart';
 export 'sync_model.dart';
 export 'transaction_search.dart';
+export 'voice_drafts.dart';
