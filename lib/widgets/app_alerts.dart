@@ -14,6 +14,19 @@ enum AlertType { success, error, warning, info }
 class AppAlerts {
   static const double _toastRadius = 22;
 
+  /// Поле тоста: от края карточки до текста слева и до видимого крестика
+  /// или подписи «Отменить» справа.
+  static const double _toastInset = 16;
+  static const double _toastCloseIconSize = 18;
+
+  /// Зона нажатия крестика — 48, как у остальных кнопок.
+  static const double _toastCloseTapSize = 48;
+  static const double _toastCloseIconPadding =
+      (_toastCloseTapSize - _toastCloseIconSize) / 2;
+
+  /// Отступ подписи «Отменить» внутри её кнопки по бокам.
+  static const double _toastActionPadding = 12;
+
   /// Отображает всплывающее уведомление (Toast) с кастомным дизайном в стиле Liquid Glass.
   ///
   /// Имеет размытие заднего плана (BackdropFilter), тонкую световую фаску (specular rim)
@@ -154,6 +167,7 @@ class AppAlerts {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final glassTheme = GlassTheme.of(context);
+    final hasAction = actionLabel != null && onAction != null;
 
     // Цвет типа — только подсветка тоста в тёмной теме, без иконки
     final accent = switch (type) {
@@ -186,7 +200,16 @@ class AppAlerts {
             offset: const Offset(0, 2),
           ),
       ],
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      // Видимый край крестика или «Отменить» — на том же расстоянии от правого
+      // края, что и текст от левого: внутренний отступ кнопки (зона нажатия)
+      // входит в поле карточки, иначе текст выглядит прижатым влево.
+      padding: EdgeInsetsDirectional.only(
+        start: _toastInset,
+        end: _toastInset -
+            (hasAction ? _toastActionPadding : _toastCloseIconPadding),
+        top: 14,
+        bottom: 14,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -220,7 +243,7 @@ class AppAlerts {
               ],
             ),
           ),
-          if (actionLabel != null && onAction != null) ...[
+          if (hasAction) ...[
             const SizedBox(width: 6),
             TextButton(
               key: const ValueKey('toast_action'),
@@ -232,6 +255,9 @@ class AppAlerts {
                 foregroundColor: AppColors.of(context).accentText,
                 textStyle: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.bold,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _toastActionPadding,
                 ),
                 // Кнопке — не больше 35% ширины экрана: при крупном шрифте
                 // («Болдырмау») подпись чуть уменьшается, а сообщению хватает
@@ -249,11 +275,14 @@ class AppAlerts {
             IconButton(
               icon: Icon(
                 Icons.close_rounded,
-                size: 18,
+                size: _toastCloseIconSize,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              constraints: const BoxConstraints.tightFor(
+                width: _toastCloseTapSize,
+                height: _toastCloseTapSize,
+              ),
               onPressed: onClose,
             ),
           ],

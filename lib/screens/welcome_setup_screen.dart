@@ -189,15 +189,15 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     final glassTheme = GlassTheme.of(context);
     final primaryColor = colorScheme.primary;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-          // Не меньше 120: при смене языка список не прыгает; при крупном
-          // шрифте блок растёт, а не обрезает подзаголовок
-          ConstrainedBox(
+    return _SetupStepLayout(
+      header: [
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child:
+              // Не меньше 120: при смене языка список не прыгает; при крупном
+              // шрифте блок растёт, а не обрезает подзаголовок
+              ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,77 +222,79 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 40),
-          ...AppLanguage.values.map((lang) {
-            final isSelected = _selectedLanguage == lang;
-            return GlassContainer(
-              margin: const EdgeInsets.only(bottom: 12),
-              borderRadius: 20,
-              blurSigma: 16,
+        ),
+        const SizedBox(height: 40),
+      ],
+      options: [
+        ...AppLanguage.values.map((lang) {
+          final isSelected = _selectedLanguage == lang;
+          return GlassContainer(
+            margin: const EdgeInsets.only(bottom: 12),
+            borderRadius: 20,
+            blurSigma: 16,
+            color: isSelected
+                ? primaryColor.withValues(alpha: isDark ? 0.24 : 0.12)
+                : glassTheme.surface,
+            border: Border.all(
               color: isSelected
-                  ? primaryColor.withValues(alpha: isDark ? 0.24 : 0.12)
-                  : glassTheme.surface,
-              border: Border.all(
+                  ? primaryColor.withValues(alpha: 0.85)
+                  : glassTheme.rim,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
                 color: isSelected
-                    ? primaryColor.withValues(alpha: 0.85)
-                    : glassTheme.rim,
-                width: 1.5,
+                    ? primaryColor.withValues(alpha: isDark ? 0.35 : 0.20)
+                    : glassTheme.shadow,
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+                spreadRadius: -2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: isSelected
-                      ? primaryColor.withValues(alpha: isDark ? 0.35 : 0.20)
-                      : glassTheme.shadow,
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                  spreadRadius: -2,
-                ),
-              ],
-              child: Material(
-                color: AppColors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () => _onLanguageSelected(lang),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 4,
+            ],
+            child: Material(
+              color: AppColors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _onLanguageSelected(lang),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
+                  title: Text(
+                    lang.displayName,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.of(context).accentText
+                          : colorScheme.onSurface,
                     ),
-                    title: Text(
-                      lang.displayName,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected
-                            ? AppColors.of(context).accentText
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: primaryColor.withValues(alpha: 0.20),
-                            ),
-                            child: Icon(
-                              Icons.check_circle_rounded,
-                              color: AppColors.of(context).accentText,
-                              size: 22,
-                            ),
-                          )
-                        : Icon(
-                            Icons.circle_outlined,
-                            color: colorScheme.outline,
+                  ),
+                  trailing: isSelected
+                      ? Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryColor.withValues(alpha: 0.20),
+                          ),
+                          child: Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.of(context).accentText,
                             size: 22,
                           ),
-                  ),
+                        )
+                      : Icon(
+                          Icons.circle_outlined,
+                          color: colorScheme.outline,
+                          size: 22,
+                        ),
                 ),
               ),
-            );
-          }),
-        ],
-      ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -307,117 +309,109 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
     final glassTheme = GlassTheme.of(context);
     final primaryColor = colorScheme.primary;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4.0, bottom: 4.0),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              color: colorScheme.onSurface,
-              onPressed: () => _goToStep(0),
-            ),
+    return _SetupStepLayout(
+      header: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4.0),
+          child: ScreenBackButton(onPressed: () => _goToStep(0)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.welcome_currency_title,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.welcome_currency_subtitle,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.welcome_currency_title,
-                  style: textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                    letterSpacing: -0.5,
+        ),
+        const SizedBox(height: 28),
+      ],
+      options: [
+        ...Currency.values.map((currency) {
+          final isSelected = _selectedCurrency == currency;
+          return GlassContainer(
+            margin: const EdgeInsets.only(bottom: 10),
+            borderRadius: 20,
+            blurSigma: 16,
+            color: isSelected
+                ? primaryColor.withValues(alpha: isDark ? 0.24 : 0.12)
+                : glassTheme.surface,
+            border: Border.all(
+              color: isSelected
+                  ? primaryColor.withValues(alpha: 0.85)
+                  : glassTheme.rim,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isSelected
+                    ? primaryColor.withValues(alpha: isDark ? 0.35 : 0.20)
+                    : glassTheme.shadow,
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+                spreadRadius: -2,
+              ),
+            ],
+            child: Material(
+              color: AppColors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _onCurrencySelected(currency),
+                child: ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 2,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.welcome_currency_subtitle,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                ...Currency.values.map((currency) {
-                  final isSelected = _selectedCurrency == currency;
-                  return GlassContainer(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    borderRadius: 20,
-                    blurSigma: 16,
-                    color: isSelected
-                        ? primaryColor.withValues(alpha: isDark ? 0.24 : 0.12)
-                        : glassTheme.surface,
-                    border: Border.all(
+                  title: Text(
+                    currency.localizedName,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
                       color: isSelected
-                          ? primaryColor.withValues(alpha: 0.85)
-                          : glassTheme.rim,
-                      width: 1.5,
+                          ? AppColors.of(context).accentText
+                          : colorScheme.onSurface,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isSelected
-                            ? primaryColor.withValues(
-                                alpha: isDark ? 0.35 : 0.20)
-                            : glassTheme.shadow,
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                        spreadRadius: -2,
-                      ),
-                    ],
-                    child: Material(
-                      color: AppColors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => _onCurrencySelected(currency),
-                        child: ListTile(
-                          dense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 2,
+                  ),
+                  trailing: isSelected
+                      ? Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryColor.withValues(alpha: 0.20),
                           ),
-                          title: Text(
-                            currency.localizedName,
-                            style: textTheme.titleMedium?.copyWith(
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? AppColors.of(context).accentText
-                                  : colorScheme.onSurface,
-                            ),
+                          child: Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.of(context).accentText,
+                            size: 22,
                           ),
-                          trailing: isSelected
-                              ? Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: primaryColor.withValues(alpha: 0.20),
-                                  ),
-                                  child: Icon(
-                                    Icons.check_circle_rounded,
-                                    color: AppColors.of(context).accentText,
-                                    size: 22,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.circle_outlined,
-                                  color: colorScheme.outline,
-                                  size: 22,
-                                ),
+                        )
+                      : Icon(
+                          Icons.circle_outlined,
+                          color: colorScheme.outline,
+                          size: 22,
                         ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+          );
+        }),
+      ],
     );
   }
 
@@ -481,6 +475,46 @@ class _WelcomeSetupScreenState extends State<WelcomeSetupScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Шаг первой настройки: заголовок вверху, варианты выбора внизу — сразу над
+/// кнопкой «Продолжить», чтобы не висели под заголовком посреди пустого
+/// экрана. Пустое место между ними тянется по высоте экрана; если всё
+/// не помещается (маленький экран, крупный шрифт), шаг прокручивается.
+class _SetupStepLayout extends StatelessWidget {
+  /// Шапка шага; последним элементом — минимальный отступ до вариантов.
+  final List<Widget> header;
+  final List<Widget> options;
+
+  const _SetupStepLayout({required this.header, required this.options});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...header,
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: options,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

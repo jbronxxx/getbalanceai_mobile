@@ -841,6 +841,64 @@ void main() {
     });
   });
 
+  group('Стрелка «Назад» и раскладка онбординга', () {
+    void phoneScreen(WidgetTester tester) {
+      tester.view
+        ..physicalSize = const Size(412, 915)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('на входе стрелка в 16 от края, как на шаге валюты',
+        (tester) async {
+      phoneScreen(tester);
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(MaterialApp(
+        navigatorKey: navigator,
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(),
+      ));
+      navigator.currentState!
+          .push(MaterialPageRoute<void>(builder: (_) => const AuthScreen()));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byIcon(Icons.arrow_back)).left, 16);
+
+      await tester.pumpWidget(_buildTestApp(const WelcomeSetupScreen()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Продолжить'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byIcon(Icons.arrow_back)).left, 16);
+    });
+
+    testWidgets('варианты выбора стоят над «Продолжить», а не под заголовком',
+        (tester) async {
+      phoneScreen(tester);
+      await tester.pumpWidget(_buildTestApp(const WelcomeSetupScreen()));
+      await tester.pumpAndSettle();
+
+      void expectOptionsAtButton(String title, String lastOption) {
+        final button = tester.getRect(find.text('Продолжить'));
+        final option = tester.getRect(find
+            .ancestor(
+              of: find.text(lastOption),
+              matching: find.byType(GlassContainer),
+            )
+            .first);
+        final header = tester.getRect(find.text(title));
+        expect(button.top - option.bottom, lessThan(56));
+        expect(option.top - header.bottom, greaterThan(200));
+      }
+
+      expectOptionsAtButton('Выберите язык', 'English');
+      await tester.tap(find.text('Продолжить'));
+      await tester.pumpAndSettle();
+      expectOptionsAtButton('Основная валюта', 'Доллар США');
+    });
+  });
+
   group('AuthScreen & Glass Headers Polish Tests', () {
     testWidgets('AuthScreen не содержит отдельного AppBar и хэдера',
         (tester) async {

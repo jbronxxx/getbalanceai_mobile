@@ -213,109 +213,118 @@ class _AuthScreenState extends State<AuthScreen> {
                     constraints:
                         BoxConstraints(minHeight: constraints.maxHeight),
                     child: IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            if (Navigator.of(context).canPop())
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 4.0,
-                                    bottom: 4.0,
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.arrow_back),
-                                    color: colorScheme.onSurface,
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                  ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Стрелка — вне поля 24, в 16 от края, как в шапках
+                          // остальных экранов
+                          if (Navigator.of(context).canPop())
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
                                 ),
-                              )
-                            else
-                              const SizedBox(height: 16),
+                                child: ScreenBackButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ),
+                            )
+                          else
                             const SizedBox(height: 16),
-                            // Иконка в виде полированного стеклянного медальона
-                            Container(
-                              width: 88,
-                              height: 88,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    colors.brandGradientStart.withValues(
-                                        alpha: isDark ? 0.35 : 0.22),
-                                    colors.brandGradientEnd.withValues(
-                                        alpha: isDark ? 0.45 : 0.28),
-                                  ],
-                                ),
-                                border: Border.all(
-                                  color: AppColors.highlightBase
-                                      .withValues(alpha: isDark ? 0.22 : 0.70),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.brandGradientStart.withValues(
-                                        alpha: isDark ? 0.35 : 0.20),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 6),
+                          Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const SizedBox(height: 16),
+                                  // Иконка в виде полированного стеклянного медальона
+                                  Container(
+                                    width: 88,
+                                    height: 88,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          colors.brandGradientStart.withValues(
+                                              alpha: isDark ? 0.35 : 0.22),
+                                          colors.brandGradientEnd.withValues(
+                                              alpha: isDark ? 0.45 : 0.28),
+                                        ],
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.highlightBase
+                                            .withValues(
+                                                alpha: isDark ? 0.22 : 0.70),
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.brandGradientStart
+                                              .withValues(
+                                                  alpha: isDark ? 0.35 : 0.20),
+                                          blurRadius: 24,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.account_circle_rounded,
+                                        size: 52,
+                                        color: colors.accentText,
+                                      ),
+                                    ),
                                   ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    context.l10n.login_or_register,
+                                    style: textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onSurface,
+                                      letterSpacing: -0.5,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    isIOS
+                                        ? context.l10n.continue_with_apple
+                                        : context.l10n.continue_with_google,
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const Spacer(),
+                                  if (_isLoading)
+                                    Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: colors.accentText,
+                                      ),
+                                    )
+                                  else if (isIOS)
+                                    appleButton
+                                  else
+                                    googleButton,
+                                  const SizedBox(height: 24),
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 16),
+                                    child: _LegalConsentText(),
+                                  ),
+                                  const SizedBox(height: 24),
                                 ],
                               ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.account_circle_rounded,
-                                  size: 52,
-                                  color: colors.accentText,
-                                ),
-                              ),
                             ),
-                            const SizedBox(height: 24),
-                            Text(
-                              context.l10n.login_or_register,
-                              style: textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                                letterSpacing: -0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              isIOS
-                                  ? context.l10n.continue_with_apple
-                                  : context.l10n.continue_with_google,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const Spacer(),
-                            if (_isLoading)
-                              Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: colors.accentText,
-                                ),
-                              )
-                            else if (isIOS)
-                              appleButton
-                            else
-                              googleButton,
-                            const SizedBox(height: 24),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: _LegalConsentText(),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
