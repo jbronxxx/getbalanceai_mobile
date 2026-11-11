@@ -287,13 +287,33 @@ class _DashboardScreenState extends State<DashboardScreen>
                         const SizedBox(height: 8),
                         if (_transactions.isEmpty && _days.isEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(top: 40.0),
+                            padding: const EdgeInsets.fromLTRB(16, 40, 16, 0),
                             child: Center(
-                              child: Text(
-                                context.l10n.no_transactions,
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.outline,
-                                ),
+                              child: Column(
+                                key: const ValueKey('dashboard_empty_state'),
+                                children: [
+                                  WholeWordsText(
+                                    context.l10n.no_transactions,
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.outline,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Голосовой ввод — только после входа
+                                  WholeWordsText(
+                                    ApiService.instance.isAuthenticated
+                                        ? context
+                                            .l10n.dashboard_empty_hint_voice
+                                        : context.l10n.dashboard_empty_hint,
+                                    key: const ValueKey('dashboard_empty_hint'),
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.outline,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

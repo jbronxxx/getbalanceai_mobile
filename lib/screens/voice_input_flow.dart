@@ -29,8 +29,6 @@ abstract final class VoiceInputFlow {
 
     final result = await VoiceListeningSheet.show(context, parse: parse);
     if (result == null || !context.mounted) return;
-    // Голосовым вводом уже пользуются — подсказка про «+» больше не нужна
-    unawaited(PreferencesService.instance.recordVoiceInputUsed());
     if (result.drafts.length == 1) {
       await AddTransactionSheet.show(context, draft: result.drafts.single);
     } else {

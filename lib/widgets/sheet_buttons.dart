@@ -78,6 +78,7 @@ class SheetPrimaryButton extends StatelessWidget {
 }
 
 /// Второе действие листа с контуром: «Удалить» (цвет ошибки). Без иконки.
+/// Подпись того же размера, что у [SheetPrimaryButton], полужирная.
 class SheetOutlinedButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -104,7 +105,15 @@ class SheetOutlinedButton extends StatelessWidget {
         padding: SheetButtons._padding,
         shape: SheetButtons._shape,
       ),
-      child: OneLineLabel(label),
+      // Тот же размер, что у основной кнопки рядом, чуть тоньше: главную
+      // кнопку и так выделяет заливка
+      child: OneLineLabel(
+        label,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: onPressed == null ? null : color,
+            ),
+      ),
     );
   }
 }

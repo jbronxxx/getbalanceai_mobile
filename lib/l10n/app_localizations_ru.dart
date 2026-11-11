@@ -1178,10 +1178,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Лимит голосового ввода на сегодня исчерпан. Добавьте запись вручную или попробуйте завтра';
 
   @override
-  String get voice_error_busy =>
-      'Не удалось разобрать фразу. Попробуйте ещё раз чуть позже';
-
-  @override
   String get voice_sign_in_required =>
       'Голосовой ввод доступен после входа в аккаунт';
 
@@ -1204,9 +1200,15 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get voice_hint_message =>
-      'Удерживайте «+», чтобы надиктовать запись: «кофе 4 евро и такси 12»';
+  String get voice_fab_long_press_hint => 'надиктовать запись';
 
   @override
-  String get voice_fab_long_press_hint => 'надиктовать запись';
+  String get voice_coach_mark => 'Зажмите кнопку, чтобы продиктовать запись';
+
+  @override
+  String get dashboard_empty_hint => 'Нажмите +, чтобы добавить запись';
+
+  @override
+  String get dashboard_empty_hint_voice =>
+      'Нажмите + для ручного ввода или зажмите для голосового создания';
 }

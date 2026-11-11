@@ -5,6 +5,7 @@ import '../models/month_period.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/insights/expense_structure_section.dart';
+import '../widgets/insights/insight_card.dart';
 import '../widgets/insights/insights_generate_card.dart';
 import '../widgets/insights/insights_outdated_note.dart';
 import '../widgets/insights/insights_unavailable_card.dart';
@@ -195,13 +196,13 @@ class _InsightsBody extends StatelessWidget {
     if (state is InsightsError) {
       return Column(
         children: [
-          _InsightCard(text: context.l10n.insights_assistants_busy_msg1),
-          _InsightCard(text: context.l10n.insights_assistants_busy_msg2),
+          InsightCard(text: context.l10n.insights_assistants_busy_msg1),
+          InsightCard(text: context.l10n.insights_assistants_busy_msg2),
         ],
       );
     }
     if (state is InsightsUnauthenticated) {
-      return _InsightCard(text: state.hint);
+      return InsightCard(text: state.hint);
     }
     if (state is InsightsLoaded) {
       final cubit = context.read<InsightsCubit>();
@@ -213,7 +214,7 @@ class _InsightsBody extends StatelessWidget {
                   ? () => cubit.loadInsights(force: true)
                   : null,
             ),
-          for (final insight in state.insights) _InsightCard(text: insight),
+          for (final insight in state.insights) InsightCard(text: insight),
         ],
       );
     }
@@ -248,70 +249,6 @@ class _NoNetworkMessage extends StatelessWidget {
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InsightCard extends StatelessWidget {
-  final String text;
-
-  const _InsightCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-
-    final glassBg = AppColors.of(context).cardGlassBackground;
-
-    final glassBorder = AppColors.of(context).cardBorder;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: glassBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: glassBorder,
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.of(context).cardShadow,
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              color: AppColors.of(context).accentText,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: WholeWordsText(
-              text,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface,
-                height: 1.45,
               ),
             ),
           ),

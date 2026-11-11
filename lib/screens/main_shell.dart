@@ -19,6 +19,9 @@ import '../theme/theme.dart';
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
+  /// Указатель «зажмите +» — после пульса кнопки.
+  static const voiceCoachMarkDelay = Duration(milliseconds: 1600);
+
   @override
   State<MainShell> createState() => _MainShellState();
 }
@@ -47,42 +50,69 @@ class _MainShellState extends State<MainShell> {
   void _startVoiceInput(bool signedIn) =>
       VoiceInputFlow.start(context, signedIn: signedIn);
 
+  /// Кнопка «+» — цель указателя голосового ввода.
+  final GlobalKey _addButtonKey = GlobalKey();
+  bool _coachMarkPending = false;
+  Timer? _coachMarkTimer;
+  VoidCallback? _closeCoachMark;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowVoiceHint());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeShowVoiceCoachMark());
   }
 
-  /// Подсказка «удерживайте +» вошедшему пользователю: после первого входа
-  /// и затем раз в несколько запусков (см. `takeVoiceHintTurn`).
-  Future<void> _maybeShowVoiceHint() async {
-    if (!mounted || context.read<AuthCubit>().state is! Authenticated) return;
-    if (!await PreferencesService.instance.takeVoiceHintTurn() || !mounted) {
+  @override
+  void dispose() {
+    _coachMarkTimer?.cancel();
+    AppLockService.instance.locked.removeListener(_onLockChanged);
+    _closeCoachMark?.call();
+    super.dispose();
+  }
+
+  /// Указатель «зажмите +» вошедшему пользователю — один раз (гостю
+  /// голосовой ввод недоступен). Показывается после пульса «+», под экраном
+  /// блокировки ждёт разблокировки; если поверх открыта шторка — не
+  /// показывается и не считается показанным.
+  Future<void> _maybeShowVoiceCoachMark() async {
+    if (_coachMarkPending || !mounted) return;
+    if (context.read<AuthCubit>().state is! Authenticated) return;
+    _coachMarkPending = true;
+    if (!await PreferencesService.instance.shouldShowVoiceCoachMark() ||
+        !mounted) {
+      _coachMarkPending = false;
       return;
     }
-    // Под экраном блокировки тост никто не увидит — ждём разблокировки
-    final locked = AppLockService.instance.locked;
-    if (locked.value) {
-      final unlocked = Completer<void>();
-      void onChange() {
-        if (!locked.value && !unlocked.isCompleted) unlocked.complete();
-      }
-
-      locked.addListener(onChange);
-      await unlocked.future;
-      locked.removeListener(onChange);
-      if (!mounted) return;
-    }
-    AppAlerts.showToast(
-      context,
-      title: context.l10n.voice_input_title,
-      message: context.l10n.voice_hint_message,
-      duration: voiceHintDuration,
-    );
+    _coachMarkTimer = Timer(MainShell.voiceCoachMarkDelay, _showCoachMarkNow);
   }
 
-  /// Подсказку успевают прочитать: она длиннее обычного тоста.
-  static const voiceHintDuration = Duration(seconds: 7);
+  void _showCoachMarkNow() {
+    if (!mounted) return;
+    final locked = AppLockService.instance.locked;
+    if (locked.value) {
+      // Под экраном блокировки указатель никто не увидит
+      locked.addListener(_onLockChanged);
+      return;
+    }
+    _coachMarkPending = false;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    _closeCoachMark = CoachMark.show(
+      context,
+      target: _addButtonKey,
+      message: context.l10n.voice_coach_mark,
+      onDismissed: () => _closeCoachMark = null,
+    );
+    if (_closeCoachMark != null) {
+      unawaited(PreferencesService.instance.recordVoiceCoachMarkShown());
+    }
+  }
+
+  void _onLockChanged() {
+    if (AppLockService.instance.locked.value) return;
+    AppLockService.instance.locked.removeListener(_onLockChanged);
+    _showCoachMarkNow();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +123,7 @@ class _MainShellState extends State<MainShell> {
             _currentIndex = 0;
           });
         } else if (state is Authenticated) {
-          unawaited(_maybeShowVoiceHint());
+          unawaited(_maybeShowVoiceCoachMark());
         }
       },
       builder: (context, authState) {
@@ -175,6 +205,8 @@ class _MainShellState extends State<MainShell> {
                         onLongPress: () =>
                             _startVoiceInput(authState is Authenticated),
                         longPressHint: context.l10n.voice_fab_long_press_hint,
+                        targetKey: _addButtonKey,
+                        pulseOnMount: true,
                       ),
                       onDestinationSelected: _selectTab,
                       destinations: [

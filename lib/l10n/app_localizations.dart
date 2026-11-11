@@ -2132,12 +2132,6 @@ abstract class AppLocalizations {
   /// **'Today\'s voice input limit is reached. Add the record manually or try again tomorrow'**
   String get voice_error_quota;
 
-  /// No description provided for @voice_error_busy.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t read the phrase. Please try again a bit later'**
-  String get voice_error_busy;
-
   /// No description provided for @voice_sign_in_required.
   ///
   /// In en, this message translates to:
@@ -2156,17 +2150,29 @@ abstract class AppLocalizations {
   /// **'Save all ({count})'**
   String voice_save_all_btn(int count);
 
-  /// No description provided for @voice_hint_message.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold “+” to dictate a record: “coffee 4 euros and taxi 12”'**
-  String get voice_hint_message;
-
   /// No description provided for @voice_fab_long_press_hint.
   ///
   /// In en, this message translates to:
   /// **'dictate a record'**
   String get voice_fab_long_press_hint;
+
+  /// No description provided for @voice_coach_mark.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold the button to dictate a record'**
+  String get voice_coach_mark;
+
+  /// No description provided for @dashboard_empty_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a record'**
+  String get dashboard_empty_hint;
+
+  /// No description provided for @dashboard_empty_hint_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a record manually or hold it to dictate one'**
+  String get dashboard_empty_hint_voice;
 }
 
 class _AppLocalizationsDelegate

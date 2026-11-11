@@ -37,12 +37,7 @@ class PreferencesService {
   static const _keyExchangeRatesUpdated = 'cached_exchange_rates_updated';
   static const _keyAppLockEnabled = 'privacy_app_lock_enabled';
   static const _keyHideBalance = 'privacy_hide_balance';
-  static const _keyVoiceHintLoginShown = 'voice_hint_login_shown';
-  static const _keyVoiceHintLaunches = 'voice_hint_launches';
-  static const _keyVoiceInputUsed = 'voice_input_used';
-
-  /// Подсказка про удержание «+» — раз в столько запусков приложения.
-  static const voiceHintEveryLaunches = 5;
+  static const _keyVoiceCoachMarkShown = 'voice_coach_mark_shown';
 
   /// Настройки перенесены из защищённого хранилища (см. [init]).
   static const _keyMovedFromSecureStorage =
@@ -268,46 +263,24 @@ class PreferencesService {
     }
   }
 
-  /// Подсказка про голосовой ввод уже решена в этом запуске приложения.
-  bool _voiceHintTurnTaken = false;
-
-  /// Показать ли подсказку «удерживайте +» вошедшему пользователю.
-  /// Вызывается при показе главного экрана; решает один раз за запуск:
-  /// первый раз после входа — да, дальше — каждый
-  /// [voiceHintEveryLaunches]-й запуск. После первого голосового ввода
-  /// ([recordVoiceInputUsed]) — больше никогда.
-  Future<bool> takeVoiceHintTurn() async {
-    if (_voiceHintTurnTaken) return false;
-    _voiceHintTurnTaken = true;
+  /// Указатель «зажмите +» ещё не показывался (показывается один раз).
+  Future<bool> shouldShowVoiceCoachMark() async {
     try {
-      final prefs = await _prefs;
-      if (prefs.getBool(_keyVoiceInputUsed) ?? false) return false;
-      if (!(prefs.getBool(_keyVoiceHintLoginShown) ?? false)) {
-        await prefs.setBool(_keyVoiceHintLoginShown, true);
-        await prefs.setInt(_keyVoiceHintLaunches, 0);
-        return true;
-      }
-      final launches = (prefs.getInt(_keyVoiceHintLaunches) ?? 0) + 1;
-      final show = launches >= voiceHintEveryLaunches;
-      await prefs.setInt(_keyVoiceHintLaunches, show ? 0 : launches);
-      return show;
+      return !((await _prefs).getBool(_keyVoiceCoachMarkShown) ?? false);
     } catch (e, stack) {
-      AppLogger.e('Ошибка подсказки голосового ввода', e, stack);
+      AppLogger.e('Ошибка чтения указателя голосового ввода', e, stack);
       return false;
     }
   }
 
-  /// Голосовой ввод сработал: подсказка про него больше не нужна.
-  Future<void> recordVoiceInputUsed() async {
+  /// Указатель «зажмите +» показан — больше не показывать.
+  Future<void> recordVoiceCoachMarkShown() async {
     try {
-      await (await _prefs).setBool(_keyVoiceInputUsed, true);
+      await (await _prefs).setBool(_keyVoiceCoachMarkShown, true);
     } catch (e, stack) {
-      AppLogger.e('Ошибка сохранения голосового ввода', e, stack);
+      AppLogger.e('Ошибка сохранения указателя голосового ввода', e, stack);
     }
   }
-
-  @visibleForTesting
-  void resetVoiceHintTurn() => _voiceHintTurnTaken = false;
 
   Future<int> _getTotalSessions() async {
     return (await _prefs).getInt(_keyTotalSessions) ?? 0;

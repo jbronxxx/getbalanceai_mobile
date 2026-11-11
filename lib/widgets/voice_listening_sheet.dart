@@ -9,6 +9,7 @@ import '../services/speech_input_service.dart';
 import '../theme/app_colors.dart';
 import '../utils/utils.dart';
 import 'ai_sparkles_loader.dart';
+import 'insights/insight_card.dart';
 import 'app_sheet.dart';
 import 'sheet_buttons.dart';
 import 'whole_words_text.dart';
@@ -61,7 +62,9 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
   _Phase _phase = _Phase.listening;
   String _words = '';
   double _level = 0;
-  String? _error;
+
+  /// Сообщения ошибки — карточками, как на «Аналитике».
+  List<String> _errors = const [];
   bool _canRetry = true;
   Timer? _finalWait;
   CancelToken? _parseToken;
@@ -91,7 +94,7 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
       _phase = _Phase.listening;
       _words = '';
       _level = 0;
-      _error = null;
+      _errors = const [];
     });
     final failure = await _recognizer.prepare();
     if (!_isCurrent(attempt)) return;
@@ -135,22 +138,24 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
   void _fail(SpeechFailure failure) {
     final l10n = context.l10n;
     _showError(
-      switch (failure) {
-        SpeechFailure.permissionDenied => l10n.voice_error_mic_permission,
-        SpeechFailure.unavailable => l10n.voice_error_unavailable,
-        SpeechFailure.nothingHeard => l10n.voice_error_nothing_heard,
-        SpeechFailure.failed => l10n.voice_error_recognition,
-      },
+      [
+        switch (failure) {
+          SpeechFailure.permissionDenied => l10n.voice_error_mic_permission,
+          SpeechFailure.unavailable => l10n.voice_error_unavailable,
+          SpeechFailure.nothingHeard => l10n.voice_error_nothing_heard,
+          SpeechFailure.failed => l10n.voice_error_recognition,
+        },
+      ],
       canRetry: failure == SpeechFailure.nothingHeard ||
           failure == SpeechFailure.failed,
     );
   }
 
-  void _showError(String message, {bool canRetry = true}) {
+  void _showError(List<String> messages, {bool canRetry = true}) {
     _finalWait?.cancel();
     setState(() {
       _phase = _Phase.error;
-      _error = message;
+      _errors = messages;
       _canRetry = canRetry;
     });
   }
@@ -168,7 +173,7 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
       final drafts = await (widget.parse ?? _parseOnServer)(phrase);
       if (!mounted || attempt != _attempt) return;
       if (drafts.isEmpty) {
-        return _showError(context.l10n.voice_error_no_amount);
+        return _showError([context.l10n.voice_error_no_amount]);
       }
       Navigator.pop(context, VoiceInputResult(phrase: phrase, drafts: drafts));
     } catch (e) {
@@ -187,22 +192,23 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
     );
   }
 
-  /// Квота — до завтра, без повтора; сбой ИИ — своё сообщение; сеть и
-  /// прочее — общие тексты ошибок приложения.
+  /// Квота — до завтра, без повтора; сбой ИИ на сервере (5xx) и
+  /// неразборчивый ответ — «помощники заняты», как на «Аналитике»; сеть и
+  /// прочие ответы сервера — общие тексты ошибок приложения.
   void _showParseError(Object error) {
     final l10n = context.l10n;
-    if (error is DioException) {
-      final response = error.response;
-      final data = response?.data;
-      final code = data is Map ? data['code'] : null;
-      if (code == 'AI_QUOTA_EXCEEDED') {
-        return _showError(l10n.voice_error_quota, canRetry: false);
-      }
-      if (response?.statusCode == 503 || code == 'SERVICE_UNAVAILABLE') {
-        return _showError(l10n.voice_error_busy);
-      }
+    final busy = [
+      l10n.insights_assistants_busy_msg1,
+      l10n.insights_assistants_busy_msg2,
+    ];
+    if (error is! DioException) return _showError(busy);
+    final response = error.response;
+    final data = response?.data;
+    if (data is Map && data['code'] == 'AI_QUOTA_EXCEEDED') {
+      return _showError([l10n.voice_error_quota], canRetry: false);
     }
-    _showError(AppErrorHandler.getMessage(error));
+    if ((response?.statusCode ?? 0) >= 500) return _showError(busy);
+    _showError([AppErrorHandler.getMessage(error)]);
   }
 
   void _close() => Navigator.pop(context);
@@ -227,53 +233,62 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 10, 24, 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // Шторка собрана вокруг индикатора: текст — по центру
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Center(child: SheetHandle()),
               WholeWordsText(
                 title,
                 key: const ValueKey('voice_title'),
+                textAlign: TextAlign.center,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 8),
-              WholeWordsText(
-                _phase == _Phase.error ? _error! : l10n.voice_listening_example,
-                key: const ValueKey('voice_message'),
-                style: textTheme.bodyMedium?.copyWith(
-                  color: _phase == _Phase.error
-                      ? colorScheme.error
-                      : colorScheme.outline,
-                  height: 1.4,
+              // Пример фразы — только пока слушаем
+              if (_phase == _Phase.listening) ...[
+                const SizedBox(height: 8),
+                WholeWordsText(
+                  l10n.voice_listening_example,
+                  key: const ValueKey('voice_example'),
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.outline,
+                    height: 1.4,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 20),
-              // Высота под две строки текста: шторка не прыгает, пока
-              // распознанная фраза растёт
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 56),
-                child: _words.isEmpty
-                    ? const SizedBox(width: double.infinity)
-                    : WholeWordsText(
-                        _words,
-                        key: const ValueKey('voice_words'),
-                        style: textTheme.bodyLarge?.copyWith(height: 1.4),
-                      ),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: SizedBox(
-                  height: 96,
-                  child: switch (_phase) {
-                    _Phase.listening => _LevelIndicator(level: _level),
-                    _Phase.parsing => const AiSparklesLoader(),
-                    _Phase.error => const SizedBox.shrink(),
-                  },
+              if (_phase != _Phase.error || _words.isNotEmpty)
+                // Высота под две строки текста: шторка не прыгает, пока
+                // распознанная фраза растёт
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 56),
+                  child: _words.isEmpty
+                      ? const SizedBox(width: double.infinity)
+                      : WholeWordsText(
+                          _words,
+                          key: const ValueKey('voice_words'),
+                          textAlign: TextAlign.center,
+                          style: textTheme.bodyLarge?.copyWith(height: 1.4),
+                        ),
                 ),
-              ),
-              const SizedBox(height: 12),
+              if (_phase == _Phase.error) ...[
+                if (_words.isNotEmpty) const SizedBox(height: 12),
+                for (final message in _errors) InsightCard(text: message),
+              ] else ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: SizedBox(
+                    height: 96,
+                    child: _phase == _Phase.listening
+                        ? _LevelIndicator(level: _level)
+                        : const AiSparklesLoader(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               _buttons(l10n),
             ],
           ),
