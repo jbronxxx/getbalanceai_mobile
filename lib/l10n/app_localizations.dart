@@ -2053,6 +2053,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No pending recurring payments'**
   String get debug_reminder_none;
+
+  /// No description provided for @done_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done_btn;
+
+  /// No description provided for @voice_input_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input'**
+  String get voice_input_title;
+
+  /// No description provided for @voice_listening_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak now'**
+  String get voice_listening_title;
+
+  /// No description provided for @voice_listening_example.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: “coffee 4 euros and taxi 12 yesterday”'**
+  String get voice_listening_example;
+
+  /// No description provided for @voice_parsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your phrase…'**
+  String get voice_parsing;
+
+  /// No description provided for @voice_retry_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get voice_retry_btn;
+
+  /// No description provided for @voice_close_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get voice_close_btn;
+
+  /// No description provided for @voice_error_nothing_heard.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t catch that. Try saying “coffee 4 euros”'**
+  String get voice_error_nothing_heard;
+
+  /// No description provided for @voice_error_no_amount.
+  ///
+  /// In en, this message translates to:
+  /// **'No amount found in the phrase. Try saying “coffee 4 euros”'**
+  String get voice_error_no_amount;
+
+  /// No description provided for @voice_error_mic_permission.
+  ///
+  /// In en, this message translates to:
+  /// **'No microphone access. Allow it for the app in your phone settings'**
+  String get voice_error_mic_permission;
+
+  /// No description provided for @voice_error_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition is not available on this phone'**
+  String get voice_error_unavailable;
+
+  /// No description provided for @voice_error_recognition.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t recognize speech. Check your internet connection and try again'**
+  String get voice_error_recognition;
+
+  /// No description provided for @voice_error_quota.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s voice input limit is reached. Add the record manually or try again tomorrow'**
+  String get voice_error_quota;
+
+  /// No description provided for @voice_error_busy.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the phrase. Please try again a bit later'**
+  String get voice_error_busy;
+
+  /// No description provided for @voice_sign_in_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input is available after you sign in'**
+  String get voice_sign_in_required;
+
+  /// Title of the list of records recognized from a voice phrase
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 record recognized} other{{count} records recognized}}'**
+  String voice_drafts_title(int count);
+
+  /// No description provided for @voice_save_all_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Save all ({count})'**
+  String voice_save_all_btn(int count);
+
+  /// No description provided for @voice_hint_message.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold “+” to dictate a record: “coffee 4 euros and taxi 12”'**
+  String get voice_hint_message;
+
+  /// No description provided for @voice_fab_long_press_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'dictate a record'**
+  String get voice_fab_long_press_hint;
 }
 
 class _AppLocalizationsDelegate

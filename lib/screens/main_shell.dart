@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+
 import '../cubits/auth/auth_cubit.dart';
+import '../services/services.dart';
 import '../utils/utils.dart';
 import 'add_transaction_sheet.dart';
 import 'budgets_screen.dart';
 import 'dashboard_screen.dart';
 import 'insights_screen.dart';
 import 'profile_screen.dart';
+import 'voice_input_flow.dart';
 
 import '../widgets/widgets.dart';
 import '../theme/theme.dart';
@@ -39,6 +43,47 @@ class _MainShellState extends State<MainShell> {
   /// о сохранении через `LocalDbService.transactionsChanged`.
   void _openNewTransaction() => AddTransactionSheet.show(context);
 
+  /// Голосовой ввод — долгое нажатие на «+».
+  void _startVoiceInput(bool signedIn) =>
+      VoiceInputFlow.start(context, signedIn: signedIn);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowVoiceHint());
+  }
+
+  /// Подсказка «удерживайте +» вошедшему пользователю: после первого входа
+  /// и затем раз в несколько запусков (см. `takeVoiceHintTurn`).
+  Future<void> _maybeShowVoiceHint() async {
+    if (!mounted || context.read<AuthCubit>().state is! Authenticated) return;
+    if (!await PreferencesService.instance.takeVoiceHintTurn() || !mounted) {
+      return;
+    }
+    // Под экраном блокировки тост никто не увидит — ждём разблокировки
+    final locked = AppLockService.instance.locked;
+    if (locked.value) {
+      final unlocked = Completer<void>();
+      void onChange() {
+        if (!locked.value && !unlocked.isCompleted) unlocked.complete();
+      }
+
+      locked.addListener(onChange);
+      await unlocked.future;
+      locked.removeListener(onChange);
+      if (!mounted) return;
+    }
+    AppAlerts.showToast(
+      context,
+      title: context.l10n.voice_input_title,
+      message: context.l10n.voice_hint_message,
+      duration: voiceHintDuration,
+    );
+  }
+
+  /// Подсказку успевают прочитать: она длиннее обычного тоста.
+  static const voiceHintDuration = Duration(seconds: 7);
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
@@ -47,6 +92,8 @@ class _MainShellState extends State<MainShell> {
           setState(() {
             _currentIndex = 0;
           });
+        } else if (state is Authenticated) {
+          unawaited(_maybeShowVoiceHint());
         }
       },
       builder: (context, authState) {
@@ -125,6 +172,9 @@ class _MainShellState extends State<MainShell> {
                       centerAction: LiquidGlassNavAction(
                         tooltip: context.l10n.new_transaction,
                         onPressed: _openNewTransaction,
+                        onLongPress: () =>
+                            _startVoiceInput(authState is Authenticated),
+                        longPressHint: context.l10n.voice_fab_long_press_hint,
                       ),
                       onDestinationSelected: _selectTab,
                       destinations: [

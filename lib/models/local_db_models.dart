@@ -270,6 +270,34 @@ class Transaction {
     this.syncRejectCode,
   });
 
+  /// Новая запись, введённая пользователем: курс и сумма в основной валюте —
+  /// по текущим курсам. [localId] — только для показа несохранённого
+  /// черновика (голосовой ввод); в базу такая запись кладётся с `0`.
+  factory Transaction.newRecord({
+    int localId = 0,
+    required TransactionType type,
+    required Category category,
+    required double amount,
+    required Currency currency,
+    required DateTime date,
+    required String description,
+  }) {
+    final base = CurrencyFormatter.currentCurrency;
+    final rates = CurrencyExchangeService.instance;
+    return Transaction(
+      localId: localId,
+      dbType: type.name,
+      dbCategory: category.name,
+      amount: amount,
+      currencyCode: currency.code,
+      exchangeRate: rates.getRate(from: currency, to: base),
+      baseAmount: rates.convert(amount, from: currency, to: base),
+      dateMilliseconds: date.millisecondsSinceEpoch,
+      description: description,
+      dateCreatedMilliseconds: 0,
+    );
+  }
+
   @Transient()
   Category get category => Category.fromString(dbCategory);
 

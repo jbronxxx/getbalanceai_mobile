@@ -8,6 +8,10 @@
 		<string>GetBalance AI</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Face ID is used to unlock the app when App lock is on.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>The microphone is used for voice input of records.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Speech recognition turns your phrase into records you confirm.</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>

@@ -593,5 +593,39 @@
   },
   "debug_test_reminder": "Reminder in 10 seconds",
   "debug_reminder_scheduled": "Reminder in 10 seconds — you can close the app",
-  "debug_reminder_none": "No pending recurring payments"
+  "debug_reminder_none": "No pending recurring payments",
+  "done_btn": "Done",
+  "voice_input_title": "Voice input",
+  "voice_listening_title": "Speak now",
+  "voice_listening_example": "For example: “coffee 4 euros and taxi 12 yesterday”",
+  "voice_parsing": "Reading your phrase…",
+  "voice_retry_btn": "Try again",
+  "voice_close_btn": "Close",
+  "voice_error_nothing_heard": "Didn't catch that. Try saying “coffee 4 euros”",
+  "voice_error_no_amount": "No amount found in the phrase. Try saying “coffee 4 euros”",
+  "voice_error_mic_permission": "No microphone access. Allow it for the app in your phone settings",
+  "voice_error_unavailable": "Speech recognition is not available on this phone",
+  "voice_error_recognition": "Couldn't recognize speech. Check your internet connection and try again",
+  "voice_error_quota": "Today's voice input limit is reached. Add the record manually or try again tomorrow",
+  "voice_error_busy": "Couldn't read the phrase. Please try again a bit later",
+  "voice_sign_in_required": "Voice input is available after you sign in",
+  "voice_drafts_title": "{count, plural, =1{1 record recognized} other{{count} records recognized}}",
+  "@voice_drafts_title": {
+    "description": "Title of the list of records recognized from a voice phrase",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "voice_save_all_btn": "Save all ({count})",
+  "@voice_save_all_btn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "voice_hint_message": "Hold “+” to dictate a record: “coffee 4 euros and taxi 12”",
+  "voice_fab_long_press_hint": "dictate a record"
 }

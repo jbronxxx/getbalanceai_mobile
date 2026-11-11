@@ -37,7 +37,8 @@ lib/
 │   ├── sync_model.dart          # Модель для пакетной синхронизации
 │   ├── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
 │   ├── month_budget_summary.dart # MonthBudgetSummary: лимиты, потрачено, остаток и «можно тратить в день» за месяц
-│   └── month_period.dart        # MonthPeriod: календарный месяц (переходы через границу года, сравнение)
+│   ├── month_period.dart        # MonthPeriod: календарный месяц (переходы через границу года, сравнение)
+│   └── voice_drafts.dart        # VoiceDrafts.fromJson: черновики записей из ответа POST /voice/parse (несохранённые Transaction)
 ├── services/
 │   ├── api_service.dart          # Единый сетевой фасад (делегирует в Auth/Transaction/Budget/Sync)
 │   ├── auth_api_service.dart     # Сервис аутентификации, сессий и токенов
@@ -51,7 +52,8 @@ lib/
 │   ├── currency_exchange_service.dart # Конвертация и актуализация курсов валют (офлайн fallback).
 │   │                                 # При смене базовой валюты Presentation-слой динамически пересчитывает суммы
 │   │                                 # в представлении (on-the-fly) без мутации исторической базы и без ложных флагов isModified.
-│   ├── entitlement_service.dart  # Доступ к платным функциям (AppFeature); до монетизации всё открыто
+│   ├── entitlement_service.dart  # Доступ к платным функциям (AppFeature: reportExport, voiceInput); до монетизации всё открыто
+│   ├── speech_input_service.dart # Распознавание речи на телефоне: интерфейс SpeechRecognizer (фейк в тестах), DeviceSpeechRecognizer на speech_to_text, локаль распознавания
 │   ├── report_data_service.dart  # Сборка ReportData из ObjectBox за период, конвертация в базовую валюту
 │   ├── csv_report_generator.dart # CSV (UTF-8 BOM, диалект по языку, защита от формул)
 │   ├── pdf_report_generator.dart # PDF (пакет pdf, шрифт Inter из ассетов): сводка, категории, лимиты, операции
@@ -80,13 +82,15 @@ lib/
 │   ├── keyboard_insets_isolation.dart # Скрывает клавиатуру от экранов под модальным листом (MainShell): кадры её анимации не перестраивают вкладки и навбар
 │   ├── liquid_glass_app_bar.dart# Хэдер экрана из полированного полупрозрачного стекла со скругленным низом (20px, BackdropFilter, topContentPadding)
 │   ├── liquid_glass_nav_bar.dart# Плавающий островок навигации Liquid Glass с единой полупрозрачностью и блюром (RepaintBoundary, sigma 18)
-│   ├── liquid_glass_fab.dart    # Кнопка действия с градиентным стеклом и неоновым свечением (центральная «+» навбара)
+│   ├── liquid_glass_fab.dart    # Кнопка действия с градиентным стеклом и неоновым свечением (центральная «+» навбара; долгое нажатие — голосовой ввод)
+│   ├── voice_listening_sheet.dart # Шторка «Говорите»: текст вживую, громкость, «Разбираю фразу…», ошибки с «Сказать ещё раз»
 │   ├── screen_body_card.dart    # Каркас контента экрана со скругленными верхними краями (28px) и бесшовным скольжением под хэдер
 │   └── welcome_language_sheet.dart # Выбор стартового языка приложения
 └── screens/
     ├── main_shell.dart            # Каркас с IndexedStack, сохранением состояния вкладок (PageStorageKey) и локализацией слушателя валюты
     ├── dashboard_screen.dart      # Баланс и список операций
-    ├── add_transaction_sheet.dart # Форма добавления транзакции
+    ├── add_transaction_sheet.dart # Форма добавления транзакции (в том числе заполненная голосовым вводом и правка черновика без сохранения)
+    ├── voice_input_flow.dart      # Голосовой ввод: VoiceInputFlow (долгое нажатие «+») и VoiceDraftsSheet — список распознанных записей
     ├── budgets_screen.dart        # «Бюджет»: бюджет месяца, лимиты по категориям
     ├── insights_screen.dart       # «Аналитика»: структура расходов, AI-советы за месяц, выгрузка отчёта в шапке
     ├── profile_screen.dart        # Профиль пользователя и настройки приложения
@@ -175,6 +179,14 @@ main.dart`. Это было исправлено переносом состоя
 - Тап по уведомлению (и запуск приложения уведомлением — `getNotificationAppLaunchDetails`, после первого кадра) открывает карточку платежа месяца через `RecordActions.openRecurring` (`navigatorKey`). Разрешение на уведомления (Android 13+, iOS) запрашивается при создании регулярного платежа, а не при запуске.
 - Работа с платформой — за интерфейсом `ReminderScheduler` (в тестах подделка). Android: `isCoreLibraryDesugaringEnabled` + `desugar_jdk_libs`, `RECEIVE_BOOT_COMPLETED`, приёмники плагина в манифесте, монохромный значок `drawable/ic_notification` (сохраняется от сжатия ресурсов правилом `res/raw/keep.xml`), канал «Регулярные платежи».
 - Меню отладки (не в release): «Напоминание через 10 секунд» — показывает напоминание о ближайшем ожидающем платеже (сразу, без планирования, чтобы пересборка расписания его не отменила).
+
+## Голосовой ввод
+
+- Долгое нажатие на «+» (`LiquidGlassNavAction.onLongPress`; подсказка-tooltip у такой кнопки отключена — она открывалась бы тем же жестом) → `VoiceInputFlow.start`. Гостю — тост «доступен после входа»: разбор идёт через сервер. Доступ — `AppFeature.voiceInput` (до FEAT-02 открыт).
+- Речь распознаёт системный сервис (`speech_to_text`, Android — `RECORD_AUDIO` и `<queries>` на `RecognitionService`, без Bluetooth): `VoiceListeningSheet` показывает текст вживую и громкость, заканчивает после паузы 3 с или по «Готово» (если итоговый текст не пришёл за 3 с — берётся распознанный по ходу). Локаль — язык интерфейса со страной из системы (`SpeechInput.localeIdFor`). Доступ к микрофону система спрашивает при первом голосовом вводе.
+- Фраза → `ApiService.parseVoice` (`POST /voice/parse`: текст, язык интерфейса, валюта приложения; ожидание до 45 с) → черновики `VoiceDrafts.fromJson` — несохранённые `Transaction` с временным `localId` (1, 2, …), день от сервера, время — текущее. Ошибки — в шторке: квота на сутки (`429 AI_QUOTA_EXCEEDED`, без повтора), ИИ недоступен (503), сеть — общие тексты `AppErrorHandler.getMessage`; нет суммы, ничего не услышано, нет доступа к микрофону, нет сервиса распознавания.
+- Одна запись — обычная форма «Новая запись», заполненная (`AddTransactionSheet.show(draft:)`); несколько — `VoiceDraftsSheet`: черновики по дням через `DayGroupWidget`, тап — `AddTransactionSheet.editDraft` (форма возвращает исправленный черновик, ничего не сохраняя), свайп — убрать, «Сохранить все (N)» — `Transaction.newRecord` с курсом на момент сохранения и фоновая выгрузка. Сам голосовой ввод ничего не записывает.
+- Подсказка «удерживайте +» — тост после первого входа и затем каждый 5-й запуск (`PreferencesService.takeVoiceHintTurn`, один раз за запуск, после разблокировки приложения); после первого успешного голосового ввода больше не показывается.
 
 ## Кнопки и сообщения
 

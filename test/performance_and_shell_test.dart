@@ -35,6 +35,8 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'language_code': 'ru',
       'onboarding_setup_completed': true,
+      // Подсказка про голосовой ввод заменила бы тост, который проверяет тест
+      'voice_input_used': true,
     });
     PackageInfo.setMockInitialValues(
       appName: 'FinanceApp',
