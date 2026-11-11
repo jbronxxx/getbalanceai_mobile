@@ -576,7 +576,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get delete_account_error => 'Failed to delete account';
 
   @override
-  String get profile_data_section => 'Data';
+  String get profile_legal_section => 'Legal';
+
+  @override
+  String get terms_of_use_title => 'Terms of Use';
+
+  @override
+  String get privacy_policy_title => 'Privacy Policy';
 
   @override
   String get delete_account_info_title => 'Account and data deletion';

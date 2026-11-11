@@ -575,7 +575,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get delete_account_error => 'Ошибка удаления аккаунта';
 
   @override
-  String get profile_data_section => 'Данные';
+  String get profile_legal_section => 'Документы';
+
+  @override
+  String get terms_of_use_title => 'Условия использования';
+
+  @override
+  String get privacy_policy_title => 'Политика конфиденциальности';
 
   @override
   String get delete_account_info_title => 'Удаление аккаунта и данных';

@@ -1166,11 +1166,23 @@ abstract class AppLocalizations {
   /// **'Failed to delete account'**
   String get delete_account_error;
 
-  /// No description provided for @profile_data_section.
+  /// No description provided for @profile_legal_section.
   ///
   /// In en, this message translates to:
-  /// **'Data'**
-  String get profile_data_section;
+  /// **'Legal'**
+  String get profile_legal_section;
+
+  /// No description provided for @terms_of_use_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Use'**
+  String get terms_of_use_title;
+
+  /// No description provided for @privacy_policy_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacy_policy_title;
 
   /// No description provided for @delete_account_info_title.
   ///

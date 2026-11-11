@@ -39,55 +39,65 @@ void main() {
     EnvironmentConfig.setCurrentForTesting(Environment.prod);
   });
 
-  group('ProfileDataCard', () {
-    testWidgets('Показывает заголовок, подзаголовок и иконку пункта меню',
+  group('ProfileLegalCard', () {
+    testWidgets(
+        'Показывает три документа со знаком внешней ссылки, без иконок слева',
         (tester) async {
-      await tester.pumpWidget(_buildTestApp(const ProfileDataCard()));
+      await tester.pumpWidget(_buildTestApp(const ProfileLegalCard()));
       await tester.pumpAndSettle();
 
+      expect(find.text('Условия использования'), findsOneWidget);
+      expect(find.text('Политика конфиденциальности'), findsOneWidget);
       expect(find.text('Удаление аккаунта и данных'), findsOneWidget);
       expect(
         find.text('Справка: как удалить аккаунт и какие данные удаляются'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.privacy_tip_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new), findsNWidgets(3));
+      for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+        expect(tile.leading, isNull);
+      }
     });
 
+    // Строки ищем по порядку, чтобы тест не зависел от языка интерфейса.
+    const pages = ['/terms', '/privacy', '/delete-account'];
+
     for (final language in AppLanguage.values) {
-      testWidgets(
-          'Тап открывает страницу удаления аккаунта на языке ${language.code}',
-          (tester) async {
-        LanguageManager.setLanguage(language, save: false);
-        Uri? opened;
-        await tester.pumpWidget(_buildTestApp(ProfileDataCard(
-          launcher: (uri) async {
-            opened = uri;
-            return true;
-          },
-        )));
-        await tester.pumpAndSettle();
+      for (final (index, path) in pages.indexed) {
+        testWidgets('Тап открывает $path на языке ${language.code}',
+            (tester) async {
+          LanguageManager.setLanguage(language, save: false);
+          Uri? opened;
+          await tester.pumpWidget(_buildTestApp(ProfileLegalCard(
+            launcher: (uri) async {
+              opened = uri;
+              return true;
+            },
+          )));
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(ListTile));
-        await tester.pumpAndSettle();
+          await tester.tap(find.byType(ListTile).at(index));
+          await tester.pumpAndSettle();
 
-        expect(opened, isNotNull);
-        // В окружении local ссылка ведет на локальный бэкенд, а не на прод
-        expect(opened!.host, equals('10.0.2.2'));
-        expect(opened!.port, equals(8000));
-        expect(opened!.path, equals('/delete-account'));
-        expect(opened!.queryParameters['lang'], equals(language.code));
-      });
+          expect(opened, isNotNull);
+          // В окружении local ссылка ведет на локальный бэкенд, а не на прод
+          expect(opened!.host, equals('10.0.2.2'));
+          expect(opened!.port, equals(8000));
+          expect(opened!.path, equals(path));
+          expect(opened!.queryParameters['lang'], equals(language.code));
+          expect(find.text('Не удалось открыть ссылку'), findsNothing);
+        });
+      }
     }
 
     testWidgets('Если ссылку открыть не удалось, показывает ошибку',
         (tester) async {
-      await tester.pumpWidget(_buildTestApp(ProfileDataCard(
+      await tester.pumpWidget(_buildTestApp(ProfileLegalCard(
         launcher: (_) async => false,
       )));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(ListTile));
+      await tester.tap(find.byType(ListTile).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -96,12 +106,12 @@ void main() {
 
     testWidgets('Исключение при открытии ссылки не падает и показывает ошибку',
         (tester) async {
-      await tester.pumpWidget(_buildTestApp(ProfileDataCard(
+      await tester.pumpWidget(_buildTestApp(ProfileLegalCard(
         launcher: (_) async => throw Exception('no browser'),
       )));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(ListTile));
+      await tester.tap(find.byType(ListTile).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
