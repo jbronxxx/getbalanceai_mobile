@@ -135,8 +135,8 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Шапка карточки: Заголовок и статус-бейдж
-          _buildHeaderRow(context, textTheme, hasIncome, hasExpenses),
+          // Шапка карточки: заголовок
+          _buildTitle(context, textTheme),
           const SizedBox(height: 18),
           // Центральная часть: Donut Chart слева и список категорий справа
           Row(
@@ -161,56 +161,16 @@ class _BudgetExpenseRatioCardState extends State<BudgetExpenseRatioCard>
     );
   }
 
-  Widget _buildHeaderRow(
-    BuildContext context,
-    TextTheme textTheme,
-    bool hasIncome,
-    bool hasExpenses,
-  ) {
-    // Процент уже в центре кольца; бейдж — только предупреждение, когда
-    // расходы превысили доход.
-    final overspendRatio = hasIncome && hasExpenses
-        ? ((widget.totalExpense / widget.totalIncome) * 100).round()
-        : 0;
-    final showOverspendBadge = overspendRatio > 100;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: WholeWordsText(
-            context.l10n.structure_title,
-            style: textTheme.titleSmall?.copyWith(
-              color: AppColors.onBrandBase.withValues(alpha: 0.82),
-              letterSpacing: 0.3,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        if (showOverspendBadge) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-            decoration: BoxDecoration(
-              color: AppColors.of(context).overspendBadge,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.onBrandBase.withValues(alpha: 0.22),
-                width: 0.8,
-              ),
-            ),
-            child: Text(
-              '! $overspendRatio%',
-              style: textTheme.labelSmall?.copyWith(
-                color: AppColors.of(context).onOverspendBadge,
-                fontWeight: FontWeight.bold,
-                fontSize: AppFontSize.small,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ),
-        ],
-      ],
+  Widget _buildTitle(BuildContext context, TextTheme textTheme) {
+    // Процент расходов от дохода — в центре кольца, отдельный бейдж
+    // перерасхода в шапке не нужен.
+    return WholeWordsText(
+      context.l10n.structure_title,
+      style: textTheme.titleSmall?.copyWith(
+        color: AppColors.onBrandBase.withValues(alpha: 0.82),
+        letterSpacing: 0.3,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 

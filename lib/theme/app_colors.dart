@@ -71,10 +71,6 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Перерасход на фирменной карточке.
   final Color exceededOnBrand;
 
-  /// Бейдж «расходы больше дохода» на фирменной карточке и его текст.
-  final Color overspendBadge;
-  final Color onOverspendBadge;
-
   /// Кнопки входа: Google — светлая, Apple — тёмная (по правилам брендов).
   final Color googleButtonBackground;
   final Color googleButtonText;
@@ -104,8 +100,6 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.warning,
     required this.exceeded,
     required this.exceededOnBrand,
-    required this.overspendBadge,
-    required this.onOverspendBadge,
     required this.googleButtonBackground,
     required this.googleButtonText,
     required this.appleButtonBackground,
@@ -153,8 +147,6 @@ class AppColors extends ThemeExtension<AppColors> {
     warning: Color(0xFFB45309),
     exceeded: Color(0xFFC2410C),
     exceededOnBrand: Color(0xFFFDBA74),
-    overspendBadge: Color(0x47F43F5E),
-    onOverspendBadge: Color(0xFFFFE4E6),
     googleButtonBackground: Color(0xE0FFFFFF),
     googleButtonText: Color(0xFF0F172A),
     appleButtonBackground: Color(0xF209090B),
@@ -184,8 +176,6 @@ class AppColors extends ThemeExtension<AppColors> {
     warning: Color(0xFFFCD34D),
     exceeded: Color(0xFFF59E0B),
     exceededOnBrand: Color(0xFFFDBA74),
-    overspendBadge: Color(0x47F43F5E),
-    onOverspendBadge: Color(0xFFFFE4E6),
     googleButtonBackground: Color(0xD9141416),
     googleButtonText: Color(0xFFFFFFFF),
     appleButtonBackground: Color(0xE618181B),
@@ -230,8 +220,6 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? warning,
     Color? exceeded,
     Color? exceededOnBrand,
-    Color? overspendBadge,
-    Color? onOverspendBadge,
     Color? googleButtonBackground,
     Color? googleButtonText,
     Color? appleButtonBackground,
@@ -260,8 +248,6 @@ class AppColors extends ThemeExtension<AppColors> {
       warning: warning ?? this.warning,
       exceeded: exceeded ?? this.exceeded,
       exceededOnBrand: exceededOnBrand ?? this.exceededOnBrand,
-      overspendBadge: overspendBadge ?? this.overspendBadge,
-      onOverspendBadge: onOverspendBadge ?? this.onOverspendBadge,
       googleButtonBackground:
           googleButtonBackground ?? this.googleButtonBackground,
       googleButtonText: googleButtonText ?? this.googleButtonText,
@@ -298,8 +284,6 @@ class AppColors extends ThemeExtension<AppColors> {
       warning: mix(warning, other.warning),
       exceeded: mix(exceeded, other.exceeded),
       exceededOnBrand: mix(exceededOnBrand, other.exceededOnBrand),
-      overspendBadge: mix(overspendBadge, other.overspendBadge),
-      onOverspendBadge: mix(onOverspendBadge, other.onOverspendBadge),
       googleButtonBackground:
           mix(googleButtonBackground, other.googleButtonBackground),
       googleButtonText: mix(googleButtonText, other.googleButtonText),

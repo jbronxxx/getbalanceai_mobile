@@ -104,9 +104,9 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Бейдж перерасхода с восклицательным знаком и процентом
-    expect(find.text('! 150%'), findsOneWidget);
-    expect(find.text('150%'), findsWidgets);
+    // Процент — только в центре кольца, без бейджа перерасхода в шапке
+    expect(find.text('150%'), findsOneWidget);
+    expect(find.textContaining('!'), findsNothing);
   });
 
   testWidgets('Кейс: пустой месяц без операций (доход = 0, расход = 0)',
