@@ -174,12 +174,12 @@ void main() {
       final englishDy = tester.getTopLeft(find.text('Русский')).dy;
       expect((englishDy - initialDy).abs(), lessThanOrEqualTo(0.5));
 
-      // Переключаем на O'zbekcha
-      await tester.tap(find.text("O'zbekcha"));
+      // И обратно на русский
+      await tester.tap(find.text('Русский'));
       await tester.pumpAndSettle();
 
-      final uzbekDy = tester.getTopLeft(find.text('Русский')).dy;
-      expect((uzbekDy - initialDy).abs(), lessThanOrEqualTo(0.5));
+      final russianDy = tester.getTopLeft(find.text('Русский')).dy;
+      expect((russianDy - initialDy).abs(), lessThanOrEqualTo(0.5));
     });
   });
 
@@ -444,7 +444,7 @@ void main() {
         localId: 3,
         dbCategory: Category.food.name,
         limitAmount: 1000,
-        currencyCode: 'KZT',
+        currencyCode: 'USD',
         month: 10,
         year: 2026,
         spent: 0,
@@ -464,17 +464,17 @@ void main() {
 
       await tester.tap(find.byType(CurrencyBadge));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(Currency.uzs.localizedName));
+      await tester.tap(find.text(Currency.eur.localizedName));
       await tester.pumpAndSettle();
 
       final expected = CurrencyFormatter.formatForInput(
         CurrencyExchangeService.instance
-            .convert(1000, from: Currency.kzt, to: Currency.uzs),
-        Currency.uzs,
+            .convert(1000, from: Currency.usd, to: Currency.eur),
+        Currency.eur,
       );
       final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller!.text, expected);
-      expect(find.text(Currency.uzs.code), findsOneWidget);
+      expect(find.text(Currency.eur.code), findsOneWidget);
     });
 
     testWidgets('AddBudgetSheet не предлагает категории с лимитом',

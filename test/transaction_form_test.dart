@@ -73,7 +73,8 @@ void main() {
   final now = DateTime(2026, 10, 15, 18, 30);
 
   setUpAll(() {
-    LanguageManager.initFallback();
+    // Тексты в проверках — русские; язык по умолчанию — английский
+    LanguageManager.setLanguage(AppLanguage.ru, save: false);
     registerFallbackValue(TransactionType.expense);
     registerFallbackValue(
       Transaction(

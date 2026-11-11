@@ -6,9 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
-import 'app_localizations_kk.dart';
 import 'app_localizations_ru.dart';
-import 'app_localizations_uz.dart';
 
 // ignore_for_file: type=lint
 
@@ -97,9 +95,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('kk'),
-    Locale('ru'),
-    Locale('uz')
+    Locale('ru')
   ];
 
   /// No description provided for @balance.
@@ -227,18 +223,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select Currency'**
   String get select_currency;
-
-  /// No description provided for @uzs_name.
-  ///
-  /// In en, this message translates to:
-  /// **'Uzbek Som'**
-  String get uzs_name;
-
-  /// No description provided for @kzt_name.
-  ///
-  /// In en, this message translates to:
-  /// **'Kazakhstani Tenge'**
-  String get kzt_name;
 
   /// No description provided for @eur_name.
   ///
@@ -624,12 +608,6 @@ abstract class AppLocalizations {
   /// **'Log in to sync'**
   String get sync_login_required;
 
-  /// No description provided for @uzs_symbol.
-  ///
-  /// In en, this message translates to:
-  /// **'UZS'**
-  String get uzs_symbol;
-
   /// No description provided for @category_food.
   ///
   /// In en, this message translates to:
@@ -887,12 +865,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again.'**
   String get err_unexpected;
-
-  /// No description provided for @server_error_code.
-  ///
-  /// In en, this message translates to:
-  /// **'Server error'**
-  String get server_error_code;
 
   /// No description provided for @err_connection_timeout.
   ///
@@ -2094,7 +2066,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'kk', 'ru', 'uz'].contains(locale.languageCode);
+      <String>['en', 'ru'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -2105,12 +2077,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
-    case 'kk':
-      return AppLocalizationsKk();
     case 'ru':
       return AppLocalizationsRu();
-    case 'uz':
-      return AppLocalizationsUz();
   }
 
   throw FlutterError(

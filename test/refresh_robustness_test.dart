@@ -49,7 +49,8 @@ void main() {
   const storage = FlutterSecureStorage();
 
   setUpAll(() async {
-    LanguageManager.initFallback();
+    // Тексты в проверках — русские; язык по умолчанию — английский
+    LanguageManager.setLanguage(AppLanguage.ru, save: false);
     EnvironmentConfig.setDefinesForTesting(
         {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     final tempDir = await Directory.systemTemp.createTemp('refresh_robustness');

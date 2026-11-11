@@ -73,12 +73,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get select_currency => 'Select Currency';
 
   @override
-  String get uzs_name => 'Uzbek Som';
-
-  @override
-  String get kzt_name => 'Kazakhstani Tenge';
-
-  @override
   String get eur_name => 'Euro';
 
   @override
@@ -282,9 +276,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sync_login_required => 'Log in to sync';
 
   @override
-  String get uzs_symbol => 'UZS';
-
-  @override
   String get category_food => 'Food';
 
   @override
@@ -419,9 +410,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get err_unexpected => 'Something went wrong. Please try again.';
-
-  @override
-  String get server_error_code => 'Server error';
 
   @override
   String get err_connection_timeout => 'Connection timeout';

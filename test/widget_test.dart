@@ -41,7 +41,8 @@ void main() {
     EnvironmentConfig.setDefinesForTesting(
         {'API_BASE_URL': 'http://localhost:8000/api/v1'});
     await LocalDbService.init();
-    LanguageManager.initFallback();
+    // Тексты в проверках — русские; язык по умолчанию — английский
+    LanguageManager.setLanguage(AppLanguage.ru, save: false);
   });
 
   testWidgets('Приложение запускается и показывает нижнюю навигацию',

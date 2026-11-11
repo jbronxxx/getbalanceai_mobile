@@ -5,36 +5,28 @@ import 'package:flutter/services.dart';
 
 /// Поддерживаемые валюты с их параметрами.
 enum Currency {
-  uzs('UZS', 'сум', 'Узбекский сум', false, 0, 100000000000), // Лимит 100 млрд
-  kzt('KZT', '₸', 'Казахстанский тенге', false, 0,
-      10000000000), // Лимит 10 млрд
-  eur('EUR', '€', 'Евро', true, 2, 100000000), // Лимит 100 млн
-  usd('USD', r'$', 'Доллар США', true, 2, 100000000); // Лимит 100 млн
+  eur('EUR', '€', true, 2, 100000000), // Лимит 100 млн
+  usd('USD', r'$', true, 2, 100000000); // Лимит 100 млн
 
   final String code; // Код валюты (ISO)
   final String symbol; // Символ валюты
-  final String readableName; // Читаемое название валюты (на русском)
   final bool symbolBefore; // Ставить ли символ перед числом ($100 vs 100 руб)
   final int defaultDecimalDigits; // Сколько знаков после запятой отображать
   final double maxAmount; // Максимально допустимая сумма для ввода
 
-  const Currency(this.code, this.symbol, this.readableName, this.symbolBefore,
+  const Currency(this.code, this.symbol, this.symbolBefore,
       this.defaultDecimalDigits, this.maxAmount);
 
-  String get localizedSymbol {
-    if (this == Currency.uzs) {
-      return LanguageManager.l10n.uzs_symbol;
-    }
-    return symbol;
+  /// Валюта по коду ISO без учёта регистра; `null` — код неизвестен.
+  static Currency? fromCode(String? code) {
+    final normalized = code?.trim().toUpperCase();
+    return values.where((c) => c.code == normalized).firstOrNull;
   }
 
-  String get localizedName => this == Currency.uzs
-      ? LanguageManager.l10n.uzs_name
-      : this == Currency.kzt
-          ? LanguageManager.l10n.kzt_name
-          : this == Currency.eur
-              ? LanguageManager.l10n.eur_name
-              : LanguageManager.l10n.usd_name;
+  String get localizedName => switch (this) {
+        Currency.eur => LanguageManager.l10n.eur_name,
+        Currency.usd => LanguageManager.l10n.usd_name,
+      };
 }
 
 /// Специализированный ValueNotifier с поддержкой принудительного уведомления слушателей.
@@ -78,18 +70,10 @@ class CurrencyFormatter {
   /// Загружает сохраненную валюту из хранилища.
   static Future<void> loadSavedCurrency() async {
     final code = await PreferencesService.instance.getCurrency();
-    if (code != null) {
-      try {
-        final saved = Currency.values.firstWhere((c) => c.code == code);
-        _currentCurrency = saved;
-        currencyNotifier.value = saved;
-      } catch (_) {
-        // Если сохраненный код не найден (например, устаревший RUB), переключаем на дефолтную USD
-        _currentCurrency = Currency.usd;
-        currencyNotifier.value = Currency.usd;
-        await PreferencesService.instance.saveCurrency(Currency.usd.code);
-      }
-    }
+    final saved = Currency.fromCode(code);
+    if (saved == null) return;
+    _currentCurrency = saved;
+    currencyNotifier.value = saved;
   }
 
   static Currency get currentCurrency => _currentCurrency;
@@ -195,9 +179,9 @@ class CurrencyFormatter {
 
     // Позиционирование символа валюты
     if (targetCurrency.symbolBefore) {
-      return '$sign${targetCurrency.localizedSymbol}$formattedNumber';
+      return '$sign${targetCurrency.symbol}$formattedNumber';
     } else {
-      return '$sign$formattedNumber ${targetCurrency.localizedSymbol}';
+      return '$sign$formattedNumber ${targetCurrency.symbol}';
     }
   }
 
@@ -208,7 +192,7 @@ class CurrencyFormatter {
   static const String hiddenAmount = '\u2022\u2022\u2022\u2022\u2022';
 
   /// Виджет для безопасного отображения текста суммы.
-  /// Использует FittedBox или ellipsis, чтобы длинные числа (UZS/KZT) не ломали верстку.
+  /// Использует FittedBox или ellipsis, чтобы длинные числа не ломали верстку.
   ///
   /// Только для экрана: минус заменяется типографским «−» (ширина как у «+»),
   /// цифры моноширинные, чтобы суммы в колонках не «прыгали». Для файлов
@@ -272,12 +256,10 @@ class CurrencyInputFormatter extends TextInputFormatter {
   static List<String>? _currencyMarks;
 
   /// Символы и коды валют, которые могут прийти вместе с суммой при
-  /// вставке; длинные — первыми, чтобы «so'm» не разбирался по частям.
+  /// вставке; длинные — первыми, чтобы код не разбирался по частям.
   static List<String> get _marks => _currencyMarks ??= () {
         final marks = <String>{
           for (final c in Currency.values) ...[c.code, c.symbol],
-          for (final language in AppLanguage.values)
-            lookupAppLocalizations(Locale(language.code)).uzs_symbol,
         };
         return marks.map((m) => m.toLowerCase()).toSet().toList()
           ..sort((a, b) => b.length.compareTo(a.length));

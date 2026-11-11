@@ -71,7 +71,7 @@ void main() {
   setUp(() async {
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
     await LocalDbService.instance.clearAllData();
-    await CurrencyFormatter.setCurrency(Currency.uzs);
+    await CurrencyFormatter.setCurrency(Currency.eur);
   });
 
   LocalDbService db() => LocalDbService.instance;
@@ -91,7 +91,7 @@ void main() {
         dbType: type,
         dbCategory: category,
         amount: 350000,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
         description: description,
         dayOfMonth: day,
         startDate: start,
@@ -112,7 +112,7 @@ void main() {
       expect(
           r.at, DateTime(2026, 11, 15, RecurringReminderService.reminderHour));
       expect(r.title, 'Сегодня платёж: ЖКХ');
-      expect(r.body, '350 000 сум — нажмите, чтобы отметить оплату');
+      expect(r.body, '€350 000,00 — нажмите, чтобы отметить оплату');
       expect(r.payload, 'p-1|2026-11');
     });
 

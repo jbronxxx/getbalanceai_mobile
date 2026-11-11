@@ -25,51 +25,20 @@ class ThemeModePickerSheet extends StatelessWidget {
     );
   }
 
-  static String getThemeTitle(BuildContext context) {
-    try {
-      return context.l10n.theme_mode;
-    } catch (_) {
-      try {
-        return LanguageManager.l10n.theme_mode;
-      } catch (_) {
-        return 'Тема оформления';
-      }
-    }
-  }
+  /// Строки из контекста, а вне дерева локализации — текущего языка.
+  static AppLocalizations _l10n(BuildContext context) =>
+      AppLocalizations.of(context) ?? LanguageManager.l10n;
+
+  static String getThemeTitle(BuildContext context) =>
+      _l10n(context).theme_mode;
 
   static String getThemeModeLabel(BuildContext context, ThemeMode mode) {
-    try {
-      final l = context.l10n;
-      switch (mode) {
-        case ThemeMode.system:
-          return l.theme_system;
-        case ThemeMode.light:
-          return l.theme_light;
-        case ThemeMode.dark:
-          return l.theme_dark;
-      }
-    } catch (_) {
-      try {
-        final l = LanguageManager.l10n;
-        switch (mode) {
-          case ThemeMode.system:
-            return l.theme_system;
-          case ThemeMode.light:
-            return l.theme_light;
-          case ThemeMode.dark:
-            return l.theme_dark;
-        }
-      } catch (_) {
-        switch (mode) {
-          case ThemeMode.system:
-            return 'Системная';
-          case ThemeMode.light:
-            return 'Светлая';
-          case ThemeMode.dark:
-            return 'Темная';
-        }
-      }
-    }
+    final l = _l10n(context);
+    return switch (mode) {
+      ThemeMode.system => l.theme_system,
+      ThemeMode.light => l.theme_light,
+      ThemeMode.dark => l.theme_dark,
+    };
   }
 
   /// Иконка режима темы для пункта списка.

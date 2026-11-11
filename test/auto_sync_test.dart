@@ -260,7 +260,7 @@ void main() {
         dbType: 'expense',
         dateMilliseconds: DateTime(2026, 11, 6).millisecondsSinceEpoch,
         dateCreatedMilliseconds: DateTime(2026, 11, 6).millisecondsSinceEpoch,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
         serverId: 'tx-1',
       );
       LocalDbService.instance.putTransactions([t]);
@@ -271,7 +271,7 @@ void main() {
       final b = Budget(
         dbCategory: 'food',
         limitAmount: 1000000,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
         month: 11,
         year: 2026,
         spent: 0,

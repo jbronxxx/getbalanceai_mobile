@@ -51,7 +51,7 @@ void main() {
         dateMilliseconds: DateTime(2026, 11, 4, 13).millisecondsSinceEpoch,
         dateCreatedMilliseconds:
             DateTime(2026, 11, 4, 13).millisecondsSinceEpoch,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
       );
 
   /// Как `SyncService._assignClientTransactionIds`: UUID пишется в базу,
@@ -165,7 +165,7 @@ void main() {
     Budget newBudget({double limit = 1000000}) => Budget(
           dbCategory: 'food',
           limitAmount: limit,
-          currencyCode: 'UZS',
+          currencyCode: 'EUR',
           month: 11,
           year: 2026,
           spent: 0,

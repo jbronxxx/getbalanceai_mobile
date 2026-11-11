@@ -338,10 +338,8 @@ class AuthApiService {
     await setAvatarUrl(profile.avatarUrl);
     final baseCurrency = profile.baseCurrency;
     if (baseCurrency != null) {
-      final currency = Currency.values.firstWhere(
-        (c) => c.code.toUpperCase() == baseCurrency.toUpperCase(),
-        orElse: () => CurrencyFormatter.currentCurrency,
-      );
+      final currency =
+          Currency.fromCode(baseCurrency) ?? CurrencyFormatter.currentCurrency;
       await CurrencyFormatter.setCurrency(currency);
     }
     AppLogger.i('[AuthApiService] Profile updated for: ${profile.userName}');

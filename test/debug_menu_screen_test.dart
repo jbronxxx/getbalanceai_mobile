@@ -13,7 +13,7 @@ import 'package:getbalanceai_mobile/utils/language_manager.dart';
 Widget _buildTestApp() {
   return const MaterialApp(
     locale: Locale('en'),
-    supportedLocales: [Locale('en'), Locale('ru'), Locale('uz')],
+    supportedLocales: [Locale('en'), Locale('ru')],
     localizationsDelegates: [
       AppLocalizations.delegate,
       GlobalMaterialLocalizations.delegate,

@@ -37,7 +37,7 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     await LocalDbService.instance.clearAllData();
     await PendingDeletionsStore.instance.clear();
-    await CurrencyFormatter.setCurrency(Currency.uzs);
+    await CurrencyFormatter.setCurrency(Currency.eur);
 
     adapter = _Adapter();
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost'))
@@ -57,7 +57,7 @@ void main() {
     String type = 'expense',
     String category = 'housing',
     double amount = 350000,
-    String currency = 'UZS',
+    String currency = 'EUR',
     int day = 15,
     String start = '2026-11-15',
     String? end,
@@ -84,7 +84,7 @@ void main() {
         dateMilliseconds:
             (date ?? DateTime(2026, 11, 14)).millisecondsSinceEpoch,
         dateCreatedMilliseconds: DateTime(2026, 11, 14).millisecondsSinceEpoch,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
       );
 
   const nov = MonthPeriod(2026, 11);
@@ -208,7 +208,7 @@ void main() {
           service.totalInBaseCurrency(pending),
           50000 +
               CurrencyExchangeService.instance
-                  .convert(10, from: Currency.usd, to: Currency.uzs));
+                  .convert(10, from: Currency.usd, to: Currency.eur));
     });
 
     test('пропуск месяца и отмена пропуска', () {

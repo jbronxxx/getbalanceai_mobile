@@ -247,7 +247,7 @@ void main() {
         dbType: TransactionType.expense.name,
         dateMilliseconds: now,
         dateCreatedMilliseconds: now,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
         exchangeRate: 1 / 12800.0,
         baseAmount: 78.125,
       );

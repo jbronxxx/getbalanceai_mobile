@@ -76,13 +76,6 @@ Future<bool> _initServices() async {
       _restoreAccount(),
     ]);
 
-    // Нужны и база, и сохранённая валюта (в неё переводятся операции в RUB)
-    final prefs = PreferencesService.instance;
-    if (!await prefs.isLegacyTransactionsMigrated() &&
-        LocalDbService.instance.migrateLegacyTransactions()) {
-      await prefs.setLegacyTransactionsMigrated();
-    }
-
     unawaited(CurrencyExchangeService.instance.fetchLatestRates());
     return true;
   } catch (e, stack) {
@@ -183,9 +176,7 @@ class FinanceApp extends StatelessWidget {
                 locale: Locale(currentLanguage.code),
                 supportedLocales: const [
                   Locale('ru'),
-                  Locale('uz'),
                   Locale('en'),
-                  Locale('kk'),
                 ],
                 localizationsDelegates: const [
                   AppLocalizations.delegate,

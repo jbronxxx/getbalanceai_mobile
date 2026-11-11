@@ -164,7 +164,7 @@ void main() {
           _tx(
             date: DateTime(2030, 3, 2),
             amount: 100000,
-            currencyCode: 'UZS',
+            currencyCode: 'EUR',
           ),
         ],
         budgets: const [],
@@ -174,9 +174,9 @@ void main() {
 
       final row = data.transactions.single;
       expect(row.amount, 100000);
-      expect(row.currency, Currency.uzs);
+      expect(row.currency, Currency.eur);
       expect(row.baseAmount,
-          exchange.convert(100000, from: Currency.uzs, to: Currency.usd));
+          exchange.convert(100000, from: Currency.eur, to: Currency.usd));
     });
 
     test('лимит в другой валюте переводится в валюту отчёта', () {

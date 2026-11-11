@@ -73,12 +73,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get select_currency => 'Выбор валюты';
 
   @override
-  String get uzs_name => 'Узбекский сум';
-
-  @override
-  String get kzt_name => 'Казахстанский тенге';
-
-  @override
   String get eur_name => 'Евро';
 
   @override
@@ -281,9 +275,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sync_login_required => 'Войдите в аккаунт для синхронизации';
 
   @override
-  String get uzs_symbol => 'сум';
-
-  @override
   String get category_food => 'Питание';
 
   @override
@@ -418,9 +409,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get err_unexpected => 'Что-то пошло не так. Попробуйте ещё раз.';
-
-  @override
-  String get server_error_code => 'Ошибка сервера';
 
   @override
   String get err_connection_timeout => 'Превышено время ожидания соединения';

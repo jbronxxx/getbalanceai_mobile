@@ -41,7 +41,8 @@ void main() {
       expect(msg, contains('Сервис временно недоступен'));
     });
 
-    test('AppErrorHandler.getMessage formats SERVICE_UNAVAILABLE error payload',
+    test(
+        'AppErrorHandler.getMessage: текст сервера не показывается, сообщение — из l10n',
         () {
       final reqOptions = RequestOptions(path: '/api/v1/health');
       final err = DioException(
@@ -58,7 +59,7 @@ void main() {
       );
 
       final msg = AppErrorHandler.getMessage(err);
-      expect(msg, equals('Плановое обновление базы данных до 03:00 UTC'));
+      expect(msg, equals(LanguageManager.l10n.http_503));
     });
 
     test(
@@ -88,10 +89,6 @@ void main() {
       LanguageManager.setLanguage(AppLanguage.ru);
       expect(LanguageManager.l10n.service_unavailable_title,
           equals('Сервис временно недоступен'));
-
-      LanguageManager.setLanguage(AppLanguage.uz);
-      expect(LanguageManager.l10n.service_unavailable_title,
-          equals('Xizmat vaqtincha ishlamayapti'));
 
       LanguageManager.setLanguage(AppLanguage.en);
       expect(LanguageManager.l10n.service_unavailable_title,

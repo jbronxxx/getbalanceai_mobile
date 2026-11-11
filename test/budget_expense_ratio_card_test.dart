@@ -284,9 +284,9 @@ void main() {
     }
 
     testWidgets(
-        '×2, узкий экран, десятки миллионов сумов: ни один текст не обрезан «…»',
+        '×2, узкий экран, десятки миллионов: ни один текст не обрезан «…»',
         (tester) async {
-      await CurrencyFormatter.setCurrency(Currency.uzs);
+      await CurrencyFormatter.setCurrency(Currency.eur);
       addTearDown(() => CurrencyFormatter.setCurrency(Currency.usd));
       final cut = <String>[];
       for (final language in AppLanguage.values) {

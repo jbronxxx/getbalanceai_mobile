@@ -186,8 +186,6 @@ void main() {
       addTearDown(tester.view.reset);
       for (final (language, month) in [
         (AppLanguage.ru, 9),
-        (AppLanguage.kk, 12),
-        (AppLanguage.uz, 9),
         (AppLanguage.en, 9),
       ]) {
         LanguageManager.setLanguage(language, save: false);

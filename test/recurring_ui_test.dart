@@ -41,7 +41,7 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     LanguageManager.setLanguage(AppLanguage.ru, save: false);
     await LocalDbService.instance.clearAllData();
-    await CurrencyFormatter.setCurrency(Currency.uzs);
+    await CurrencyFormatter.setCurrency(Currency.eur);
     SelectedPeriodService.instance.select(MonthPeriod.current());
   });
 
@@ -62,7 +62,7 @@ void main() {
       dbType: type,
       dbCategory: category,
       amount: 350000,
-      currencyCode: 'UZS',
+      currencyCode: 'EUR',
       description: 'ЖКХ',
       dayOfMonth: day ?? first.day,
       startDate: formatDateOnly(first),
@@ -172,7 +172,7 @@ void main() {
       await openSheet(tester, occurrence: occurrence);
 
       expect(find.text('Отметить оплату'), findsOneWidget);
-      expect(find.text('350 000'), findsOneWidget);
+      expect(find.text('350 000,00'), findsOneWidget);
       expect(find.byType(TransactionTypeToggle), findsNothing);
       expect(find.byKey(const ValueKey('recurrence_toggle')), findsNothing);
       expect(find.text('Оплачено'), findsOneWidget);
@@ -195,7 +195,7 @@ void main() {
         dbType: 'expense',
         dateMilliseconds: today.millisecondsSinceEpoch,
         dateCreatedMilliseconds: 0,
-        currencyCode: 'UZS',
+        currencyCode: 'EUR',
       );
       db().saveTransaction(existing);
       await tester.pumpWidget(app(Builder(
@@ -409,7 +409,7 @@ void main() {
     Budget budget(String category, double limit) => Budget(
           dbCategory: category,
           limitAmount: limit,
-          currencyCode: 'UZS',
+          currencyCode: 'EUR',
           month: 11,
           year: 2026,
           spent: 0,

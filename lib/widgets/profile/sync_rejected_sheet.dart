@@ -153,7 +153,7 @@ class _RejectedTile extends StatelessWidget {
                 style:
                     textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
-              // Две строки: рядом с суммой в сотни миллионов сумов дата и описание
+              // Две строки: рядом с суммой в сотни миллионов дата и описание
               // в одну строку обрезались.
               subtitle: WholeWordsText(
                 details,

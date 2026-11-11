@@ -131,9 +131,9 @@ void main() {
       verify(() => mockDb.saveBudget(captureAny())).captured.single as Budget;
 
   group('Правка операции в валюте, отличной от базовой', () {
-    testWidgets('база UZS, операция \$19.99: копейки не теряются',
+    testWidgets('база EUR, операция \$19.99: копейки не теряются',
         (tester) async {
-      await setUpEnvironment(base: Currency.uzs);
+      await setUpEnvironment(base: Currency.eur);
       await _pumpSheet(
         tester,
         AddTransactionSheet(
@@ -150,9 +150,9 @@ void main() {
       expect(saved.serverId, 'tx-1');
     });
 
-    testWidgets('база UZS, операция \$0.45 не превращается в 0',
+    testWidgets('база EUR, операция \$0.45 не превращается в 0',
         (tester) async {
-      await setUpEnvironment(base: Currency.uzs);
+      await setUpEnvironment(base: Currency.eur);
       await _pumpSheet(
         tester,
         AddTransactionSheet(
@@ -166,22 +166,22 @@ void main() {
       expect(savedTransaction().amount, 0.45);
     });
 
-    testWidgets('база USD, операция в UZS: без копеек и сохраняется как есть',
+    testWidgets('база USD, операция в EUR сохраняется как есть',
         (tester) async {
       await setUpEnvironment(base: Currency.usd);
       await _pumpSheet(
         tester,
         AddTransactionSheet(
-            transactionToEdit: _transaction(50000, Currency.uzs)),
+            transactionToEdit: _transaction(50000, Currency.eur)),
       );
 
-      expect(_amountText(tester), '50 000');
+      expect(_amountText(tester), '50 000,00');
 
       await _tap(tester, _submitTransaction);
 
       final saved = savedTransaction();
       expect(saved.amount, 50000);
-      expect(saved.currencyCode, 'UZS');
+      expect(saved.currencyCode, 'EUR');
     });
 
     testWidgets('ошибка максимума — в формате валюты операции', (tester) async {
@@ -189,32 +189,32 @@ void main() {
       await _pumpSheet(
         tester,
         AddTransactionSheet(
-            transactionToEdit: _transaction(50000, Currency.uzs)),
+            transactionToEdit: _transaction(50000, Currency.eur)),
       );
 
-      await tester.enterText(find.byType(TextField).first, '999999999999');
+      await tester.enterText(find.byType(TextField).first, '999999999');
       await _tap(tester, _submitTransaction);
 
       verifyNever(() => mockDb.saveTransaction(any()));
       expect(
         find.text(LanguageManager.l10n
-            .amount_requirement_max('100 000 000 000', 'UZS')),
+            .amount_requirement_max('100 000 000,00', 'EUR')),
         findsOneWidget,
       );
     });
   });
 
   group('EN-локаль: сохранение без правки суммы', () {
-    testWidgets('операция 1 500 UZS не делится на 1000', (tester) async {
-      await setUpEnvironment(base: Currency.uzs, language: AppLanguage.en);
+    testWidgets('операция 1 500 EUR не делится на 1000', (tester) async {
+      await setUpEnvironment(base: Currency.eur, language: AppLanguage.en);
       await _pumpSheet(
         tester,
         AddTransactionSheet(
-            transactionToEdit: _transaction(1500, Currency.uzs)),
+            transactionToEdit: _transaction(1500, Currency.eur)),
         locale: const Locale('en'),
       );
 
-      expect(_amountText(tester), '1 500');
+      expect(_amountText(tester), '1 500,00');
 
       await _tap(tester, _submitTransaction);
 
@@ -242,27 +242,27 @@ void main() {
       expect(savedTransaction().amount, 1500.5);
     });
 
-    testWidgets('лимит 1 500 000 UZS сохраняется без изменений',
+    testWidgets('лимит 1 500 000 EUR сохраняется без изменений',
         (tester) async {
-      await setUpEnvironment(base: Currency.uzs, language: AppLanguage.en);
+      await setUpEnvironment(base: Currency.eur, language: AppLanguage.en);
       await _pumpSheet(
         tester,
         AddBudgetSheet(
           selectedMonth: 11,
           selectedYear: 2026,
-          budgetToEdit: _budget(1500000, Currency.uzs),
+          budgetToEdit: _budget(1500000, Currency.eur),
           onSaved: () {},
         ),
         locale: const Locale('en'),
       );
 
-      expect(_amountText(tester), '1 500 000');
+      expect(_amountText(tester), '1 500 000,00');
 
       await _tap(tester, find.text(LanguageManager.l10n.save_btn));
 
       final saved = savedBudget();
       expect(saved.limitAmount, 1500000);
-      expect(saved.currencyCode, 'UZS');
+      expect(saved.currencyCode, 'EUR');
     });
 
     testWidgets('смена валюты лимита подставляет сумму в формате поля',
@@ -281,18 +281,17 @@ void main() {
 
       await tester.tap(find.byType(CurrencyBadge));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(Currency.uzs.localizedName));
+      await tester.tap(find.text(Currency.eur.localizedName));
       await tester.pumpAndSettle();
 
       final converted = CurrencyExchangeService.instance
-          .convert(1000, from: Currency.usd, to: Currency.uzs);
+          .convert(1000, from: Currency.usd, to: Currency.eur);
       expect(_amountText(tester),
-          CurrencyFormatter.formatForInput(converted, Currency.uzs));
-      expect(_amountText(tester), isNot(contains(',')));
+          CurrencyFormatter.formatForInput(converted, Currency.eur));
 
       await _tap(tester, find.text(LanguageManager.l10n.save_btn));
 
-      expect(savedBudget().limitAmount, converted.roundToDouble());
+      expect(savedBudget().limitAmount, closeTo(converted, 0.005));
     });
   });
 }

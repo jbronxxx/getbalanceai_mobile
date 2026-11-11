@@ -144,16 +144,10 @@ class AppErrorHandler {
             ? int.tryParse(retryAfterHeader.trim())
             : null;
 
-        final customMsg = (data is Map &&
-                data['message'] != null &&
-                data['message'].toString().isNotEmpty)
-            ? data['message'].toString()
-            : LanguageManager.l10n.http_429;
-
         AppAlerts.showRateLimitDialog(
           context,
           title: title ?? LanguageManager.l10n.rate_limit_exceeded_title,
-          message: customMsg,
+          message: LanguageManager.l10n.http_429,
           retryAfterSeconds: retrySeconds,
         );
         return;
@@ -163,15 +157,7 @@ class AppErrorHandler {
       if (error.response?.statusCode == 503 ||
           code == 'SERVICE_UNAVAILABLE' ||
           (data is Map && data['status'] == 'SERVICE_UNAVAILABLE')) {
-        final customMsg = (data is Map &&
-                data['message'] != null &&
-                data['message'].toString().isNotEmpty)
-            ? data['message'].toString()
-            : null;
-        AppAlerts.showServiceUnavailableDialog(
-          context,
-          message: customMsg,
-        );
+        AppAlerts.showServiceUnavailableDialog(context);
         return;
       }
     }
@@ -180,70 +166,31 @@ class AppErrorHandler {
   }
 
   /// Обрабатывает исключения Dio и возвращает локализованное сообщение.
+  ///
+  /// Текст ответа сервера (`message`, ошибки полей) пользователю не
+  /// показывается: он для разработчика и не на языке интерфейса. Сообщение —
+  /// по коду ошибки и HTTP-статусу из l10n.
   static String _handleDioError(DioException error) {
-    String message = LanguageManager.l10n.server_error_general;
+    String message;
+    final response = error.response;
 
-    if (error.response != null) {
-      final data = error.response?.data;
-
-      if (data is Map) {
-        // Извлечение сообщения из унифицированного контракта ErrorResponse
-        if (data['message'] != null && data['message'].toString().isNotEmpty) {
-          message = data['message'].toString();
-        } else if (data['code'] == 'RATE_LIMIT_EXCEEDED' ||
-            data['status'] == 'RATE_LIMIT_EXCEEDED' ||
-            error.response?.statusCode == 429) {
-          message = LanguageManager.l10n.http_429;
-        } else if (data['code'] == 'SERVICE_UNAVAILABLE' ||
-            data['status'] == 'SERVICE_UNAVAILABLE' ||
-            error.response?.statusCode == 503) {
-          message = LanguageManager.l10n.http_503;
-        }
-
-        // Обработка детальных ошибок валидации (VALIDATION_ERROR)
-        final String? code = data['code'];
-        if (code == 'VALIDATION_ERROR' && data['details']?['fields'] != null) {
-          try {
-            final fields = data['details']['fields'] as Map;
-            if (fields.isNotEmpty) {
-              final firstError = fields.values.first;
-              if (firstError is List && firstError.isNotEmpty) {
-                message = firstError.first.toString();
-              } else {
-                message = firstError.toString();
-              }
-            }
-          } catch (_) {}
-        }
-      } else {
-        // Резервный механизм на основе HTTP статус-кодов
-        switch (error.response?.statusCode) {
-          case 400:
-            message = LanguageManager.l10n.http_400;
-            break;
-          case 401:
-            message = LanguageManager.l10n.http_401;
-            break;
-          case 403:
-            message = LanguageManager.l10n.http_403;
-            break;
-          case 404:
-            message = LanguageManager.l10n.http_404;
-            break;
-          case 429:
-            message = LanguageManager.l10n.http_429;
-            break;
-          case 500:
-            message = LanguageManager.l10n.http_500;
-            break;
-          case 503:
-            message = LanguageManager.l10n.http_503;
-            break;
-          default:
-            message =
-                '${LanguageManager.l10n.server_error_code}: ${error.response?.statusCode}';
-        }
+    if (response != null) {
+      final data = response.data;
+      final code = data is Map ? data['code'] ?? data['status'] : null;
+      if (code == 'RATE_LIMIT_EXCEEDED' || response.statusCode == 429) {
+        return LanguageManager.l10n.http_429;
       }
+      if (code == 'SERVICE_UNAVAILABLE' || response.statusCode == 503) {
+        return LanguageManager.l10n.http_503;
+      }
+      message = switch (response.statusCode) {
+        400 || 422 => LanguageManager.l10n.http_400,
+        401 => LanguageManager.l10n.http_401,
+        403 => LanguageManager.l10n.http_403,
+        404 => LanguageManager.l10n.http_404,
+        500 => LanguageManager.l10n.http_500,
+        _ => LanguageManager.l10n.server_error_general,
+      };
     } else {
       // Ошибки транспортного уровня (сеть, таймауты)
       switch (error.type) {

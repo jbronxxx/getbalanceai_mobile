@@ -158,11 +158,6 @@ void main() {
               ? contains('наши умные помощники')
               : '');
 
-      LanguageManager.setLanguage(AppLanguage.uz);
-      expect(LanguageManager.formatDate(testDate), '2-oktabr, 14:30');
-      expect(LanguageManager.l10n.insights_assistants_busy_msg1,
-          contains('aqlli yordamchilarimiz'));
-
       LanguageManager.setLanguage(AppLanguage.en);
       expect(LanguageManager.formatDate(testDate), 'October 2, 14:30');
       expect(LanguageManager.l10n.insights_assistants_busy_msg1,
