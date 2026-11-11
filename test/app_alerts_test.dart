@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/widgets/app_alerts.dart';
+import 'package:getbalanceai_mobile/widgets/glass_container.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 
 void main() {
@@ -225,5 +226,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(dialogResult, isTrue);
+  });
+
+  group('Поля тоста одинаковые слева и справа', () {
+    Future<Rect> showToast(WidgetTester tester, {bool undo = false}) async {
+      await tester.pumpWidget(buildTestApp(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => AppAlerts.showToast(
+              context,
+              message: 'Запись удалена',
+              actionLabel: undo ? 'Отменить' : null,
+              onAction: undo ? () {} : null,
+            ),
+            child: const Text('Show'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      return tester.getRect(find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.byType(GlassContainer),
+      ));
+    }
+
+    testWidgets('крестик — на том же расстоянии от края, что и текст',
+        (tester) async {
+      final card = await showToast(tester);
+      final text = tester.getRect(find.text('Запись удалена'));
+      final icon = tester.getRect(find.byIcon(Icons.close_rounded));
+
+      expect(card.right - icon.right, closeTo(text.left - card.left, 0.5));
+      // Зона нажатия крестика не уменьшилась
+      expect(tester.getSize(find.byType(IconButton)), const Size(48, 48));
+    });
+
+    testWidgets('подпись «Отменить» — на том же расстоянии от края',
+        (tester) async {
+      final card = await showToast(tester, undo: true);
+      final text = tester.getRect(find.text('Запись удалена'));
+      final action = tester.getRect(find.text('Отменить'));
+
+      expect(card.right - action.right, closeTo(text.left - card.left, 0.5));
+    });
   });
 }
