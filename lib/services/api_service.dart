@@ -8,6 +8,7 @@ import '../config/secure_storage_config.dart';
 import '../models/models.dart';
 import '../utils/app_logger.dart';
 import '../utils/currency_formatter.dart';
+import 'app_info_service.dart';
 import 'auth_api_service.dart';
 import 'budget_api_service.dart';
 import 'report_export_service.dart';
@@ -70,6 +71,7 @@ class ApiService {
         if (!_isForeignHost(options.path)) {
           options.headers[_kTimezoneOffsetHeader] =
               DateTime.now().timeZoneOffset.inMinutes.toString();
+          options.headers.addAll(AppInfoService.instance.clientHeaders);
         }
         final token = _authService.token;
         if (token != null &&

@@ -21,12 +21,21 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        // Уровень API для DeviceCapabilityService: Platform.operatingSystemVersion
-        // на Android — строка ядра Linux, версии Android в ней нет.
+        // Данные устройства для DeviceCapabilityService: уровень API (размытие)
+        // и версия Android с моделью (заголовки запросов к бэкенду, OBS-02).
+        // Platform.operatingSystemVersion на Android — строка ядра Linux,
+        // версии Android в ней нет.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DEVICE_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "androidSdkInt" -> result.success(Build.VERSION.SDK_INT)
+                    "deviceInfo" -> result.success(
+                        mapOf(
+                            "sdkInt" to Build.VERSION.SDK_INT,
+                            "release" to Build.VERSION.RELEASE,
+                            "manufacturer" to Build.MANUFACTURER,
+                            "model" to Build.MODEL,
+                        )
+                    )
                     else -> result.notImplemented()
                 }
             }

@@ -92,6 +92,7 @@ Future<void> _loadSettings() async {
   await Future.wait([
     prefs.init(),
     DeviceCapabilityService.instance.init(),
+    AppInfoService.instance.init(),
   ]);
   await CurrencyFormatter.loadSavedCurrency();
   await CurrencyExchangeService.instance.init();

@@ -107,16 +107,19 @@ void main() {
       expect(service.isBlurSupported, isNotNull);
     });
 
-    group('уровень API Android берётся из Build.VERSION.SDK_INT', () {
-      Future<void> initWithSdk(int? sdk) async {
+    group('данные устройства берутся из Build через канал MainActivity', () {
+      Future<void> initWith(Map<String, Object?>? info) async {
         _messenger.setMockMethodCallHandler(DeviceCapabilityService.channel,
             (call) async {
-          if (call.method != 'androidSdkInt') return null;
-          if (sdk == null) throw PlatformException(code: 'unavailable');
-          return sdk;
+          if (call.method != 'deviceInfo') return null;
+          if (info == null) throw PlatformException(code: 'unavailable');
+          return info;
         });
         await DeviceCapabilityService.instance.init();
       }
+
+      Future<void> initWithSdk(int? sdk) =>
+          initWith(sdk == null ? null : {'sdkInt': sdk});
 
       setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.android);
       tearDown(() {
@@ -141,6 +144,29 @@ void main() {
 
         expect(DeviceCapabilityService.instance.androidSdkVersion, isNull);
         expect(DeviceCapabilityService.instance.isBlurSupported, isTrue);
+      });
+
+      test('версия Android и модель для заголовков запросов', () async {
+        await initWith({
+          'sdkInt': 35,
+          'release': '15',
+          'manufacturer': 'samsung',
+          'model': 'SM-S921B',
+        });
+
+        final device = DeviceCapabilityService.instance;
+        expect(device.androidSdkVersion, 35);
+        expect(device.androidRelease, '15');
+        expect(device.deviceModel, 'samsung SM-S921B');
+      });
+
+      test('производитель не повторяется, если модель с него начинается',
+          () async {
+        await initWith({'manufacturer': 'Google', 'model': 'Google Pixel 8'});
+        expect(DeviceCapabilityService.instance.deviceModel, 'Google Pixel 8');
+
+        await initWith({'manufacturer': 'Xiaomi', 'model': ''});
+        expect(DeviceCapabilityService.instance.deviceModel, 'Xiaomi');
       });
 
       test('не на Android канал не вызывается', () async {
