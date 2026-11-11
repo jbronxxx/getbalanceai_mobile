@@ -26,6 +26,8 @@ fvm dart run build_runner build --delete-conflicting-outputs      # после �
 ```
 Pre-commit хук (`.githooks/pre-commit`) повторяет format и analyze.
 
+Полный `fvm flutter test` — один раз перед тем, как отдать задачу (перед проверкой на телефоне или коммитом). Мелкие косметические правки по ходу задачи (иконка, отступ, текст) — только format, analyze и тесты затронутых файлов (`fvm flutter test test/<файл>_test.dart`). Вывод длинных команд сохранять в файл и смотреть итог оттуда, а не перезапускать команду.
+
 Проверка на телефоне и установка release — скилл `getbalance-device-check`.
 
 ## Git

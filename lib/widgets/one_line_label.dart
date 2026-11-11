@@ -20,12 +20,18 @@ class OneLineLabel extends StatelessWidget {
   });
 
   /// Ширина [text] в одну строку с учётом масштаба шрифта — сколько места
-  /// нужно подписи, чтобы не уменьшаться.
-  static double widthOf(BuildContext context, String text, TextStyle? style) {
+  /// нужно подписи, чтобы не уменьшаться. [textScaler] — другой масштаб
+  /// вместо системного (подбор уменьшения в [WholeWordsText]).
+  static double widthOf(
+    BuildContext context,
+    String text,
+    TextStyle? style, {
+    TextScaler? textScaler,
+  }) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
+      textScaler: textScaler ?? MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout();
     final width = painter.width.ceilToDouble() + 1;
