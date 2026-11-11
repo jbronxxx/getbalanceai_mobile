@@ -135,6 +135,8 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'language_code': 'ru',
       'onboarding_setup_completed': true,
+      // Указатель на «+» перекрыл бы проверяемые экраны
+      'voice_coach_mark_shown': true,
     });
     PackageInfo.setMockInitialValues(
       appName: 'GetBalance',
@@ -380,6 +382,19 @@ void main() {
 
   Future<void> tapOpen(WidgetTester tester) => tapText(tester, 'open');
 
+  /// Месяц год назад — без записей и регулярных платежей: на «Балансе»
+  /// пустое состояние с подсказкой.
+  Future<void> showEmptyMonth(WidgetTester tester) async {
+    var period = SelectedPeriodService.instance.period;
+    for (var i = 0; i < 12; i++) {
+      period = period.previous;
+    }
+    SelectedPeriodService.instance.select(period);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byKey(const ValueKey('dashboard_empty_hint')), findsOneWidget);
+    SelectedPeriodService.instance.reset();
+  }
+
   group('Вкладки', () {
     audit('Баланс', () => const MainShell());
     audit('Баланс по категориям', () => const MainShell(),
@@ -396,6 +411,14 @@ void main() {
           .select(SelectedPeriodService.instance.period.next);
       await tester.pump(const Duration(seconds: 1));
       SelectedPeriodService.instance.reset();
+    });
+    audit('Баланс: пустой месяц', () => const MainShell(),
+        open: (tester) async {
+      await showEmptyMonth(tester);
+    });
+    audit('Гость: Баланс, пустой месяц', () => const MainShell(), guest: true,
+        open: (tester) async {
+      await showEmptyMonth(tester);
     });
     audit('Аналитика', () => const MainShell(),
         open: (tester) => tapText(tester, LanguageManager.l10n.insights));
@@ -760,7 +783,7 @@ void main() {
             parse: (_) => Completer<List<Transaction>>().future),
         open: tapOpen);
     audit(
-        'Голосовой ввод: ошибка с повтором',
+        'Голосовой ввод: помощники заняты',
         () => listening(
             finalPhrase: phrase,
             parse: (_) async => throw DioException(
@@ -843,13 +866,17 @@ void main() {
             message: context.l10n.sync_login_required)),
         open: tapOpen);
     audit(
-        'Подсказка голосового ввода',
-        () => actionHost((context) => AppAlerts.showToast(
-              context,
-              title: context.l10n.voice_input_title,
-              message: context.l10n.voice_hint_message,
-            )),
-        open: tapOpen);
+        'Указатель «зажмите +»',
+        () => Builder(
+              builder: (context) => Stack(children: [
+                const Scaffold(),
+                CoachMarkLayer(
+                  targetRect: const Rect.fromLTWH(152, 740, 56, 56),
+                  message: context.l10n.voice_coach_mark,
+                  onDismiss: () {},
+                ),
+              ]),
+            ));
     audit(
         'Голосовой ввод для гостя',
         () => actionHost(

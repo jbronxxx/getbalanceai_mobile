@@ -607,7 +607,6 @@
   "voice_error_unavailable": "Speech recognition is not available on this phone",
   "voice_error_recognition": "Couldn't recognize speech. Check your internet connection and try again",
   "voice_error_quota": "Today's voice input limit is reached. Add the record manually or try again tomorrow",
-  "voice_error_busy": "Couldn't read the phrase. Please try again a bit later",
   "voice_sign_in_required": "Voice input is available after you sign in",
   "voice_drafts_title": "{count, plural, =1{1 record recognized} other{{count} records recognized}}",
   "@voice_drafts_title": {
@@ -626,6 +625,8 @@
       }
     }
   },
-  "voice_hint_message": "Hold “+” to dictate a record: “coffee 4 euros and taxi 12”",
-  "voice_fab_long_press_hint": "dictate a record"
+  "voice_fab_long_press_hint": "dictate a record",
+  "voice_coach_mark": "Hold the button to dictate a record",
+  "dashboard_empty_hint": "Tap + to add a record",
+  "dashboard_empty_hint_voice": "Tap + to add a record manually or hold it to dictate one"
 }

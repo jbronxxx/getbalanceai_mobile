@@ -6,6 +6,7 @@ export 'app_sheet.dart';
 export 'balance_card.dart';
 export 'category_icon_badge.dart';
 export 'category_style.dart';
+export 'coach_mark.dart';
 export 'custom_pull_to_refresh.dart';
 export 'detail_row.dart';
 export 'glass_container.dart';

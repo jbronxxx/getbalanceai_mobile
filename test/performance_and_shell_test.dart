@@ -35,8 +35,8 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'language_code': 'ru',
       'onboarding_setup_completed': true,
-      // Подсказка про голосовой ввод заменила бы тост, который проверяет тест
-      'voice_input_used': true,
+      // Указатель на «+» перекрыл бы экран, который проверяют тесты
+      'voice_coach_mark_shown': true,
     });
     PackageInfo.setMockInitialValues(
       appName: 'FinanceApp',
@@ -281,6 +281,74 @@ void main() {
         ),
       );
       when(() => mockAuthCubit.stream).thenAnswer((_) => const Stream.empty());
+    });
+
+    Future<void> pumpShell(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: AppTheme.lightTheme,
+          home: BlocProvider<AuthCubit>.value(
+            value: mockAuthCubit,
+            child: const MainShell(),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    const coachText = 'Зажмите кнопку, чтобы продиктовать запись';
+
+    testWidgets('указатель на «+» — вошедшему один раз, после пульса',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'language_code': 'ru',
+        'onboarding_setup_completed': true,
+      });
+      addTearDown(() => SharedPreferences.setMockInitialValues({
+            'language_code': 'ru',
+            'onboarding_setup_completed': true,
+            'voice_coach_mark_shown': true,
+          }));
+      await pumpShell(tester);
+      expect(find.text(coachText), findsNothing);
+
+      await tester.pump(MainShell.voiceCoachMarkDelay);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(coachText), findsOneWidget);
+      expect(await PreferencesService.instance.shouldShowVoiceCoachMark(),
+          isFalse);
+
+      // Тап в любом месте закрывает указатель
+      await tester.tapAt(const Offset(30, 200));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(coachText), findsNothing);
+
+      // Повторный показ главного экрана — без указателя
+      await tester.pumpWidget(const SizedBox());
+      await pumpShell(tester);
+      await tester.pump(MainShell.voiceCoachMarkDelay * 2);
+      expect(find.text(coachText), findsNothing);
+    });
+
+    testWidgets('гостю указатель не показывается', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'language_code': 'ru',
+        'onboarding_setup_completed': true,
+      });
+      addTearDown(() => SharedPreferences.setMockInitialValues({
+            'language_code': 'ru',
+            'onboarding_setup_completed': true,
+            'voice_coach_mark_shown': true,
+          }));
+      when(() => mockAuthCubit.state).thenReturn(Unauthenticated());
+      await pumpShell(tester);
+      await tester.pump(MainShell.voiceCoachMarkDelay * 2);
+      expect(find.text(coachText), findsNothing);
+      expect(
+          await PreferencesService.instance.shouldShowVoiceCoachMark(), isTrue);
     });
 
     testWidgets(

@@ -1169,10 +1169,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Today\'s voice input limit is reached. Add the record manually or try again tomorrow';
 
   @override
-  String get voice_error_busy =>
-      'Couldn\'t read the phrase. Please try again a bit later';
-
-  @override
   String get voice_sign_in_required =>
       'Voice input is available after you sign in';
 
@@ -1193,9 +1189,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get voice_hint_message =>
-      'Hold “+” to dictate a record: “coffee 4 euros and taxi 12”';
+  String get voice_fab_long_press_hint => 'dictate a record';
 
   @override
-  String get voice_fab_long_press_hint => 'dictate a record';
+  String get voice_coach_mark => 'Hold the button to dictate a record';
+
+  @override
+  String get dashboard_empty_hint => 'Tap + to add a record';
+
+  @override
+  String get dashboard_empty_hint_voice =>
+      'Tap + to add a record manually or hold it to dictate one';
 }

@@ -10,12 +10,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
+import 'package:getbalanceai_mobile/screens/dashboard_screen.dart';
 import 'package:getbalanceai_mobile/screens/voice_input_flow.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/services/speech_input_service.dart';
 import 'package:getbalanceai_mobile/theme/theme.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/transaction/transaction.dart';
+import 'package:getbalanceai_mobile/widgets/insights/insight_card.dart';
 import 'package:getbalanceai_mobile/widgets/voice_listening_sheet.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
 
@@ -171,35 +173,109 @@ void main() {
     });
   });
 
-  group('Подсказка «удерживайте +»', () {
-    Future<bool> launch() {
-      PreferencesService.instance.resetVoiceHintTurn();
-      return PreferencesService.instance.takeVoiceHintTurn();
+  group('Указатель «зажмите +»', () {
+    test('показывается один раз', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = PreferencesService.instance;
+      expect(await prefs.shouldShowVoiceCoachMark(), isTrue);
+      await prefs.recordVoiceCoachMarkShown();
+      expect(await prefs.shouldShowVoiceCoachMark(), isFalse);
+    });
+
+    testWidgets('кольцо вокруг цели, текст, закрывается тапом в любом месте',
+        (tester) async {
+      final target = GlobalKey();
+      var dismissed = 0;
+      var shown = false;
+      await tester.pumpWidget(app(Scaffold(
+        body: Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(key: target, width: 56, height: 56),
+        ),
+        floatingActionButton: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => shown = null !=
+                CoachMark.show(
+                  context,
+                  target: target,
+                  message: 'Зажмите кнопку, чтобы продиктовать запись',
+                  onDismissed: () => dismissed++,
+                ),
+            child: const Text('open'),
+          ),
+        ),
+      )));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+      expect(shown, isTrue);
+      expect(find.text('Зажмите кнопку, чтобы продиктовать запись'),
+          findsOneWidget);
+
+      // Тап далеко от подсказки и цели
+      await tester.tapAt(const Offset(20, 20));
+      await settle(tester);
+      expect(find.byType(CoachMarkLayer), findsNothing);
+      expect(dismissed, 1);
+    });
+
+    testWidgets('закрывается функцией, которую вернул show', (tester) async {
+      final target = GlobalKey();
+      VoidCallback? close;
+      await tester.pumpWidget(app(Scaffold(
+        body: Center(child: SizedBox(key: target, width: 56, height: 56)),
+        floatingActionButton: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => close =
+                CoachMark.show(context, target: target, message: 'подсказка'),
+            child: const Text('open'),
+          ),
+        ),
+      )));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+      expect(find.byType(CoachMarkLayer), findsOneWidget);
+      close!();
+      close!(); // повторный вызов безопасен
+      await tester.pump();
+      expect(find.byType(CoachMarkLayer), findsNothing);
+    });
+
+    testWidgets('без отрисованной цели не показывается', (tester) async {
+      var shown = true;
+      await tester.pumpWidget(host((context) async {
+        shown = null !=
+            CoachMark.show(context, target: GlobalKey(), message: 'подсказка');
+      }));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+      expect(shown, isFalse);
+      expect(find.byType(CoachMarkLayer), findsNothing);
+    });
+  });
+
+  group('Пустой месяц на «Балансе»', () {
+    Future<String> hint(WidgetTester tester) async {
+      await tester.pumpWidget(app(const DashboardScreen()));
+      await settle(tester);
+      return tester
+          .widget<WholeWordsText>(
+              find.byKey(const ValueKey('dashboard_empty_hint')))
+          .text;
     }
 
-    test('после первого входа, затем каждый 5-й запуск', () async {
-      SharedPreferences.setMockInitialValues({});
-      final shown = [for (var i = 0; i < 11; i++) await launch()];
-      expect(shown, [
-        true, // первый показ после входа
-        false, false, false, false, true, // 5-й запуск
-        false, false, false, false, true,
-      ]);
+    testWidgets('вошедшему — ручной и голосовой ввод', (tester) async {
+      await tester.runAsync(
+          () => ApiService.instance.auth.setTokens('token', 'refresh'));
+      addTearDown(() => ApiService.instance.auth.setTokens(null, null));
+      expect(await hint(tester),
+          'Нажмите + для ручного ввода или зажмите для голосового создания');
+      expect(find.text('Нет записей за этот месяц'), findsOneWidget);
     });
 
-    test('один раз за запуск', () async {
-      SharedPreferences.setMockInitialValues({});
-      expect(await launch(), isTrue);
-      expect(await PreferencesService.instance.takeVoiceHintTurn(), isFalse);
-    });
-
-    test('после первого голосового ввода — больше никогда', () async {
-      SharedPreferences.setMockInitialValues({});
-      expect(await launch(), isTrue);
-      await PreferencesService.instance.recordVoiceInputUsed();
-      for (var i = 0; i < 6; i++) {
-        expect(await launch(), isFalse);
-      }
+    testWidgets('гостю — без голосовой части', (tester) async {
+      await tester
+          .runAsync(() => ApiService.instance.auth.setTokens(null, null));
+      expect(await hint(tester), 'Нажмите +, чтобы добавить запись');
     });
   });
 
@@ -228,9 +304,13 @@ void main() {
       await settle(tester);
     }
 
-    String message(WidgetTester tester) => tester
-        .widget<WholeWordsText>(find.byKey(const ValueKey('voice_message')))
-        .text;
+    /// Сообщения ошибки — карточки, как на «Аналитике».
+    List<String> messages(WidgetTester tester) => [
+          for (final card
+              in tester.widgetList<InsightCard>(find.byType(InsightCard)))
+            card.text,
+        ];
+    String message(WidgetTester tester) => messages(tester).single;
 
     testWidgets('текст вживую, итоговая фраза уходит в разбор', (tester) async {
       await open(tester);
@@ -350,8 +430,41 @@ void main() {
       await open(tester);
       speech.say('кофе 4 евро', isFinal: true);
       await settle(tester);
-      expect(message(tester), startsWith('Не удалось разобрать фразу'));
+      // Те же «помощники заняты», что на «Аналитике»
+      expect(messages(tester), [
+        LanguageManager.l10n.insights_assistants_busy_msg1,
+        LanguageManager.l10n.insights_assistants_busy_msg2,
+      ]);
       expect(find.byKey(const ValueKey('voice_retry')), findsOneWidget);
+    });
+
+    testWidgets('ответ сервера не разобран — тоже «помощники заняты»',
+        (tester) async {
+      parseResult = (_) async => throw const FormatException('битый ответ');
+      await open(tester);
+      speech.say('кофе 4 евро', isFinal: true);
+      await settle(tester);
+      expect(messages(tester), hasLength(2));
+      expect(messages(tester).first,
+          LanguageManager.l10n.insights_assistants_busy_msg1);
+    });
+
+    testWidgets('пример фразы — только пока слушаем', (tester) async {
+      final pending = Completer<List<Transaction>>();
+      parseResult = (_) => pending.future;
+      await open(tester);
+      expect(find.byKey(const ValueKey('voice_example')), findsOneWidget);
+
+      speech.say('кофе 4 евро', isFinal: true);
+      await tester.pump();
+      expect(find.text('Разбираю фразу…'), findsOneWidget);
+      expect(find.byKey(const ValueKey('voice_example')), findsNothing);
+
+      pending.completeError(const FormatException('битый ответ'));
+      await settle(tester);
+      expect(find.byKey(const ValueKey('voice_example')), findsNothing);
+      // Сообщение — карточкой, а не красной строкой
+      expect(find.byType(InsightCard), findsNWidgets(2));
     });
 
     testWidgets('нет сети — общий текст ошибки сети', (tester) async {
@@ -478,15 +591,6 @@ void main() {
       expect(find.byType(VoiceDraftsSheet), findsNothing);
       expect(LocalDbService.instance.getAllTransactions(), isEmpty);
     });
-
-    testWidgets('успешный ввод отключает подсказку про «+»', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      await start(tester, drafts: [draft(1, 'Кофе', 4)]);
-      speech.say('кофе 4 евро', isFinal: true);
-      await settle(tester);
-      PreferencesService.instance.resetVoiceHintTurn();
-      expect(await PreferencesService.instance.takeVoiceHintTurn(), isFalse);
-    });
   });
 
   group('Правка черновика', () {
@@ -535,6 +639,107 @@ void main() {
       await tester.tap(find.byType(LiquidGlassFab));
       await tester.pump();
       expect(taps, 1);
+    });
+
+    testWidgets(
+        'удержание — системная вибрация долгого нажатия, без слабого тика',
+        (tester) async {
+      final haptics = <Object?>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          haptics.add(call.arguments);
+        }
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+      await tester.pumpWidget(app(Scaffold(
+        body: Center(
+          child: LiquidGlassFab(onPressed: () {}, onLongPress: () {}),
+        ),
+      )));
+
+      await tester.longPress(find.byType(LiquidGlassFab));
+      await tester.pump();
+      // null — HapticFeedbackType.standard (LONG_PRESS на Android);
+      // heavyImpact (CONTEXT_CLICK) — слабее тапа по вкладкам
+      expect(haptics, [null]);
+
+      haptics.clear();
+      await tester.tap(find.byType(LiquidGlassFab));
+      await tester.pump();
+      expect(haptics, ['HapticFeedbackType.mediumImpact']);
+    });
+
+    testWidgets('пока держат — сжимается до 0,9, отпустили — обратно',
+        (tester) async {
+      await tester.pumpWidget(app(Scaffold(
+        body: Center(
+          child: LiquidGlassFab(onPressed: () {}, onLongPress: () {}),
+        ),
+      )));
+      double scale() => tester
+          .widget<AnimatedScale>(find.byKey(const ValueKey('fab_hold_scale')))
+          .scale;
+      expect(scale(), 1.0);
+
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(LiquidGlassFab)));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(scale(), LiquidGlassFab.heldScale);
+
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(scale(), 1.0);
+    });
+
+    testWidgets('пульс иконки один раз после появления', (tester) async {
+      await tester.pumpWidget(app(Scaffold(
+        body: Center(
+          child: LiquidGlassFab(onPressed: () {}, pulseOnMount: true),
+        ),
+      )));
+      double iconScale() => tester
+          .widget<ScaleTransition>(find.descendant(
+              of: find.byType(LiquidGlassFab),
+              matching: find.byType(ScaleTransition)))
+          .scale
+          .value;
+      expect(iconScale(), 1.0);
+      await tester.pump(LiquidGlassFab.pulseDelay);
+      await tester.pump(LiquidGlassFab.pulseDuration * 0.25);
+      expect(iconScale(), greaterThan(1.1));
+      await tester.pump(LiquidGlassFab.pulseDuration);
+      expect(iconScale(), 1.0);
+      // Больше не повторяется
+      await tester.pump(const Duration(seconds: 5));
+      expect(iconScale(), 1.0);
+    });
+
+    testWidgets('без пульса и при отключённых анимациях — иконка в покое',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: Center(
+              child: LiquidGlassFab(onPressed: () {}, pulseOnMount: true),
+            ),
+          ),
+        ),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ));
+      await tester.pump(LiquidGlassFab.pulseDelay);
+      await tester.pump(LiquidGlassFab.pulseDuration * 0.25);
+      final scale = tester
+          .widget<ScaleTransition>(find.descendant(
+              of: find.byType(LiquidGlassFab),
+              matching: find.byType(ScaleTransition)))
+          .scale
+          .value;
+      expect(scale, 1.0);
     });
 
     testWidgets('без долгого нажатия — подсказка-tooltip как раньше',

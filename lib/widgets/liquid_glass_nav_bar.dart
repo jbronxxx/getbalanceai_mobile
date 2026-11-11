@@ -31,12 +31,20 @@ class LiquidGlassNavAction {
   final VoidCallback? onLongPress;
   final String? longPressHint;
 
+  /// Ключ кнопки — для указателя на неё ([CoachMark]).
+  final GlobalKey? targetKey;
+
+  /// Пульс иконки один раз после появления.
+  final bool pulseOnMount;
+
   const LiquidGlassNavAction({
     this.icon = Icons.add_rounded,
     required this.tooltip,
     required this.onPressed,
     this.onLongPress,
     this.longPressHint,
+    this.targetKey,
+    this.pulseOnMount = false,
   });
 }
 
@@ -220,15 +228,19 @@ class LiquidGlassNavBar extends StatelessWidget {
                     left: 0,
                     right: 0,
                     child: Center(
-                      child: LiquidGlassFab(
-                        key: const ValueKey('nav_center_action'),
-                        icon: centerAction!.icon,
-                        size: centerActionSize,
-                        fillOpacity: 0.82,
-                        tooltip: centerAction!.tooltip,
-                        onPressed: centerAction!.onPressed,
-                        onLongPress: centerAction!.onLongPress,
-                        longPressHint: centerAction!.longPressHint,
+                      child: KeyedSubtree(
+                        key: centerAction!.targetKey,
+                        child: LiquidGlassFab(
+                          key: const ValueKey('nav_center_action'),
+                          pulseOnMount: centerAction!.pulseOnMount,
+                          icon: centerAction!.icon,
+                          size: centerActionSize,
+                          fillOpacity: 0.82,
+                          tooltip: centerAction!.tooltip,
+                          onPressed: centerAction!.onPressed,
+                          onLongPress: centerAction!.onLongPress,
+                          longPressHint: centerAction!.longPressHint,
+                        ),
                       ),
                     ),
                   ),
