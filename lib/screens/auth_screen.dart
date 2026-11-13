@@ -6,7 +6,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
@@ -25,6 +24,10 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
+
+  /// Отметка «Принимаю Условия и Политику»: без неё кнопка входа неактивна,
+  /// сервер вход без принятия документов не пропускает.
+  bool _legalAccepted = false;
 
   void _handleSocialLogin(String provider) async {
     setState(() => _isLoading = true);
@@ -158,7 +161,7 @@ class _AuthScreenState extends State<AuthScreen> {
           offset: const Offset(0, 6),
         ),
       ],
-      onPressed: () => _handleSocialLogin('google'),
+      onPressed: _legalAccepted ? () => _handleSocialLogin('google') : null,
     );
 
     final appleButton = _SocialButton(
@@ -179,7 +182,7 @@ class _AuthScreenState extends State<AuthScreen> {
           offset: const Offset(0, 6),
         ),
       ],
-      onPressed: () => _handleSocialLogin('apple'),
+      onPressed: _legalAccepted ? () => _handleSocialLogin('apple') : null,
     );
 
     return Scaffold(
@@ -301,6 +304,14 @@ class _AuthScreenState extends State<AuthScreen> {
                                     textAlign: TextAlign.center,
                                   ),
                                   const Spacer(),
+                                  _LegalConsentCheckbox(
+                                    value: _legalAccepted,
+                                    onChanged: _isLoading
+                                        ? null
+                                        : (value) => setState(
+                                            () => _legalAccepted = value),
+                                  ),
+                                  const SizedBox(height: 16),
                                   if (_isLoading)
                                     Padding(
                                       padding: const EdgeInsets.all(16.0),
@@ -313,12 +324,6 @@ class _AuthScreenState extends State<AuthScreen> {
                                     appleButton
                                   else
                                     googleButton,
-                                  const SizedBox(height: 24),
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 16),
-                                    child: _LegalConsentText(),
-                                  ),
                                   const SizedBox(height: 24),
                                 ],
                               ),
@@ -346,7 +351,9 @@ class _SocialButton extends StatelessWidget {
   final Color textColor;
   final Color borderColor;
   final List<BoxShadow>? boxShadow;
-  final VoidCallback onPressed;
+
+  /// `null` — кнопка неактивна (не отмечено принятие документов).
+  final VoidCallback? onPressed;
 
   const _SocialButton({
     required this.icon,
@@ -360,6 +367,14 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: onPressed == null ? 0.45 : 1,
+      duration: const Duration(milliseconds: 150),
+      child: _buildButton(),
+    );
+  }
+
+  Widget _buildButton() {
     return Container(
       width: double.infinity,
       height: 56,
@@ -417,24 +432,31 @@ class _SocialButton extends StatelessWidget {
   }
 }
 
-/// «Продолжая, вы принимаете Условия и Политику конфиденциальности»: ссылки —
-/// части текста, а не отдельные виджеты, поэтому при крупном шрифте строка
-/// переносится между словами, а не посреди слова ссылки.
-class _LegalConsentText extends StatefulWidget {
-  const _LegalConsentText();
+/// Отметка «Принимаю Условия использования и Политику конфиденциальности».
+/// Ссылки — части текста, а не отдельные виджеты, поэтому при крупном шрифте
+/// строка переносится между словами; тап по остальному тексту ставит или
+/// снимает отметку.
+class _LegalConsentCheckbox extends StatefulWidget {
+  final bool value;
+
+  /// `null` — отметка недоступна (идёт вход).
+  final ValueChanged<bool>? onChanged;
+
+  const _LegalConsentCheckbox({required this.value, required this.onChanged});
 
   @override
-  State<_LegalConsentText> createState() => _LegalConsentTextState();
+  State<_LegalConsentCheckbox> createState() => _LegalConsentCheckboxState();
 }
 
-class _LegalConsentTextState extends State<_LegalConsentText> {
+class _LegalConsentCheckboxState extends State<_LegalConsentCheckbox> {
   late final _termsTap = TapGestureRecognizer()
     ..onTap = () => _open(LegalPage.terms);
   late final _privacyTap = TapGestureRecognizer()
     ..onTap = () => _open(LegalPage.privacy);
 
-  void _open(LegalPage page) => launchUrl(
-      LegalLinks.url(page, Localizations.localeOf(context).languageCode));
+  void _open(LegalPage page) => openLegalPage(context, page);
+
+  void _toggle() => widget.onChanged?.call(!widget.value);
 
   @override
   void dispose() {
@@ -450,29 +472,47 @@ class _LegalConsentTextState extends State<_LegalConsentText> {
       color: AppColors.of(context).accentText,
       decoration: TextDecoration.underline,
     );
+    final onChanged = widget.onChanged;
 
-    return Text.rich(
-      TextSpan(
-        style: textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Checkbox(
+          key: const ValueKey('legal_consent_checkbox'),
+          value: widget.value,
+          visualDensity: VisualDensity.compact,
+          onChanged:
+              onChanged == null ? null : (value) => onChanged(value ?? false),
         ),
-        children: [
-          TextSpan(text: context.l10n.terms_of_use_prefix),
-          TextSpan(
-            text: context.l10n.terms_of_use_link,
-            style: linkStyle,
-            recognizer: _termsTap,
+        const SizedBox(width: 4),
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onChanged == null ? null : _toggle,
+            child: Text.rich(
+              TextSpan(
+                style: textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                children: [
+                  TextSpan(text: context.l10n.legal_accept_prefix),
+                  TextSpan(
+                    text: context.l10n.legal_accept_terms,
+                    style: linkStyle,
+                    recognizer: _termsTap,
+                  ),
+                  TextSpan(text: context.l10n.legal_accept_and),
+                  TextSpan(
+                    text: context.l10n.legal_accept_privacy,
+                    style: linkStyle,
+                    recognizer: _privacyTap,
+                  ),
+                ],
+              ),
+            ),
           ),
-          TextSpan(text: context.l10n.terms_of_use_and),
-          TextSpan(
-            text: context.l10n.privacy_policy_link,
-            style: linkStyle,
-            recognizer: _privacyTap,
-          ),
-          TextSpan(text: context.l10n.terms_of_use_suffix),
-        ],
-      ),
-      textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

@@ -11,6 +11,7 @@ import '../utils/currency_formatter.dart';
 import 'app_info_service.dart';
 import 'auth_api_service.dart';
 import 'budget_api_service.dart';
+import 'legal_api_service.dart';
 import 'report_export_service.dart';
 import 'sync_service.dart';
 import 'tracing_interceptor.dart';
@@ -21,12 +22,14 @@ import 'transaction_api_service.dart';
 class ApiService {
   static const String _kRetriedKey = 'retried';
   static const String _kTimezoneOffsetHeader = 'X-Timezone-Offset';
+  static const String _kTermsNotAccepted = 'TERMS_NOT_ACCEPTED';
 
   final Dio _dio;
   late final AuthApiService _authService;
   late final TransactionApiService _transactionApiService;
   late final BudgetApiService _budgetApiService;
   late final SyncService _syncService;
+  late final LegalApiService _legalService;
 
   static final ApiService instance = ApiService._internal();
 
@@ -42,6 +45,11 @@ class ApiService {
     _authService = AuthApiService(
       dio: _dio,
       onSignIn: (userId) => _syncService.claimLocalData(userId),
+      onLegalStatus: (status) => _legalService.update(status),
+    );
+    _legalService = LegalApiService(
+      dio: _dio,
+      authOptions: _authService.authOptions,
     );
     _transactionApiService = TransactionApiService(
       dio: _dio,
@@ -138,6 +146,13 @@ class ApiService {
             return handler.reject(e);
           }
         }
+        // Вышла новая версия соглашения: данные закрыты до её принятия
+        final data = e.response?.data;
+        if (e.response?.statusCode == 403 &&
+            data is Map &&
+            data['code'] == _kTermsNotAccepted) {
+          _legalService.markTermsRequired();
+        }
         return handler.next(e);
       },
     ));
@@ -184,6 +199,7 @@ class ApiService {
   TransactionApiService get transactions => _transactionApiService;
   BudgetApiService get budgets => _budgetApiService;
   SyncService get sync => _syncService;
+  LegalApiService get legal => _legalService;
 
   Stream<bool> get authStream => _authService.authStream;
   String? get userName => _authService.userName;

@@ -528,19 +528,47 @@ class AppLocalizationsRu extends AppLocalizations {
   String get month_gen_12 => 'декабря';
 
   @override
-  String get terms_of_use_prefix => 'Продолжая, вы соглашаетесь с ';
+  String get legal_accept_prefix => 'Принимаю ';
 
   @override
-  String get terms_of_use_link => 'Условиями использования';
+  String get legal_accept_terms => 'Условия использования';
 
   @override
-  String get terms_of_use_and => ' и ';
+  String get legal_accept_and => ' и ';
 
   @override
-  String get privacy_policy_link => 'Политикой конфиденциальности';
+  String get legal_accept_privacy => 'Политику конфиденциальности';
 
   @override
-  String get terms_of_use_suffix => '.';
+  String get terms_update_title => 'Мы обновили Условия использования';
+
+  @override
+  String get privacy_update_title => 'Мы обновили Политику конфиденциальности';
+
+  @override
+  String legal_effective_date(String date) {
+    return 'Дата вступления в силу: $date';
+  }
+
+  @override
+  String get legal_whats_changed => 'Что изменилось';
+
+  @override
+  String get legal_read_full => 'Читать полностью';
+
+  @override
+  String get legal_accept_btn => 'Принять';
+
+  @override
+  String get legal_got_it_btn => 'Понятно';
+
+  @override
+  String get legal_load_error =>
+      'Не удалось загрузить новую версию документов. Проверьте интернет и попробуйте ещё раз.';
+
+  @override
+  String get legal_version_outdated =>
+      'Документы только что снова обновились — посмотрите изменения.';
 
   @override
   String get login_with_google => 'Войти с помощью Google';

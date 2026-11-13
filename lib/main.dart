@@ -10,6 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/main_shell.dart';
 import 'screens/record_actions.dart';
 import 'screens/auth_screen.dart';
+import 'screens/legal_consent_gate.dart';
 import 'screens/service_unavailable_screen.dart';
 import 'screens/startup_error_screen.dart';
 import 'screens/welcome_setup_screen.dart';
@@ -125,6 +126,8 @@ Future<bool> _retryStartup() async {
 
 void _runFinanceApp() {
   runApp(const FinanceApp());
+  // Новая версия соглашения могла выйти, пока приложение было закрыто
+  unawaited(ApiService.instance.auth.refreshProfile());
   AutoSyncService.instance.start();
   SelectedPeriodService.instance.start();
   // Тап на напоминание о регулярном платеже открывает его карточку
@@ -171,7 +174,8 @@ class FinanceApp extends StatelessWidget {
               return MaterialApp(
                 navigatorKey: navigatorKey,
                 title: 'GetBalance AI',
-                builder: (context, child) => AppLockGate(child: child!),
+                builder: (context, child) =>
+                    AppLockGate(child: LegalConsentGate(child: child!)),
                 debugShowCheckedModeBanner: false,
                 themeMode: themeMode,
                 locale: Locale(currentLanguage.code),

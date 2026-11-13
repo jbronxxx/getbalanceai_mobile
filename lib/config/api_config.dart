@@ -21,4 +21,6 @@ class ApiConfig {
   static const String insights = '/insights/';
   static const String voiceParse = '/voice/parse';
   static const String currencyRates = '/currencies/rates';
+  static const String legal = '/legal';
+  static const String legalAccept = '/legal/accept';
 }

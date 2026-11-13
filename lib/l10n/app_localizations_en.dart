@@ -529,19 +529,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get month_gen_12 => 'December';
 
   @override
-  String get terms_of_use_prefix => 'By continuing, you agree to the ';
+  String get legal_accept_prefix => 'I accept the ';
 
   @override
-  String get terms_of_use_link => 'Terms of Use';
+  String get legal_accept_terms => 'Terms of Use';
 
   @override
-  String get terms_of_use_and => ' and ';
+  String get legal_accept_and => ' and ';
 
   @override
-  String get privacy_policy_link => 'Privacy Policy';
+  String get legal_accept_privacy => 'Privacy Policy';
 
   @override
-  String get terms_of_use_suffix => '.';
+  String get terms_update_title => 'We\'ve updated our Terms of Use';
+
+  @override
+  String get privacy_update_title => 'We\'ve updated our Privacy Policy';
+
+  @override
+  String legal_effective_date(String date) {
+    return 'Effective date: $date';
+  }
+
+  @override
+  String get legal_whats_changed => 'What\'s changed';
+
+  @override
+  String get legal_read_full => 'Read the full text';
+
+  @override
+  String get legal_accept_btn => 'Accept';
+
+  @override
+  String get legal_got_it_btn => 'Got it';
+
+  @override
+  String get legal_load_error =>
+      'Couldn\'t load the new version of the documents. Check your connection and try again.';
+
+  @override
+  String get legal_version_outdated =>
+      'The documents were just updated again — please review the changes.';
 
   @override
   String get login_with_google => 'Continue with Google';
