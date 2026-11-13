@@ -1076,35 +1076,83 @@ abstract class AppLocalizations {
   /// **'December'**
   String get month_gen_12;
 
-  /// No description provided for @terms_of_use_prefix.
+  /// No description provided for @legal_accept_prefix.
   ///
   /// In en, this message translates to:
-  /// **'By continuing, you agree to the '**
-  String get terms_of_use_prefix;
+  /// **'I accept the '**
+  String get legal_accept_prefix;
 
-  /// No description provided for @terms_of_use_link.
+  /// No description provided for @legal_accept_terms.
   ///
   /// In en, this message translates to:
   /// **'Terms of Use'**
-  String get terms_of_use_link;
+  String get legal_accept_terms;
 
-  /// No description provided for @terms_of_use_and.
+  /// No description provided for @legal_accept_and.
   ///
   /// In en, this message translates to:
   /// **' and '**
-  String get terms_of_use_and;
+  String get legal_accept_and;
 
-  /// No description provided for @privacy_policy_link.
+  /// No description provided for @legal_accept_privacy.
   ///
   /// In en, this message translates to:
   /// **'Privacy Policy'**
-  String get privacy_policy_link;
+  String get legal_accept_privacy;
 
-  /// No description provided for @terms_of_use_suffix.
+  /// No description provided for @terms_update_title.
   ///
   /// In en, this message translates to:
-  /// **'.'**
-  String get terms_of_use_suffix;
+  /// **'We\'ve updated our Terms of Use'**
+  String get terms_update_title;
+
+  /// No description provided for @privacy_update_title.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve updated our Privacy Policy'**
+  String get privacy_update_title;
+
+  /// No description provided for @legal_effective_date.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective date: {date}'**
+  String legal_effective_date(String date);
+
+  /// No description provided for @legal_whats_changed.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s changed'**
+  String get legal_whats_changed;
+
+  /// No description provided for @legal_read_full.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the full text'**
+  String get legal_read_full;
+
+  /// No description provided for @legal_accept_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get legal_accept_btn;
+
+  /// No description provided for @legal_got_it_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get legal_got_it_btn;
+
+  /// No description provided for @legal_load_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the new version of the documents. Check your connection and try again.'**
+  String get legal_load_error;
+
+  /// No description provided for @legal_version_outdated.
+  ///
+  /// In en, this message translates to:
+  /// **'The documents were just updated again — please review the changes.'**
+  String get legal_version_outdated;
 
   /// No description provided for @login_with_google.
   ///

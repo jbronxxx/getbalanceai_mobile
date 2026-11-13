@@ -68,6 +68,13 @@ class AppErrorHandler {
     return LanguageManager.l10n.err_unexpected;
   }
 
+  static bool _isTermsNotAccepted(dynamic error) {
+    final dioError = error is SyncException ? error.cause : error;
+    if (dioError is! DioException) return false;
+    final data = dioError.response?.data;
+    return data is Map && data['code'] == 'TERMS_NOT_ACCEPTED';
+  }
+
   /// Показывает уведомление об ошибке пользователю.
   ///
   /// В случае истечения сессии (401 или специальные коды) отображает модальный диалог.
@@ -76,6 +83,10 @@ class AppErrorHandler {
       AppLogger.i('[AppErrorHandler] Действие отменено пользователем');
       return;
     }
+
+    // Не принята новая версия соглашения: вместо сообщения — экран новой
+    // версии (LegalConsentGate), его открывает ответ сервера
+    if (_isTermsNotAccepted(error)) return;
 
     final message = getMessage(error);
 

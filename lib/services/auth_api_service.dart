@@ -45,6 +45,9 @@ class AuthApiService {
   /// подписчики [authStream] узнают о входе.
   final Future<void> Function(String userId)? _onSignIn;
 
+  /// Статус соглашения и политики из профиля; `null` — сессия очищена.
+  final void Function(LegalStatus? status)? _onLegalStatus;
+
   String? _userId;
   String? _userName;
   String? _email;
@@ -54,9 +57,11 @@ class AuthApiService {
     required Dio dio,
     FlutterSecureStorage storage = appSecureStorage,
     Future<void> Function(String userId)? onSignIn,
+    void Function(LegalStatus? status)? onLegalStatus,
   })  : _dio = dio,
         _storage = storage,
-        _onSignIn = onSignIn;
+        _onSignIn = onSignIn,
+        _onLegalStatus = onLegalStatus;
 
   Stream<bool> get authStream => _authStream.stream;
   String? get token => _token;
@@ -212,6 +217,7 @@ class AuthApiService {
     _userName = null;
     _email = null;
     _avatarUrl = null;
+    _onLegalStatus?.call(null);
 
     try {
       await _deleteTokens();
@@ -251,6 +257,8 @@ class AuthApiService {
     try {
       final payload = <String, dynamic>{
         'id_token': idToken,
+        // Экран входа не даёт войти без отметки о принятии документов
+        'accept_legal': true,
       };
       if (avatarUrl != null && avatarUrl.isNotEmpty) {
         payload['avatar_url'] = avatarUrl;
@@ -277,7 +285,7 @@ class AuthApiService {
     try {
       final response = await _dio.post(
         ApiConfig.loginApple,
-        data: {'identity_token': identityToken},
+        data: {'identity_token': identityToken, 'accept_legal': true},
       );
 
       await _handleLoginResponse(response.data);
@@ -336,6 +344,8 @@ class AuthApiService {
     await setUserName(profile.userName);
     await setUserEmail(profile.userEmail);
     await setAvatarUrl(profile.avatarUrl);
+    final legal = profile.legal;
+    if (legal != null) _onLegalStatus?.call(legal);
     final baseCurrency = profile.baseCurrency;
     if (baseCurrency != null) {
       final currency =
@@ -343,6 +353,12 @@ class AuthApiService {
       await CurrencyFormatter.setCurrency(currency);
     }
     AppLogger.i('[AuthApiService] Profile updated for: ${profile.userName}');
+  }
+
+  /// Перечитывает профиль с сервера (при запуске — чтобы узнать о новой
+  /// версии соглашения). Ошибки только пишутся в журнал.
+  Future<void> refreshProfile() async {
+    if (isAuthenticated) await _fetchAndSaveUserProfile();
   }
 
   Future<void> _fetchAndSaveUserProfile() async {

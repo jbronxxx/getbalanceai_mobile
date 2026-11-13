@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../config/legal_links.dart';
 import '../../utils/utils.dart';
-import '../app_alerts.dart';
 import '../../theme/app_colors.dart';
+import '../legal_page_link.dart';
 import '../whole_words_text.dart';
-
-/// Открывает URL во внешнем браузере; возвращает `false`, если открыть не удалось.
-Future<bool> openExternalUrl(Uri uri) =>
-    launchUrl(uri, mode: LaunchMode.externalApplication);
 
 /// Карточка раздела «Документы» в профиле (видна и гостю): условия
 /// использования, политика конфиденциальности и справка об удалении аккаунта
@@ -18,19 +13,8 @@ class ProfileLegalCard extends StatelessWidget {
 
   const ProfileLegalCard({super.key, this.launcher = openExternalUrl});
 
-  Future<void> _open(BuildContext context, LegalPage page) async {
-    final l10n = context.l10n;
-    var opened = false;
-    try {
-      final languageCode = Localizations.localeOf(context).languageCode;
-      opened = await launcher(LegalLinks.url(page, languageCode));
-    } catch (e, stack) {
-      AppLogger.e('Не удалось открыть страницу /${page.slug}', e, stack);
-    }
-    if (!opened && context.mounted) {
-      AppAlerts.error(context, l10n.open_link_error);
-    }
-  }
+  void _open(BuildContext context, LegalPage page) =>
+      openLegalPage(context, page, launcher: launcher);
 
   @override
   Widget build(BuildContext context) {

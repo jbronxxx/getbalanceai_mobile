@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:getbalanceai_mobile/config/environment.dart';
+import 'package:getbalanceai_mobile/config/legal_links.dart';
 import 'package:getbalanceai_mobile/cubits/auth/auth_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/report_export/report_export_cubit.dart';
@@ -446,6 +447,42 @@ void main() {
   group('Экраны', () {
     audit('Поиск', () => const TransactionSearchScreen());
     audit('Вход', () => const AuthScreen());
+    // Самые длинные пункты «Что изменилось» из версий документов на бэкенде
+    final legalChanges = LegalDocumentInfo(
+      version: '2026-11-13',
+      effectiveDate: DateTime(2025, 11, 13),
+      changes: const [
+        'О новой версии Соглашения мы сообщаем в приложении; чтобы '
+            'пользоваться аккаунтом дальше, её нужно принять.',
+        'После удаления аккаунта эта запись хранится 3 года, без имени и email.',
+      ],
+    );
+    audit('Шторка о новой политике',
+        () => Scaffold(body: PrivacyUpdateSheet(info: legalChanges)));
+    audit(
+      'Новая версия: два документа',
+      () => Scaffold(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              WholeWordsText(LanguageManager.l10n.terms_update_title),
+              LegalChanges(
+                info: legalChanges,
+                page: LegalPage.terms,
+                heading: LanguageManager.l10n.terms_of_use_title,
+              ),
+              LegalChanges(
+                info: legalChanges,
+                page: LegalPage.privacy,
+                heading: LanguageManager.l10n.privacy_policy_title,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
     audit('Первая настройка', () => const WelcomeSetupScreen());
     audit('Сервис недоступен', () => const ServiceUnavailableScreen());
     audit(

@@ -9,6 +9,7 @@ export 'currency_exchange_service.dart';
 export 'csv_report_generator.dart';
 export 'device_capability_service.dart';
 export 'entitlement_service.dart';
+export 'legal_api_service.dart';
 export 'local_db_service.dart';
 export 'pdf_report_generator.dart';
 export 'pending_deletions_store.dart';
