@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../cubits/report_export/report_export_cubit.dart';
 import '../../models/models.dart';
+import '../../screens/paywall_screen.dart';
 import '../../services/selected_period_service.dart';
 import '../../utils/utils.dart';
 import '../app_alerts.dart';
@@ -41,7 +42,9 @@ class ReportExportSheet extends StatelessWidget {
       case ReportExportStatus.empty:
         AppAlerts.info(context, l10n.report_empty_period);
       case ReportExportStatus.locked:
-        AppAlerts.warning(context, l10n.report_feature_locked);
+        // Выгрузка — в Pro: пейволл поверх шторки, после покупки можно
+        // выгрузить сразу
+        PaywallScreen.show(context, trigger: PaywallTrigger.export);
       case ReportExportStatus.failure:
         AppAlerts.error(context, l10n.report_export_error);
       case ReportExportStatus.idle:
@@ -58,7 +61,10 @@ class ReportExportSheet extends StatelessWidget {
     final l10n = context.l10n;
 
     return BlocConsumer<ReportExportCubit, ReportExportState>(
-      listenWhen: (previous, current) => previous.status != current.status,
+      // Повторное «Выгрузить» на Free снова открывает пейволл
+      listenWhen: (previous, current) =>
+          previous.status != current.status ||
+          current.status == ReportExportStatus.locked,
       listener: _onStatusChanged,
       builder: (context, state) {
         // Оформление и кнопки — как у шторок операции и лимита. Системную

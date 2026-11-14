@@ -20,6 +20,7 @@ class ApiConfig {
   static const String syncChanges = '/sync/changes';
   static const String insights = '/insights/';
   static const String voiceParse = '/voice/parse';
+  static const String subscriptionRefresh = '/subscriptions/refresh';
   static const String currencyRates = '/currencies/rates';
   static const String legal = '/legal';
   static const String legalAccept = '/legal/accept';

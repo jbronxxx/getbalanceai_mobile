@@ -35,17 +35,30 @@ enum _Phase { listening, parsing, error }
 class VoiceListeningSheet extends StatefulWidget {
   final VoicePhraseParser? parse;
 
-  const VoiceListeningSheet({super.key, this.parse});
+  /// Лимит голоса на Free исчерпан (`403 PLAN_LIMIT_REACHED`): шторка
+  /// закрывается, и вызывается он с корневым навигатором (пейволл). Без него
+  /// и на Pro — сообщение в шторке.
+  final void Function(NavigatorState navigator)? onFreeLimitReached;
+
+  const VoiceListeningSheet({
+    super.key,
+    this.parse,
+    this.onFreeLimitReached,
+  });
 
   static Future<VoiceInputResult?> show(
     BuildContext context, {
     VoicePhraseParser? parse,
+    void Function(NavigatorState navigator)? onFreeLimitReached,
   }) {
     return showModalBottomSheet<VoiceInputResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.transparent,
-      builder: (_) => VoiceListeningSheet(parse: parse),
+      builder: (_) => VoiceListeningSheet(
+        parse: parse,
+        onFreeLimitReached: onFreeLimitReached,
+      ),
     );
   }
 
@@ -192,7 +205,8 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
     );
   }
 
-  /// Квота — до завтра, без повтора; сбой ИИ на сервере (5xx) и
+  /// Лимит тарифа: Free — пейволл, Pro — до завтра, без повтора; сбой ИИ
+  /// на сервере (5xx) и
   /// неразборчивый ответ — «помощники заняты», как на «Аналитике»; сеть и
   /// прочие ответы сервера — общие тексты ошибок приложения.
   void _showParseError(Object error) {
@@ -204,7 +218,14 @@ class _VoiceListeningSheetState extends State<VoiceListeningSheet> {
     if (error is! DioException) return _showError(busy);
     final response = error.response;
     final data = response?.data;
-    if (data is Map && data['code'] == 'AI_QUOTA_EXCEEDED') {
+    final reached = PlanLimitReached.fromResponse(response?.statusCode, data);
+    if (reached != null) {
+      final onFreeLimit = widget.onFreeLimitReached;
+      if (reached.plan == PlanCode.free && onFreeLimit != null) {
+        final navigator = Navigator.of(context, rootNavigator: true);
+        Navigator.pop(context);
+        return onFreeLimit(navigator);
+      }
       return _showError([l10n.voice_error_quota], canRetry: false);
     }
     if ((response?.statusCode ?? 0) >= 500) return _showError(busy);

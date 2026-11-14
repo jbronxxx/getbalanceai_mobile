@@ -19,6 +19,7 @@ import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
 import 'package:getbalanceai_mobile/screens/auth_screen.dart';
 import 'package:getbalanceai_mobile/screens/main_shell.dart';
+import 'package:getbalanceai_mobile/screens/paywall_screen.dart';
 import 'package:getbalanceai_mobile/screens/service_unavailable_screen.dart';
 import 'package:getbalanceai_mobile/screens/startup_error_screen.dart';
 import 'package:getbalanceai_mobile/screens/transaction_search_screen.dart';
@@ -56,6 +57,43 @@ import 'support/fake_speech_recognizer.dart';
 /// бы ложные срабатывания.
 
 class _MockAuthCubit extends MockCubit<AuthState> implements AuthCubit {}
+
+/// Магазин с ценами — для вёрстки пейволла без RevenueCat.
+class _PricedStore implements PurchaseService {
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Future<void> logIn(String userId) async {}
+
+  @override
+  Future<void> logOut() async {}
+
+  @override
+  Future<List<ProOption>> loadOptions() async => const [
+        ProOption(
+            period: ProPeriod.month,
+            priceString: '€3,99',
+            price: 3.99,
+            package: 1),
+        ProOption(
+            period: ProPeriod.year,
+            priceString: '€29,99',
+            price: 29.99,
+            trialDays: 14,
+            package: 2),
+      ];
+
+  @override
+  Future<StoreOutcome> purchase(ProOption option) async =>
+      StoreOutcome.cancelled;
+
+  @override
+  Future<StoreOutcome> restore() async => StoreOutcome.cancelled;
+
+  @override
+  Future<Uri> managementUrl() async => Uri.parse('https://play.google.com');
+}
 
 /// Буква, цифра или апостроф внутри слова («O'chirish»).
 final _wordChar = RegExp(r"[\p{L}\p{N}'ʻ’]", unicode: true);
@@ -486,6 +524,15 @@ void main() {
     audit('Первая настройка', () => const WelcomeSetupScreen());
     audit('Сервис недоступен', () => const ServiceUnavailableScreen());
     audit(
+        'Пейволл: лимит ИИ-отчёта',
+        () => PaywallScreen(
+              trigger: PaywallTrigger.aiReport,
+              resetsAt: DateTime.utc(2026, 11, 30, 19),
+              store: _PricedStore(),
+            ));
+    audit('Гость: пейволл', () => PaywallScreen(store: _PricedStore()),
+        guest: true);
+    audit(
         'Ошибка запуска', () => StartupErrorScreen(onRetry: () async => true));
     // С текстом «Слишком много попыток…» — самый длинный вариант экрана
     audit(
@@ -840,8 +887,11 @@ void main() {
                   requestOptions: RequestOptions(path: '/voice/parse'),
                   response: Response(
                     requestOptions: RequestOptions(path: '/voice/parse'),
-                    statusCode: 429,
-                    data: {'code': 'AI_QUOTA_EXCEEDED'},
+                    statusCode: 403,
+                    data: {
+                      'code': 'PLAN_LIMIT_REACHED',
+                      'details': {'feature': 'voice', 'plan': 'pro'},
+                    },
                   ),
                 )),
         open: tapOpen);

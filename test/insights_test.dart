@@ -3,13 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
+import 'package:getbalanceai_mobile/models/plan_model.dart';
+import 'package:getbalanceai_mobile/screens/paywall_screen.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/services/entitlement_service.dart';
 import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/services/selected_period_service.dart';
 import 'package:getbalanceai_mobile/screens/insights_screen.dart';
 import 'package:getbalanceai_mobile/models/insights_model.dart';
 import 'package:getbalanceai_mobile/models/month_period.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/utils/ui_utils.dart';
 import 'package:getbalanceai_mobile/widgets/ai_sparkles_loader.dart';
 import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
 import 'package:getbalanceai_mobile/widgets/insights/insights_unavailable_card.dart';
@@ -56,7 +60,11 @@ void main() {
 
   setUp(() {
     storageData.clear();
+    // Pro: текущий месяц строится сам; правила Free — в группе «Тариф Free»
+    EntitlementService.instance = EntitlementService(isPro: () => true);
   });
+
+  tearDown(() => EntitlementService.instance = EntitlementService());
 
   group('InsightsModel Tests', () {
     test('parses ISO-8601 generated_at and list of insights', () {
@@ -104,7 +112,6 @@ void main() {
       expect(parse('ready'), InsightsReportState.ready);
       expect(parse('not_generated'), InsightsReportState.notGenerated);
       expect(parse('no_data'), InsightsReportState.noData);
-      expect(parse('quota_exceeded'), InsightsReportState.quotaExceeded);
       expect(parse('busy'), InsightsReportState.busy);
       expect(parse('something_new'), InsightsReportState.ready);
       expect(InsightsModel.fromJson({'insights': []}).state,
@@ -629,25 +636,181 @@ void main() {
     );
   });
 
-  testWidgets('квота исчерпана: пометка «обновить завтра» без кнопки',
-      (tester) async {
-    await _pumpInsights(
+  testWidgets(
+      'Pro: дневной лимит исчерпан — сохранённый отчёт с пометкой «завтра», '
+      'без пейволла', (tester) async {
+    await _pumpInsightsByGenerate(
       tester,
-      (_) => {
+      generated: null,
+      saved: {
         'insights': ['Старый совет'],
-        'state': 'quota_exceeded',
         'is_outdated': true,
       },
-      (_) async {
+      plan: 'pro',
+      (requests) async {
+        expect(requests, [true, false]);
         expect(find.text('Старый совет'), findsOneWidget);
         expect(outdatedNote, findsOneWidget);
         expect(
           find.textContaining(LanguageManager.l10n.insights_outdated_tomorrow),
-          findsOneWidget,
+          findsWidgets,
         );
         expect(outdatedRefresh, findsNothing);
+        expect(find.byType(PaywallScreen), findsNothing);
       },
     );
+  });
+
+  group('Тариф Free', () {
+    setUp(() =>
+        EntitlementService.instance = EntitlementService(isPro: () => false));
+
+    final getReport = find.byKey(const ValueKey('insights_generate_button'));
+
+    testWidgets(
+        'текущий месяц сам не строится: «Получить отчёт» с подписью о лимите',
+        (tester) async {
+      await _pumpInsightsByGenerate(
+        tester,
+        generated: {
+          'insights': ['Новый отчёт'],
+        },
+        saved: {'insights': <String>[], 'state': 'not_generated'},
+        (requests) async {
+          expect(requests, [false]);
+          expect(find.text(LanguageManager.l10n.insights_get_report_btn),
+              findsOneWidget);
+          expect(find.text(LanguageManager.l10n.insights_free_limit_caption(1)),
+              findsOneWidget);
+
+          await tester.tap(getReport);
+          await tester.pumpAndSettle();
+          expect(requests, [false, true]);
+          expect(find.text('Новый отчёт'), findsOneWidget);
+        },
+      );
+    });
+
+    testWidgets(
+        'устаревший отчёт — «Обновлять отчёт — в Pro» открывает пейволл',
+        (tester) async {
+      await _pumpInsightsByGenerate(
+        tester,
+        generated: null,
+        saved: {
+          'insights': ['Старый совет'],
+          'is_outdated': true,
+        },
+        (requests) async {
+          expect(requests, [false]);
+          expect(outdatedRefresh, findsNothing);
+          await tester
+              .tap(find.byKey(const ValueKey('insights_outdated_upgrade')));
+          await tester.pumpAndSettle();
+          expect(find.byType(PaywallScreen), findsOneWidget);
+          expect(requests, [false]);
+        },
+      );
+    });
+
+    testWidgets(
+        '403 PLAN_LIMIT_REACHED — пейволл и сохранённый отчёт с generate=false',
+        (tester) async {
+      await _pumpInsightsByGenerate(
+        tester,
+        generated: null,
+        saved: {'insights': <String>[], 'state': 'not_generated'},
+        (requests) async {
+          await tester.tap(getReport);
+          await tester.pumpAndSettle();
+
+          expect(requests, [false, true, false]);
+          expect(find.byType(PaywallScreen), findsOneWidget);
+          // Дата не переносится посередине: «1 декабря» — одна строка
+          final date = nonBreaking(LanguageManager.formatDayMonthYear(
+              DateTime.utc(2026, 11, 30, 19).toLocal()));
+          expect(find.text(LanguageManager.l10n.paywall_reason_ai_report(date)),
+              findsOneWidget);
+
+          // «Не сейчас» — снова карточка с кнопкой
+          await tester.tap(find.byKey(const ValueKey('paywall_not_now')));
+          await tester.pumpAndSettle();
+          expect(getReport, findsOneWidget);
+        },
+      );
+    });
+
+    testWidgets('известный остаток 0 — пейволл без запроса', (tester) async {
+      final subscription = ApiService.instance.subscription;
+      await _pumpInsightsByGenerate(
+        tester,
+        generated: {
+          'insights': ['Новый отчёт'],
+        },
+        saved: {'insights': <String>[], 'state': 'not_generated'},
+        (requests) async {
+          await subscription.update(PlanStatus(
+            subscription: SubscriptionStatus.free,
+            limits: {
+              PlanFeature.aiReport: FeatureLimit(
+                feature: PlanFeature.aiReport,
+                period: LimitPeriod.month,
+                limit: 1,
+                used: 1,
+                remaining: 0,
+                resetsAt: DateTime.now().toUtc().add(const Duration(days: 3)),
+              ),
+            },
+          ));
+          await tester.tap(getReport);
+          await tester.pumpAndSettle();
+          expect(requests, [false]);
+          expect(find.byType(PaywallScreen), findsOneWidget);
+        },
+      );
+    });
+
+    testWidgets(
+        'отчёт по кнопке тратит остаток — на другом месяце «Получить отчёт» '
+        'сразу открывает пейволл', (tester) async {
+      final subscription = ApiService.instance.subscription;
+      await _pumpInsightsByGenerate(
+        tester,
+        generated: {
+          'insights': ['Новый отчёт'],
+        },
+        saved: {'insights': <String>[], 'state': 'not_generated'},
+        (requests) async {
+          await subscription.update(PlanStatus(
+            subscription: SubscriptionStatus.free,
+            limits: {
+              PlanFeature.aiReport: FeatureLimit(
+                feature: PlanFeature.aiReport,
+                period: LimitPeriod.month,
+                limit: 1,
+                used: 0,
+                remaining: 1,
+                resetsAt: DateTime.now().toUtc().add(const Duration(days: 3)),
+              ),
+            },
+          ));
+          await tester.tap(getReport);
+          await tester.pumpAndSettle();
+          expect(requests, [false, true]);
+          expect(find.text('Новый отчёт'), findsOneWidget);
+          expect(subscription.isExhausted(PlanFeature.aiReport), isTrue);
+
+          await tester.tap(find.byKey(const ValueKey('period_previous')));
+          await tester.pumpAndSettle();
+          expect(requests, [false, true, false]);
+
+          await tester.tap(getReport);
+          await tester.pumpAndSettle();
+          expect(requests, [false, true, false]);
+          expect(find.byType(PaywallScreen), findsOneWidget);
+        },
+      );
+    });
   });
 
   testWidgets('изменение операций или лимитов перезапрашивает отчёт',
@@ -782,6 +945,66 @@ Future<void> _pumpInsights(
     await tester.pumpAndSettle();
     await body(() => requestCount);
   } finally {
+    ApiService.instance.dio.httpClientAdapter = originalAdapter;
+    await ApiService.instance.clearAllUserData();
+  }
+}
+
+/// Бэкенд отчётов по флагу `generate`: [generated] — ответ на генерацию
+/// (`null` — `403 PLAN_LIMIT_REACHED` тарифа [plan]), [saved] — на
+/// `generate=false`. [body] получает флаги всех запросов.
+Future<void> _pumpInsightsByGenerate(
+  WidgetTester tester,
+  Future<void> Function(List<bool> requests) body, {
+  required Map<String, dynamic>? generated,
+  required Map<String, dynamic> saved,
+  String plan = 'free',
+}) async {
+  await ApiService.instance.auth.setTokens('test_token', 'test_refresh');
+  final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+  final requests = <bool>[];
+  ApiService.instance.dio.httpClientAdapter =
+      _MockHttpClientAdapter((options) async {
+    final generate = options.queryParameters['generate'] != false;
+    requests.add(generate);
+    final headers = {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    };
+    if (generate && generated == null) {
+      return ResponseBody.fromString(
+        jsonEncode({
+          'status': 'error',
+          'code': 'PLAN_LIMIT_REACHED',
+          'details': {
+            'feature': 'ai_report',
+            'plan': plan,
+            'limit': plan == 'pro' ? 5 : 1,
+            'period': plan == 'pro' ? 'day' : 'month',
+            'resets_at': '2026-11-30T19:00:00Z',
+          },
+        }),
+        403,
+        headers: headers,
+      );
+    }
+    return ResponseBody.fromString(
+      jsonEncode({'status': 'success', 'data': generate ? generated : saved}),
+      200,
+      headers: headers,
+    );
+  });
+
+  try {
+    await tester.pumpWidget(MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routes: {'/login': (_) => const SizedBox()},
+        home: const InsightsScreen()));
+    await tester.pumpAndSettle();
+    await body(requests);
+  } finally {
+    await tester.pumpWidget(const SizedBox());
     ApiService.instance.dio.httpClientAdapter = originalAdapter;
     await ApiService.instance.clearAllUserData();
   }

@@ -20,7 +20,12 @@ class InsightsInitial extends InsightsState {
 
 /// Отчёта за период нет, генерация ждёт явного действия пользователя.
 class InsightsAwaitingRequest extends InsightsState {
+  /// Free: сколько отчётов в месяц на бесплатном тарифе (подпись у кнопки);
+  /// `null` — Pro.
+  final int? freeReportsPerMonth;
+
   const InsightsAwaitingRequest({
+    this.freeReportsPerMonth,
     required super.selectedMonth,
     required super.selectedYear,
   });
@@ -56,6 +61,18 @@ class InsightsLoading extends InsightsState {
   });
 }
 
+/// Что можно сделать с устаревшим отчётом.
+enum InsightsRefresh {
+  /// Перегенерировать сейчас.
+  available,
+
+  /// Free: обновление отчёта — в Pro.
+  proOnly,
+
+  /// Pro: дневной лимит исчерпан, новый отчёт — завтра.
+  tomorrow,
+}
+
 class InsightsLoaded extends InsightsState {
   final List<String> insights;
   final DateTime? generatedAt;
@@ -64,15 +81,14 @@ class InsightsLoaded extends InsightsState {
   /// генерации: суммы в тексте могут не совпадать с экраном «Бюджет».
   final bool isOutdated;
 
-  /// Устаревший отчёт можно перегенерировать сейчас (`false` — суточная
-  /// квота исчерпана, обновить можно завтра).
-  final bool canRefresh;
+  /// Можно ли перегенерировать устаревший отчёт.
+  final InsightsRefresh refresh;
 
   const InsightsLoaded({
     required this.insights,
     this.generatedAt,
     this.isOutdated = false,
-    this.canRefresh = true,
+    this.refresh = InsightsRefresh.available,
     required super.selectedMonth,
     required super.selectedYear,
   });

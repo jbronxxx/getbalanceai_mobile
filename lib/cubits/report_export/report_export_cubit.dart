@@ -11,7 +11,8 @@ part 'report_export_state.dart';
 /// Управляет формой выгрузки отчёта за период в CSV/PDF.
 ///
 /// Файл формируется на устройстве из локальной базы; доступ к функции
-/// проверяется через [EntitlementService] (будущее разделение тарифов).
+/// проверяется через [EntitlementService]: выгрузка — в Pro, на Free —
+/// статус `locked` и пейволл.
 class ReportExportCubit extends Cubit<ReportExportState> {
   final ReportExportService _exportService;
   final EntitlementService _entitlements;

@@ -5,12 +5,14 @@ import '../../utils/utils.dart';
 /// Пометка над AI-советами: отчёт сохранён до последних изменений операций
 /// или лимитов, суммы в тексте могут не совпадать с экраном «Бюджет».
 ///
-/// С [onRefresh] — кнопка новой генерации; без него (суточная квота
-/// исчерпана) — подсказка, что обновить можно завтра.
+/// С [onRefresh] — кнопка новой генерации (Pro); с [onUpgrade] — «Обновлять
+/// отчёт — в Pro» (Free, открывает пейволл); без обоих (дневной лимит Pro
+/// исчерпан) — подсказка, что обновить можно завтра.
 class InsightsOutdatedNote extends StatelessWidget {
   final VoidCallback? onRefresh;
+  final VoidCallback? onUpgrade;
 
-  const InsightsOutdatedNote({super.key, this.onRefresh});
+  const InsightsOutdatedNote({super.key, this.onRefresh, this.onUpgrade});
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +21,7 @@ class InsightsOutdatedNote extends StatelessWidget {
     final textTheme = theme.textTheme;
     final colors = AppColors.of(context);
     final l10n = context.l10n;
+    final action = onRefresh ?? onUpgrade;
 
     return Container(
       key: const ValueKey('insights_outdated_note'),
@@ -39,7 +42,7 @@ class InsightsOutdatedNote extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  onRefresh != null
+                  action != null
                       ? l10n.insights_outdated_note
                       : '${l10n.insights_outdated_note} '
                           '${l10n.insights_outdated_tomorrow}',
@@ -51,16 +54,20 @@ class InsightsOutdatedNote extends StatelessWidget {
               ),
             ],
           ),
-          if (onRefresh != null)
+          if (action != null)
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                key: const ValueKey('insights_outdated_refresh'),
-                onPressed: onRefresh,
+                key: ValueKey(onRefresh != null
+                    ? 'insights_outdated_refresh'
+                    : 'insights_outdated_upgrade'),
+                onPressed: action,
                 style: TextButton.styleFrom(
                   foregroundColor: colors.accentText,
                 ),
-                child: Text(l10n.insights_outdated_refresh),
+                child: Text(onRefresh != null
+                    ? l10n.insights_outdated_refresh
+                    : l10n.insights_outdated_upgrade),
               ),
             )
           else

@@ -19,6 +19,8 @@ export 'recurring_reminder_service.dart';
 export 'report_data_service.dart';
 export 'report_export_service.dart';
 export 'selected_period_service.dart';
+export 'subscription_api_service.dart';
+export 'purchase_service.dart';
 export 'sync_service.dart';
 export 'tracing_interceptor.dart';
 export 'transaction_api_service.dart';

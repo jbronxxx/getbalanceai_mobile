@@ -5,6 +5,7 @@ import '../services/services.dart';
 import '../theme/theme.dart';
 import '../utils/utils.dart';
 import '../widgets/widgets.dart';
+import 'subscription_actions.dart';
 
 /// Выход и удаление аккаунта с подтверждением — общие для «Профиля» и экрана
 /// новой версии условий. Нужен [ProfileCubit] выше по дереву (выход).
@@ -47,7 +48,21 @@ abstract final class AccountActions {
     AppAlerts.info(context, context.l10n.logout_info);
   }
 
+  /// Удаление аккаунта. При Pro, который продлится, сначала предупреждение:
+  /// удаление подписку в магазине не отменяет.
   static Future<void> deleteAccount(BuildContext context) async {
+    if (ApiService.instance.subscription.subscription.renewsPaid) {
+      final openStore = await AppAlerts.showConfirmDialog(
+        context,
+        title: context.l10n.delete_account_subscription_title,
+        message: context.l10n.delete_account_subscription_warning,
+        confirmText: context.l10n.delete_account_subscription_open_store,
+        cancelText: context.l10n.delete_account_subscription_continue,
+      );
+      if (!context.mounted || openStore == null) return;
+      if (openStore) return SubscriptionActions.manage(context);
+    }
+
     final confirm = await AppAlerts.showConfirmDialog(
       context,
       title: context.l10n.delete_account_title,

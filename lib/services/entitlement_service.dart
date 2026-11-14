@@ -1,25 +1,30 @@
-/// Функции приложения, доступ к которым зависит от тарифа.
-///
-/// Бесплатный тариф ограничится локальным функционалом и инфографикой на
-/// экране «Финансы»; платные функции перечисляются здесь.
+import 'api_service.dart';
+
+/// Функции, доступные только в Pro. Лимиты, которые есть на обоих тарифах
+/// (число ИИ-отчётов и голосовых записей), проверяет сервер, а приложение —
+/// по остаткам в `SubscriptionApiService`.
 enum AppFeature {
   /// Выгрузка отчётов за период в CSV и PDF.
   reportExport,
 
-  /// Голосовой ввод записей (разбор фразы через ИИ на сервере).
-  voiceInput,
+  /// ИИ-отчёт текущего месяца строится сам при открытии «Аналитики» и
+  /// обновляется после изменения данных. На Free — только по кнопке
+  /// «Получить отчёт», 1 в месяц.
+  aiInsights,
 }
 
-/// Единая точка проверки доступа к платным функциям.
-///
-/// До подключения монетизации все функции открыты. После подключения
-/// достаточно заменить [isEnabled] проверкой подписки — вызывающий код
-/// (экраны и Cubit'ы) менять не потребуется.
+/// Единая точка проверки доступа к функциям Pro.
 class EntitlementService {
-  EntitlementService._();
+  final bool Function() _isPro;
 
-  static EntitlementService instance = EntitlementService._();
+  EntitlementService({bool Function()? isPro})
+      : _isPro = isPro ?? (() => ApiService.instance.subscription.isPro);
 
-  /// Доступна ли функция текущему пользователю.
-  bool isEnabled(AppFeature feature) => true;
+  static EntitlementService instance = EntitlementService();
+
+  /// Доступна ли функция текущему пользователю: последний известный тариф,
+  /// в том числе без сети.
+  bool isEnabled(AppFeature feature) => switch (feature) {
+        AppFeature.reportExport || AppFeature.aiInsights => _isPro(),
+      };
 }

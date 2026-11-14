@@ -11,14 +11,19 @@ part 'insights_state.dart';
 
 /// Загружает AI-отчёт за выбранный месяц.
 ///
-/// Генерация — платный запрос к LLM, поэтому:
+/// Генерация — платный запрос к LLM с лимитом по тарифу, поэтому:
 /// * будущий месяц и месяц, где операций меньше [minTransactions],
 ///   определяются локально — без запроса ([InsightsUnavailable]);
-/// * текущий месяц запрашивается с генерацией: бэкенд сам отдаёт сохранённый
-///   отчёт, пока данные месяца почти не менялись;
-/// * прошлые месяцы и смена валюты/языка — только сохранённый отчёт
-///   (`generate=false`), в том числе по pull-to-refresh ([refresh]); если
-///   его нет — [InsightsAwaitingRequest] с кнопкой;
+/// * в Pro ([AppFeature.aiInsights]) текущий месяц запрашивается с
+///   генерацией: бэкенд сам отдаёт сохранённый отчёт, пока данные месяца
+///   почти не менялись;
+/// * на Free, за прошлые месяцы и при смене валюты/языка — только
+///   сохранённый отчёт (`generate=false`), в том числе по pull-to-refresh
+///   ([refresh]); если его нет — [InsightsAwaitingRequest] с кнопкой
+///   ([requestReport]);
+/// * упор в лимит тарифа (`403 PLAN_LIMIT_REACHED` или известный остаток 0)
+///   — событие [limitReached] (Free — пейволл) и сохранённый отчёт, если он
+///   есть;
 /// * полученные отчёты кэшируются на сессию (очищается при выходе);
 /// * изменение операций или лимитов (в том числе загрузка с сервера при
 ///   синхронизации) сбрасывает кэш сессии: видимая вкладка сразу
@@ -28,14 +33,20 @@ part 'insights_state.dart';
 ///   выдавались за актуальные.
 class InsightsCubit extends Cubit<InsightsState> {
   /// Меньше операций за месяц — советам не на чем строиться, а генерация
-  /// тратит суточную квоту. Тот же порог на бэкенде
+  /// тратит лимит тарифа. Тот же порог на бэкенде
   /// (`MIN_TRANSACTIONS_FOR_INSIGHTS`).
   static const minTransactions = 7;
 
   final ApiService _api;
   final Connectivity _connectivity;
+  final EntitlementService _entitlements;
   CancelToken? _cancelToken;
   StreamSubscription<bool>? _authSub;
+  final _limitReached = StreamController<PlanLimitReached>.broadcast();
+
+  /// Тариф по последнему статусу: после покупки Pro текущий месяц строится
+  /// сам.
+  bool _wasPro;
   bool _hasLoadedOnce = false;
 
   /// Вошёл ли пользователь по последнему событию [ApiService.authStream].
@@ -67,13 +78,17 @@ class InsightsCubit extends Cubit<InsightsState> {
   InsightsCubit({
     ApiService? api,
     Connectivity? connectivity,
+    EntitlementService? entitlements,
     int? initialMonth,
     int? initialYear,
   })  : _api = api ?? ApiService.instance,
         _connectivity = connectivity ?? Connectivity(),
+        _entitlements = entitlements ?? EntitlementService.instance,
         _selectedMonth = initialMonth ?? DateTime.now().month,
         _selectedYear = initialYear ?? DateTime.now().year,
         _wasAuthenticated = (api ?? ApiService.instance).isAuthenticated,
+        _wasPro = (entitlements ?? EntitlementService.instance)
+            .isEnabled(AppFeature.aiInsights),
         super(InsightsInitial(
           selectedMonth: initialMonth ?? DateTime.now().month,
           selectedYear: initialYear ?? DateTime.now().year,
@@ -84,6 +99,22 @@ class InsightsCubit extends Cubit<InsightsState> {
     LocalDbService.transactionsChanged.addListener(_onDataChanged);
     LocalDbService.budgetsChanged.addListener(_onDataChanged);
     _authSub = _api.authStream.listen(_onAuthChanged);
+    _api.subscription.status.addListener(_onPlanChanged);
+  }
+
+  /// Упор в лимит ИИ-отчёта: Free — пейволл, Pro — новый отчёт завтра.
+  Stream<PlanLimitReached> get limitReached => _limitReached.stream;
+
+  /// Текущий месяц строится сам (Pro).
+  bool get _autoGenerate => _entitlements.isEnabled(AppFeature.aiInsights);
+
+  /// Тариф сменился (покупка, окончание подписки): отчёты перезапрашиваются
+  /// по правилам нового тарифа.
+  void _onPlanChanged() {
+    final isPro = _autoGenerate;
+    if (isPro == _wasPro) return;
+    _wasPro = isPro;
+    _onDataChanged();
   }
 
   /// Вход шлёт в [ApiService.authStream] несколько `true` подряд (токены,
@@ -189,18 +220,46 @@ class InsightsCubit extends Cubit<InsightsState> {
   /// Показывает отчёт за выбранный период: генерация разрешена только для
   /// текущего месяца (и если [allowGenerate]).
   Future<void> resolvePeriod({bool allowGenerate = true}) {
-    return loadInsights(generate: allowGenerate && _isCurrentMonth);
+    return loadInsights(
+        generate: allowGenerate && _isCurrentMonth && _autoGenerate);
   }
 
   /// Pull-to-refresh: запрос мимо кэша сессии по тем же правилам, что и
-  /// открытие периода. Прошлый месяц только перечитывает сохранённый отчёт;
-  /// генерация за него — лишь по кнопке «Сформировать анализ».
+  /// открытие периода. Прошлый месяц и Free только перечитывают сохранённый
+  /// отчёт; генерация — лишь по кнопке ([requestReport]).
   Future<void> refresh() =>
-      loadInsights(force: true, generate: _isCurrentMonth);
+      loadInsights(force: true, generate: _isCurrentMonth && _autoGenerate);
+
+  /// Кнопки «Получить отчёт», «Сформировать анализ» и «Обновить отчёт».
+  /// Известный остаток 0 — сразу [limitReached], без запроса. Кнопки есть,
+  /// только когда отчёта нет или он устарел, поэтому свежий отчёт в ответе —
+  /// генерация на сервере: остаток на один меньше, и следующий тап по
+  /// «Получить отчёт» (другой месяц) сразу открывает пейволл.
+  Future<void> requestReport() async {
+    final subscription = _api.subscription;
+    if (subscription.isExhausted(PlanFeature.aiReport)) {
+      final limit = subscription.limit(PlanFeature.aiReport);
+      _limitReached.add(PlanLimitReached(
+        feature: PlanFeature.aiReport,
+        plan: subscription.isPro ? PlanCode.pro : PlanCode.free,
+        limit: limit?.limit,
+        period: limit?.period ?? LimitPeriod.month,
+        resetsAt: limit?.resetsAt,
+      ));
+      return;
+    }
+    final period = _period;
+    await loadInsights(force: true, generate: true);
+    final loaded = state;
+    if (_period == period && loaded is InsightsLoaded && !loaded.isOutdated) {
+      subscription.recordUse(PlanFeature.aiReport);
+    }
+  }
 
   /// Запрашивает отчёт, отменяя предыдущий незавершённый запрос.
   ///
-  /// [generate] — разрешить генерацию через LLM (кнопка, текущий месяц);
+  /// [generate] — разрешить генерацию через LLM (кнопка, текущий месяц в
+  /// Pro);
   /// [force] — не брать отчёт из кэша сессии (pull-to-refresh).
   Future<void> loadInsights({bool force = false, bool generate = true}) async {
     _hasLoadedOnce = true;
@@ -288,7 +347,50 @@ class InsightsCubit extends Cubit<InsightsState> {
       if (superseded() || (e is DioException && CancelToken.isCancel(e))) {
         return;
       }
+      final reached = e is DioException
+          ? PlanLimitReached.fromResponse(
+              e.response?.statusCode, e.response?.data)
+          : null;
+      if (reached != null) {
+        _limitReached.add(reached);
+        return _loadSaved(requestKey, cancelToken,
+            currency: currency, locale: locale, month: month, year: year);
+      }
       AppLogger.e('[Insights] Failed to load insights', e);
+      emit(_errorState(e, month: month, year: year));
+    }
+  }
+
+  /// Лимит тарифа исчерпан: сохранённый отчёт без генерации — обновить его
+  /// сейчас нельзя.
+  Future<void> _loadSaved(
+    String requestKey,
+    CancelToken cancelToken, {
+    required String currency,
+    required String locale,
+    required int month,
+    required int year,
+  }) async {
+    try {
+      final data = await _api.getInsights(
+        currency: currency,
+        locale: locale,
+        month: month,
+        year: year,
+        generate: false,
+        cancelToken: cancelToken,
+      );
+      if (isClosed || cancelToken.isCancelled) return;
+      emit(_stateFromResponse(
+        InsightsModel.fromJson(data),
+        requestKey,
+        month: month,
+        year: year,
+        limitReached: true,
+      ));
+    } catch (e) {
+      if (isClosed || cancelToken.isCancelled) return;
+      AppLogger.e('[Insights] Failed to load saved insights', e);
       emit(_errorState(e, month: month, year: year));
     }
   }
@@ -314,11 +416,19 @@ class InsightsCubit extends Cubit<InsightsState> {
     String requestKey, {
     required int month,
     required int year,
+    bool limitReached = false,
   }) {
+    final pro = _autoGenerate;
     switch (parsed.state) {
       case InsightsReportState.notGenerated:
         return InsightsAwaitingRequest(
-            selectedMonth: month, selectedYear: year);
+          freeReportsPerMonth: pro
+              ? null
+              : _api.subscription.limit(PlanFeature.aiReport)?.limit ??
+                  PlanCatalog.freeAiReportsPerMonth,
+          selectedMonth: month,
+          selectedYear: year,
+        );
       case InsightsReportState.noData:
         return InsightsUnavailable(
           InsightsUnavailableReason.noTransactions,
@@ -340,22 +450,23 @@ class InsightsCubit extends Cubit<InsightsState> {
           selectedYear: year,
         );
       case InsightsReportState.ready:
-      case InsightsReportState.quotaExceeded:
         final loaded = InsightsLoaded(
           insights: parsed.insights.isNotEmpty
               ? parsed.insights
               : [LanguageManager.l10n.insight_no_data],
           generatedAt: parsed.generatedAt,
           isOutdated: parsed.isOutdated,
-          canRefresh: parsed.state != InsightsReportState.quotaExceeded,
+          refresh: !pro
+              ? InsightsRefresh.proOnly
+              : limitReached
+                  ? InsightsRefresh.tomorrow
+                  : InsightsRefresh.available,
           selectedMonth: month,
           selectedYear: year,
         );
-        // Сообщение о квоте и устаревший отчёт — не актуальный отчёт: в кэш
-        // не кладём, следующее открытие спросит бэкенд снова.
-        if (parsed.state == InsightsReportState.ready &&
-            !parsed.isOutdated &&
-            parsed.insights.isNotEmpty) {
+        // Устаревший отчёт — не актуальный: в кэш не кладём, следующее
+        // открытие спросит бэкенд снова.
+        if (!parsed.isOutdated && parsed.insights.isNotEmpty) {
           _cache[requestKey] = loaded;
         }
         return loaded;
@@ -370,6 +481,8 @@ class InsightsCubit extends Cubit<InsightsState> {
         .removeListener(_onCurrencyOrLanguageChanged);
     LocalDbService.transactionsChanged.removeListener(_onDataChanged);
     LocalDbService.budgetsChanged.removeListener(_onDataChanged);
+    _api.subscription.status.removeListener(_onPlanChanged);
+    unawaited(_limitReached.close());
     _dataChangeDebounce?.cancel();
     _authSub?.cancel();
     _cancelToken?.cancel();

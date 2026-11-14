@@ -12,7 +12,9 @@ import 'app_info_service.dart';
 import 'auth_api_service.dart';
 import 'budget_api_service.dart';
 import 'legal_api_service.dart';
+import 'purchase_service.dart';
 import 'report_export_service.dart';
+import 'subscription_api_service.dart';
 import 'sync_service.dart';
 import 'tracing_interceptor.dart';
 import 'transaction_api_service.dart';
@@ -30,6 +32,7 @@ class ApiService {
   late final BudgetApiService _budgetApiService;
   late final SyncService _syncService;
   late final LegalApiService _legalService;
+  late final SubscriptionApiService _subscriptionService;
 
   static final ApiService instance = ApiService._internal();
 
@@ -44,10 +47,22 @@ class ApiService {
         )) {
     _authService = AuthApiService(
       dio: _dio,
-      onSignIn: (userId) => _syncService.claimLocalData(userId),
+      onSignIn: (userId) async {
+        await _syncService.claimLocalData(userId);
+        unawaited(PurchaseService.instance.logIn(userId));
+      },
       onLegalStatus: (status) => _legalService.update(status),
+      onPlanStatus: (status) {
+        unawaited(_subscriptionService.update(status));
+        // null — сессия очищена: покупки больше не принадлежат аккаунту
+        if (status == null) unawaited(PurchaseService.instance.logOut());
+      },
     );
     _legalService = LegalApiService(
+      dio: _dio,
+      authOptions: _authService.authOptions,
+    );
+    _subscriptionService = SubscriptionApiService(
       dio: _dio,
       authOptions: _authService.authOptions,
     );
@@ -153,6 +168,12 @@ class ApiService {
             data['code'] == _kTermsNotAccepted) {
           _legalService.markTermsRequired();
         }
+        // Лимит тарифа исчерпан: до сброса окна запросы не отправляются
+        final limitReached =
+            PlanLimitReached.fromResponse(e.response?.statusCode, data);
+        if (limitReached != null) {
+          _subscriptionService.markLimitReached(limitReached);
+        }
         return handler.next(e);
       },
     ));
@@ -200,6 +221,7 @@ class ApiService {
   BudgetApiService get budgets => _budgetApiService;
   SyncService get sync => _syncService;
   LegalApiService get legal => _legalService;
+  SubscriptionApiService get subscription => _subscriptionService;
 
   Stream<bool> get authStream => _authService.authStream;
   String? get userName => _authService.userName;
@@ -221,11 +243,13 @@ class ApiService {
     final stored = await appSecureStorage.readAll();
     await _authService.init(stored);
     await _syncService.init(stored);
+    await _subscriptionService.init(signedIn: _authService.isAuthenticated);
     // Установки, где владелец данных ещё не записан: данные на устройстве
     // принадлежат вошедшему пользователю.
     final userId = _authService.userId;
     if (_authService.isAuthenticated && userId != null) {
       await _syncService.claimLocalData(userId);
+      unawaited(PurchaseService.instance.logIn(userId));
     }
   }
 
@@ -373,7 +397,8 @@ class ApiService {
   /// Разбирает распознанную фразу на черновики записей (сервер их не
   /// сохраняет). [currency] — валюта записи, если в фразе её нет; [locale] —
   /// язык интерфейса. Пустой список — в фразе нет ни одной суммы. Ошибки —
-  /// как есть: 429 `AI_QUOTA_EXCEEDED` (квота на сутки), 503, сеть.
+  /// как есть: 403 `PLAN_LIMIT_REACHED` (лимит тарифа), 429 (частота), 503,
+  /// сеть. Успешный разбор уменьшает остаток голоса в [subscription].
   Future<List<Transaction>> parseVoice({
     required String text,
     required String locale,
@@ -391,8 +416,10 @@ class ApiService {
         ),
         cancelToken: cancelToken,
       );
-      return VoiceDrafts.fromJson(
-          response.data['data'] as Map<String, dynamic>);
+      final drafts =
+          VoiceDrafts.fromJson(response.data['data'] as Map<String, dynamic>);
+      _subscriptionService.recordUse(PlanFeature.voice);
+      return drafts;
     } catch (e) {
       // Текст фразы в журнал не пишется: в нём траты пользователя
       AppLogger.e('[ApiService] Voice parse error', e);

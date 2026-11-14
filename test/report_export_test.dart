@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:getbalanceai_mobile/screens/paywall_screen.dart';
 import 'package:getbalanceai_mobile/cubits/report_export/report_export_cubit.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
@@ -621,6 +622,37 @@ void main() {
       await tester.pump();
       expect(formatChip(ReportFormat.csv).selected, isTrue);
       expect(formatChip(ReportFormat.pdf).selected, isFalse);
+    });
+
+    testWidgets('Free: «Скачать отчёт» открывает пейволл — и повторно тоже',
+        (tester) async {
+      EntitlementService.instance = EntitlementService(isPro: () => false);
+      addTearDown(() => EntitlementService.instance = EntitlementService());
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: AppTheme.lightTheme,
+          home: const Scaffold(
+            body: ReportExportAction(selectedMonth: 3, selectedYear: 2030),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Отчёт'));
+      await tester.pumpAndSettle();
+
+      final download = find.byKey(const ValueKey('report_download_button'));
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(download);
+        await tester.pumpAndSettle();
+        expect(find.byType(PaywallScreen), findsOneWidget);
+        expect(find.text('Выгрузка отчётов в CSV и PDF доступна в Pro.'),
+            findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('paywall_not_now')));
+        await tester.pumpAndSettle();
+        expect(find.byType(PaywallScreen), findsNothing);
+      }
     });
   });
 }

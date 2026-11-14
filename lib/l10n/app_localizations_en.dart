@@ -653,10 +653,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get report_empty_period => 'No transactions for the selected period';
 
   @override
-  String get report_feature_locked =>
-      'Report export is available with a subscription';
-
-  @override
   String get report_title => 'Financial report';
 
   @override
@@ -1234,4 +1230,225 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboard_empty_hint_voice =>
       'Tap + to add a record manually or hold it to dictate one';
+
+  @override
+  String get paywall_not_now => 'Not now';
+
+  @override
+  String get paywall_title => 'GetBalance Pro';
+
+  @override
+  String get paywall_subtitle => 'More AI insights and voice input';
+
+  @override
+  String paywall_reason_ai_report(String date) {
+    return 'You\'ve already used this month\'s free AI report. The next one is available on $date.';
+  }
+
+  @override
+  String get paywall_reason_voice =>
+      'You\'ve used today\'s free voice entries. More are available tomorrow.';
+
+  @override
+  String get paywall_reason_export =>
+      'Exporting reports to CSV and PDF is available in Pro.';
+
+  @override
+  String get plan_name_free => 'Free';
+
+  @override
+  String get plan_name_pro => 'Pro';
+
+  @override
+  String plan_feature_ai_report_daily(int count) {
+    return 'AI report — $count per day, updated when your data changes';
+  }
+
+  @override
+  String plan_feature_ai_report_monthly(int count) {
+    return 'AI report — $count per month';
+  }
+
+  @override
+  String plan_feature_voice_daily(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '$count entry',
+    );
+    return 'Voice input — $_temp0 per day';
+  }
+
+  @override
+  String get plan_feature_export => 'Report export to CSV and PDF';
+
+  @override
+  String get plan_feature_basics => 'Tracking, budgets and sync';
+
+  @override
+  String get paywall_period_month => 'Month';
+
+  @override
+  String get paywall_period_year => 'Year';
+
+  @override
+  String paywall_price_month(String price) {
+    return '$price per month';
+  }
+
+  @override
+  String paywall_price_year(String price) {
+    return '$price per year';
+  }
+
+  @override
+  String paywall_year_discount(int percent) {
+    return '−$percent%';
+  }
+
+  @override
+  String paywall_start_trial(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '$days day',
+    );
+    return '$_temp0 free';
+  }
+
+  @override
+  String get paywall_subscribe => 'Subscribe';
+
+  @override
+  String paywall_terms_trial(int days, String price) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '$days day',
+    );
+    return 'Free for $_temp0, then $price. The subscription renews automatically; you can cancel it in Google Play at any time.';
+  }
+
+  @override
+  String paywall_terms(String price) {
+    return '$price. The subscription renews automatically; you can cancel it in Google Play at any time.';
+  }
+
+  @override
+  String get paywall_sign_in => 'Sign in to get Pro';
+
+  @override
+  String get paywall_prices_unavailable =>
+      'Couldn\'t load prices. Check your internet connection and try again.';
+
+  @override
+  String get paywall_retry => 'Try again';
+
+  @override
+  String get restore_purchases => 'Restore purchases';
+
+  @override
+  String get subscription_checking => 'Checking your purchase…';
+
+  @override
+  String get subscription_activated => 'Pro is active. Thank you!';
+
+  @override
+  String get subscription_pending_sync =>
+      'Purchase complete. Pro will be activated within a few minutes.';
+
+  @override
+  String get subscription_payment_pending =>
+      'The payment is pending. Pro will be activated once Google Play confirms it.';
+
+  @override
+  String get subscription_other_account =>
+      'The subscription on this Google Play account belongs to another GetBalance account. Sign in to that account to use Pro.';
+
+  @override
+  String get subscription_purchase_failed =>
+      'Couldn\'t complete the purchase. Please try again.';
+
+  @override
+  String get subscription_restored => 'Purchases restored: Pro is active.';
+
+  @override
+  String get subscription_restore_none =>
+      'No active subscription found for this account. If you got Pro under another GetBalance account, sign in to it.';
+
+  @override
+  String get subscription_restore_failed =>
+      'Couldn\'t restore purchases. Please try again.';
+
+  @override
+  String get profile_subscription_section => 'Subscription';
+
+  @override
+  String get subscription_plan => 'Plan';
+
+  @override
+  String subscription_renews_on(String date) {
+    return 'Renews on $date';
+  }
+
+  @override
+  String subscription_ends_on(String date) {
+    return 'Active until $date';
+  }
+
+  @override
+  String subscription_trial_until(String date) {
+    return 'Free trial until $date';
+  }
+
+  @override
+  String subscription_limit_ai_report_month(int remaining, int limit) {
+    return 'AI report: $remaining of $limit left this month';
+  }
+
+  @override
+  String subscription_limit_ai_report_day(int remaining, int limit) {
+    return 'AI report: $remaining of $limit left today';
+  }
+
+  @override
+  String subscription_limit_voice_day(int remaining, int limit) {
+    return 'Voice input: $remaining of $limit left today';
+  }
+
+  @override
+  String get subscription_get_pro => 'Get Pro';
+
+  @override
+  String get subscription_manage => 'Manage in Google Play';
+
+  @override
+  String get insights_get_report_btn => 'Get report';
+
+  @override
+  String insights_free_limit_caption(int count) {
+    return '$count per month on the free plan';
+  }
+
+  @override
+  String get insights_outdated_upgrade => 'Report updates are in Pro';
+
+  @override
+  String get delete_account_subscription_title => 'Pro subscription is active';
+
+  @override
+  String get delete_account_subscription_warning =>
+      'Deleting your account doesn\'t cancel the subscription: it will renew and you\'ll keep being charged. Cancel it in Google Play.';
+
+  @override
+  String get delete_account_subscription_open_store => 'Open Google Play';
+
+  @override
+  String get delete_account_subscription_continue => 'Continue deleting';
+
+  @override
+  String get plan_limit_reached => 'You\'ve reached the limit on your plan';
 }

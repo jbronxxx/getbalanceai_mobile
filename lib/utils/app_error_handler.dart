@@ -188,6 +188,9 @@ class AppErrorHandler {
     if (response != null) {
       final data = response.data;
       final code = data is Map ? data['code'] ?? data['status'] : null;
+      if (code == 'PLAN_LIMIT_REACHED') {
+        return LanguageManager.l10n.plan_limit_reached;
+      }
       if (code == 'RATE_LIMIT_EXCEEDED' || response.statusCode == 429) {
         return LanguageManager.l10n.http_429;
       }

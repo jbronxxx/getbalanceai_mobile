@@ -48,6 +48,9 @@ class AuthApiService {
   /// Статус соглашения и политики из профиля; `null` — сессия очищена.
   final void Function(LegalStatus? status)? _onLegalStatus;
 
+  /// Тариф и лимиты из профиля; `null` — сессия очищена.
+  final void Function(PlanStatus? status)? _onPlanStatus;
+
   String? _userId;
   String? _userName;
   String? _email;
@@ -58,10 +61,12 @@ class AuthApiService {
     FlutterSecureStorage storage = appSecureStorage,
     Future<void> Function(String userId)? onSignIn,
     void Function(LegalStatus? status)? onLegalStatus,
+    void Function(PlanStatus? status)? onPlanStatus,
   })  : _dio = dio,
         _storage = storage,
         _onSignIn = onSignIn,
-        _onLegalStatus = onLegalStatus;
+        _onLegalStatus = onLegalStatus,
+        _onPlanStatus = onPlanStatus;
 
   Stream<bool> get authStream => _authStream.stream;
   String? get token => _token;
@@ -218,6 +223,7 @@ class AuthApiService {
     _email = null;
     _avatarUrl = null;
     _onLegalStatus?.call(null);
+    _onPlanStatus?.call(null);
 
     try {
       await _deleteTokens();
@@ -337,6 +343,10 @@ class AuthApiService {
     if (!profileApplied) await _fetchAndSaveUserProfile();
 
     _authStream.add(true);
+    // Ответ входа приходит без тарифа: он — из полного профиля, вход его не ждёт
+    if (profileApplied && profile?.plan == null) {
+      unawaited(_fetchAndSaveUserProfile());
+    }
   }
 
   Future<void> _applyProfile(AuthMeResponseModel profile) async {
@@ -346,6 +356,8 @@ class AuthApiService {
     await setAvatarUrl(profile.avatarUrl);
     final legal = profile.legal;
     if (legal != null) _onLegalStatus?.call(legal);
+    final plan = profile.plan;
+    if (plan != null) _onPlanStatus?.call(plan);
     final baseCurrency = profile.baseCurrency;
     if (baseCurrency != null) {
       final currency =
@@ -356,7 +368,8 @@ class AuthApiService {
   }
 
   /// Перечитывает профиль с сервера (при запуске — чтобы узнать о новой
-  /// версии соглашения). Ошибки только пишутся в журнал.
+  /// версии соглашения, тарифе и остатках лимитов). Ошибки только пишутся в
+  /// журнал.
   Future<void> refreshProfile() async {
     if (isAuthenticated) await _fetchAndSaveUserProfile();
   }

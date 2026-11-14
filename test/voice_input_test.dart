@@ -11,6 +11,7 @@ import 'package:getbalanceai_mobile/config/environment.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/screens/add_transaction_sheet.dart';
 import 'package:getbalanceai_mobile/screens/dashboard_screen.dart';
+import 'package:getbalanceai_mobile/screens/paywall_screen.dart';
 import 'package:getbalanceai_mobile/screens/voice_input_flow.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/services/speech_input_service.dart';
@@ -292,12 +293,19 @@ void main() {
       closed = false;
     });
 
-    Future<void> open(WidgetTester tester) async {
+    Future<void> open(
+      WidgetTester tester, {
+      void Function(NavigatorState navigator)? onFreeLimitReached,
+    }) async {
       await tester.pumpWidget(host((context) async {
-        result = await VoiceListeningSheet.show(context, parse: (phrase) {
-          parsed.add(phrase);
-          return parseResult(phrase);
-        });
+        result = await VoiceListeningSheet.show(
+          context,
+          parse: (phrase) {
+            parsed.add(phrase);
+            return parseResult(phrase);
+          },
+          onFreeLimitReached: onFreeLimitReached,
+        );
         closed = true;
       }));
       await tester.tap(find.text('open'));
@@ -405,24 +413,55 @@ void main() {
       expect(closed, isFalse);
     });
 
-    DioException serverError(int status, String code) => DioException(
+    DioException serverError(int status, String code,
+            {Map<String, dynamic>? details}) =>
+        DioException(
           requestOptions: RequestOptions(path: '/voice/parse'),
           response: Response(
             requestOptions: RequestOptions(path: '/voice/parse'),
             statusCode: status,
-            data: {'status': 'error', 'code': code, 'message': 'текст сервера'},
+            data: {
+              'status': 'error',
+              'code': code,
+              'message': 'текст сервера',
+              if (details != null) 'details': details,
+            },
           ),
         );
 
-    testWidgets('квота на сутки — без повтора, текст сервера не показан',
+    DioException planLimit(String plan) =>
+        serverError(403, 'PLAN_LIMIT_REACHED', details: {
+          'feature': 'voice',
+          'plan': plan,
+          'limit': plan == 'pro' ? 30 : 5,
+          'period': 'day',
+          'resets_at': '2026-11-15T00:00:00Z',
+        });
+
+    testWidgets('лимит Pro на сутки — без повтора, текст сервера не показан',
         (tester) async {
-      parseResult = (_) async => throw serverError(429, 'AI_QUOTA_EXCEEDED');
-      await open(tester);
+      NavigatorState? paywallNavigator;
+      parseResult = (_) async => throw planLimit('pro');
+      await open(tester, onFreeLimitReached: (n) => paywallNavigator = n);
       speech.say('кофе 4 евро', isFinal: true);
       await settle(tester);
       expect(message(tester), startsWith('Лимит голосового ввода'));
       expect(find.byKey(const ValueKey('voice_retry')), findsNothing);
       expect(find.textContaining('текст сервера'), findsNothing);
+      expect(paywallNavigator, isNull);
+    });
+
+    testWidgets('лимит Free — шторка закрывается и открывается пейволл',
+        (tester) async {
+      NavigatorState? paywallNavigator;
+      parseResult = (_) async => throw planLimit('free');
+      await open(tester, onFreeLimitReached: (n) => paywallNavigator = n);
+      speech.say('кофе 4 евро', isFinal: true);
+      await settle(tester);
+      expect(closed, isTrue);
+      expect(result, isNull);
+      expect(find.byType(VoiceListeningSheet), findsNothing);
+      expect(paywallNavigator, isNotNull);
     });
 
     testWidgets('ИИ недоступен (503) — с повтором', (tester) async {
@@ -503,6 +542,44 @@ void main() {
       await tester.tap(find.text('open'));
       await settle(tester);
     }
+
+    group('остаток голоса 0 — запись не начинается', () {
+      final subscription = ApiService.instance.subscription;
+      tearDown(() => subscription.update(null));
+
+      Future<void> exhaust(PlanCode plan) => subscription.update(PlanStatus(
+            subscription: SubscriptionStatus(plan: plan),
+            limits: {
+              PlanFeature.voice: FeatureLimit(
+                feature: PlanFeature.voice,
+                period: LimitPeriod.day,
+                limit: 5,
+                used: 5,
+                remaining: 0,
+                resetsAt: DateTime.now().toUtc().add(const Duration(hours: 3)),
+              ),
+            },
+          ));
+
+      testWidgets('Free — пейволл', (tester) async {
+        await exhaust(PlanCode.free);
+        await start(tester);
+        expect(find.byType(VoiceListeningSheet), findsNothing);
+        expect(speech.listenCalls, 0);
+        expect(find.byType(PaywallScreen), findsOneWidget);
+        expect(find.text(LanguageManager.l10n.paywall_reason_voice),
+            findsOneWidget);
+      });
+
+      testWidgets('Pro — сообщение о лимите', (tester) async {
+        await exhaust(PlanCode.pro);
+        await start(tester);
+        expect(find.byType(VoiceListeningSheet), findsNothing);
+        expect(find.byType(PaywallScreen), findsNothing);
+        expect(
+            find.text(LanguageManager.l10n.voice_error_quota), findsOneWidget);
+      });
+    });
 
     testWidgets('гость — тост «после входа», шторка не открывается',
         (tester) async {

@@ -233,7 +233,9 @@
   "legal_effective_date": "Effective date: {date}",
   "@legal_effective_date": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "legal_whats_changed": "What's changed",
@@ -268,7 +270,6 @@
   "report_saved": "Report saved",
   "report_export_error": "Could not create the report",
   "report_empty_period": "No transactions for the selected period",
-  "report_feature_locked": "Report export is available with a subscription",
   "report_title": "Financial report",
   "report_generated_at": "Generated",
   "report_summary": "Summary",
@@ -643,5 +644,189 @@
   "voice_fab_long_press_hint": "dictate a record",
   "voice_coach_mark": "Hold the button to dictate a record",
   "dashboard_empty_hint": "Tap + to add a record",
-  "dashboard_empty_hint_voice": "Tap + to add a record manually or hold it to dictate one"
+  "dashboard_empty_hint_voice": "Tap + to add a record manually or hold it to dictate one",
+  "paywall_not_now": "Not now",
+  "paywall_title": "GetBalance Pro",
+  "paywall_subtitle": "More AI insights and voice input",
+  "paywall_reason_ai_report": "You've already used this month's free AI report. The next one is available on {date}.",
+  "@paywall_reason_ai_report": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "paywall_reason_voice": "You've used today's free voice entries. More are available tomorrow.",
+  "paywall_reason_export": "Exporting reports to CSV and PDF is available in Pro.",
+  "plan_name_free": "Free",
+  "plan_name_pro": "Pro",
+  "plan_feature_ai_report_daily": "AI report — {count} per day, updated when your data changes",
+  "@plan_feature_ai_report_daily": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plan_feature_ai_report_monthly": "AI report — {count} per month",
+  "@plan_feature_ai_report_monthly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plan_feature_voice_daily": "Voice input — {count, plural, one{{count} entry} other{{count} entries}} per day",
+  "@plan_feature_voice_daily": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plan_feature_export": "Report export to CSV and PDF",
+  "plan_feature_basics": "Tracking, budgets and sync",
+  "paywall_period_month": "Month",
+  "paywall_period_year": "Year",
+  "paywall_price_month": "{price} per month",
+  "@paywall_price_month": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywall_price_year": "{price} per year",
+  "@paywall_price_year": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywall_year_discount": "−{percent}%",
+  "@paywall_year_discount": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "paywall_start_trial": "{days, plural, one{{days} day} other{{days} days}} free",
+  "@paywall_start_trial": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "paywall_subscribe": "Subscribe",
+  "paywall_terms_trial": "Free for {days, plural, one{{days} day} other{{days} days}}, then {price}. The subscription renews automatically; you can cancel it in Google Play at any time.",
+  "@paywall_terms_trial": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywall_terms": "{price}. The subscription renews automatically; you can cancel it in Google Play at any time.",
+  "@paywall_terms": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywall_sign_in": "Sign in to get Pro",
+  "paywall_prices_unavailable": "Couldn't load prices. Check your internet connection and try again.",
+  "paywall_retry": "Try again",
+  "restore_purchases": "Restore purchases",
+  "subscription_checking": "Checking your purchase…",
+  "subscription_activated": "Pro is active. Thank you!",
+  "subscription_pending_sync": "Purchase complete. Pro will be activated within a few minutes.",
+  "subscription_payment_pending": "The payment is pending. Pro will be activated once Google Play confirms it.",
+  "subscription_other_account": "The subscription on this Google Play account belongs to another GetBalance account. Sign in to that account to use Pro.",
+  "subscription_purchase_failed": "Couldn't complete the purchase. Please try again.",
+  "subscription_restored": "Purchases restored: Pro is active.",
+  "subscription_restore_none": "No active subscription found for this account. If you got Pro under another GetBalance account, sign in to it.",
+  "subscription_restore_failed": "Couldn't restore purchases. Please try again.",
+  "profile_subscription_section": "Subscription",
+  "subscription_plan": "Plan",
+  "subscription_renews_on": "Renews on {date}",
+  "@subscription_renews_on": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscription_ends_on": "Active until {date}",
+  "@subscription_ends_on": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscription_trial_until": "Free trial until {date}",
+  "@subscription_trial_until": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscription_limit_ai_report_month": "AI report: {remaining} of {limit} left this month",
+  "@subscription_limit_ai_report_month": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "subscription_limit_ai_report_day": "AI report: {remaining} of {limit} left today",
+  "@subscription_limit_ai_report_day": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "subscription_limit_voice_day": "Voice input: {remaining} of {limit} left today",
+  "@subscription_limit_voice_day": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "subscription_get_pro": "Get Pro",
+  "subscription_manage": "Manage in Google Play",
+  "insights_get_report_btn": "Get report",
+  "insights_free_limit_caption": "{count} per month on the free plan",
+  "@insights_free_limit_caption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "insights_outdated_upgrade": "Report updates are in Pro",
+  "delete_account_subscription_title": "Pro subscription is active",
+  "delete_account_subscription_warning": "Deleting your account doesn't cancel the subscription: it will renew and you'll keep being charged. Cancel it in Google Play.",
+  "delete_account_subscription_open_store": "Open Google Play",
+  "delete_account_subscription_continue": "Continue deleting",
+  "plan_limit_reached": "You've reached the limit on your plan"
 }
