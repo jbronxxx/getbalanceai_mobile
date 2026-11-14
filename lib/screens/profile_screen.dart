@@ -167,6 +167,10 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       isAuthenticated: isAuthenticated,
                     ),
                     const SizedBox(height: 32),
+                    _buildSectionHeader(
+                        context.l10n.profile_subscription_section),
+                    ProfileSubscriptionCard(isAuthenticated: isAuthenticated),
+                    const SizedBox(height: 24),
                     _buildSectionHeader(context.l10n.cloud),
                     ProfileSyncCard(
                       isAuthenticated: isAuthenticated,

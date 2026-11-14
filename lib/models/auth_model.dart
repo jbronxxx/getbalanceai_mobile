@@ -1,4 +1,5 @@
 import 'legal_model.dart';
+import 'plan_model.dart';
 
 class AuthMeResponseModel {
   final String id;
@@ -10,6 +11,9 @@ class AuthMeResponseModel {
   /// Статус соглашения и политики; `null` — сервер его не прислал.
   final LegalStatus? legal;
 
+  /// Тариф и лимиты; `null` — сервер их не прислал (ответ входа).
+  final PlanStatus? plan;
+
   AuthMeResponseModel({
     required this.id,
     required this.userEmail,
@@ -17,6 +21,7 @@ class AuthMeResponseModel {
     this.avatarUrl,
     this.baseCurrency,
     this.legal,
+    this.plan,
   });
 
   factory AuthMeResponseModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +36,7 @@ class AuthMeResponseModel {
       legal: data['legal'] is Map<String, dynamic>
           ? LegalStatus.fromJson(data['legal'] as Map<String, dynamic>)
           : null,
+      plan: PlanStatus.fromProfile(data as Map<String, dynamic>),
     );
   }
 }

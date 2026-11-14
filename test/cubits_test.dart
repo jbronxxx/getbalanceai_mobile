@@ -10,6 +10,8 @@ import 'package:getbalanceai_mobile/cubits/insights/insights_cubit.dart';
 import 'package:getbalanceai_mobile/cubits/profile/profile_cubit.dart';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/services/entitlement_service.dart';
+import 'package:getbalanceai_mobile/services/subscription_api_service.dart';
 import 'package:getbalanceai_mobile/services/local_db_service.dart';
 import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
@@ -44,6 +46,8 @@ void main() {
     authStreamController = StreamController<bool>.broadcast();
     when(() => api.authStream).thenAnswer((_) => authStreamController.stream);
     when(() => api.isAuthenticated).thenReturn(false);
+    when(() => api.subscription).thenReturn(SubscriptionApiService(
+        dio: Dio(), authOptions: ([String? token]) => Options()));
     when(() => connectivity.checkConnectivity())
         .thenAnswer((_) async => [ConnectivityResult.wifi]);
   });
@@ -54,8 +58,12 @@ void main() {
   });
 
   group('InsightsCubit', () {
-    InsightsCubit build() =>
-        InsightsCubit(api: api, connectivity: connectivity);
+    // Pro: текущий месяц строится сам (правила Free — в insights_test)
+    InsightsCubit build() => InsightsCubit(
+          api: api,
+          connectivity: connectivity,
+          entitlements: EntitlementService(isPro: () => true),
+        );
 
     blocTest<InsightsCubit, InsightsState>(
       'reacts to authStream emitting false by emitting InsightsUnauthenticated',

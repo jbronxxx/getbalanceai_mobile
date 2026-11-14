@@ -1310,12 +1310,6 @@ abstract class AppLocalizations {
   /// **'No transactions for the selected period'**
   String get report_empty_period;
 
-  /// No description provided for @report_feature_locked.
-  ///
-  /// In en, this message translates to:
-  /// **'Report export is available with a subscription'**
-  String get report_feature_locked;
-
   /// No description provided for @report_title.
   ///
   /// In en, this message translates to:
@@ -2233,6 +2227,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap + to add a record manually or hold it to dictate one'**
   String get dashboard_empty_hint_voice;
+
+  /// No description provided for @paywall_not_now.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get paywall_not_now;
+
+  /// No description provided for @paywall_title.
+  ///
+  /// In en, this message translates to:
+  /// **'GetBalance Pro'**
+  String get paywall_title;
+
+  /// No description provided for @paywall_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More AI insights and voice input'**
+  String get paywall_subtitle;
+
+  /// No description provided for @paywall_reason_ai_report.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve already used this month\'s free AI report. The next one is available on {date}.'**
+  String paywall_reason_ai_report(String date);
+
+  /// No description provided for @paywall_reason_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used today\'s free voice entries. More are available tomorrow.'**
+  String get paywall_reason_voice;
+
+  /// No description provided for @paywall_reason_export.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting reports to CSV and PDF is available in Pro.'**
+  String get paywall_reason_export;
+
+  /// No description provided for @plan_name_free.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get plan_name_free;
+
+  /// No description provided for @plan_name_pro.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get plan_name_pro;
+
+  /// No description provided for @plan_feature_ai_report_daily.
+  ///
+  /// In en, this message translates to:
+  /// **'AI report — {count} per day, updated when your data changes'**
+  String plan_feature_ai_report_daily(int count);
+
+  /// No description provided for @plan_feature_ai_report_monthly.
+  ///
+  /// In en, this message translates to:
+  /// **'AI report — {count} per month'**
+  String plan_feature_ai_report_monthly(int count);
+
+  /// No description provided for @plan_feature_voice_daily.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input — {count, plural, one{{count} entry} other{{count} entries}} per day'**
+  String plan_feature_voice_daily(int count);
+
+  /// No description provided for @plan_feature_export.
+  ///
+  /// In en, this message translates to:
+  /// **'Report export to CSV and PDF'**
+  String get plan_feature_export;
+
+  /// No description provided for @plan_feature_basics.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking, budgets and sync'**
+  String get plan_feature_basics;
+
+  /// No description provided for @paywall_period_month.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get paywall_period_month;
+
+  /// No description provided for @paywall_period_year.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get paywall_period_year;
+
+  /// No description provided for @paywall_price_month.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} per month'**
+  String paywall_price_month(String price);
+
+  /// No description provided for @paywall_price_year.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} per year'**
+  String paywall_price_year(String price);
+
+  /// No description provided for @paywall_year_discount.
+  ///
+  /// In en, this message translates to:
+  /// **'−{percent}%'**
+  String paywall_year_discount(int percent);
+
+  /// No description provided for @paywall_start_trial.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{{days} day} other{{days} days}} free'**
+  String paywall_start_trial(int days);
+
+  /// No description provided for @paywall_subscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe'**
+  String get paywall_subscribe;
+
+  /// No description provided for @paywall_terms_trial.
+  ///
+  /// In en, this message translates to:
+  /// **'Free for {days, plural, one{{days} day} other{{days} days}}, then {price}. The subscription renews automatically; you can cancel it in Google Play at any time.'**
+  String paywall_terms_trial(int days, String price);
+
+  /// No description provided for @paywall_terms.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}. The subscription renews automatically; you can cancel it in Google Play at any time.'**
+  String paywall_terms(String price);
+
+  /// No description provided for @paywall_sign_in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to get Pro'**
+  String get paywall_sign_in;
+
+  /// No description provided for @paywall_prices_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load prices. Check your internet connection and try again.'**
+  String get paywall_prices_unavailable;
+
+  /// No description provided for @paywall_retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get paywall_retry;
+
+  /// No description provided for @restore_purchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get restore_purchases;
+
+  /// No description provided for @subscription_checking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your purchase…'**
+  String get subscription_checking;
+
+  /// No description provided for @subscription_activated.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro is active. Thank you!'**
+  String get subscription_activated;
+
+  /// No description provided for @subscription_pending_sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase complete. Pro will be activated within a few minutes.'**
+  String get subscription_pending_sync;
+
+  /// No description provided for @subscription_payment_pending.
+  ///
+  /// In en, this message translates to:
+  /// **'The payment is pending. Pro will be activated once Google Play confirms it.'**
+  String get subscription_payment_pending;
+
+  /// No description provided for @subscription_other_account.
+  ///
+  /// In en, this message translates to:
+  /// **'The subscription on this Google Play account belongs to another GetBalance account. Sign in to that account to use Pro.'**
+  String get subscription_other_account;
+
+  /// No description provided for @subscription_purchase_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t complete the purchase. Please try again.'**
+  String get subscription_purchase_failed;
+
+  /// No description provided for @subscription_restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases restored: Pro is active.'**
+  String get subscription_restored;
+
+  /// No description provided for @subscription_restore_none.
+  ///
+  /// In en, this message translates to:
+  /// **'No active subscription found for this account. If you got Pro under another GetBalance account, sign in to it.'**
+  String get subscription_restore_none;
+
+  /// No description provided for @subscription_restore_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t restore purchases. Please try again.'**
+  String get subscription_restore_failed;
+
+  /// No description provided for @profile_subscription_section.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get profile_subscription_section;
+
+  /// No description provided for @subscription_plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get subscription_plan;
+
+  /// No description provided for @subscription_renews_on.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews on {date}'**
+  String subscription_renews_on(String date);
+
+  /// No description provided for @subscription_ends_on.
+  ///
+  /// In en, this message translates to:
+  /// **'Active until {date}'**
+  String subscription_ends_on(String date);
+
+  /// No description provided for @subscription_trial_until.
+  ///
+  /// In en, this message translates to:
+  /// **'Free trial until {date}'**
+  String subscription_trial_until(String date);
+
+  /// No description provided for @subscription_limit_ai_report_month.
+  ///
+  /// In en, this message translates to:
+  /// **'AI report: {remaining} of {limit} left this month'**
+  String subscription_limit_ai_report_month(int remaining, int limit);
+
+  /// No description provided for @subscription_limit_ai_report_day.
+  ///
+  /// In en, this message translates to:
+  /// **'AI report: {remaining} of {limit} left today'**
+  String subscription_limit_ai_report_day(int remaining, int limit);
+
+  /// No description provided for @subscription_limit_voice_day.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input: {remaining} of {limit} left today'**
+  String subscription_limit_voice_day(int remaining, int limit);
+
+  /// No description provided for @subscription_get_pro.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Pro'**
+  String get subscription_get_pro;
+
+  /// No description provided for @subscription_manage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage in Google Play'**
+  String get subscription_manage;
+
+  /// No description provided for @insights_get_report_btn.
+  ///
+  /// In en, this message translates to:
+  /// **'Get report'**
+  String get insights_get_report_btn;
+
+  /// No description provided for @insights_free_limit_caption.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} per month on the free plan'**
+  String insights_free_limit_caption(int count);
+
+  /// No description provided for @insights_outdated_upgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Report updates are in Pro'**
+  String get insights_outdated_upgrade;
+
+  /// No description provided for @delete_account_subscription_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro subscription is active'**
+  String get delete_account_subscription_title;
+
+  /// No description provided for @delete_account_subscription_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account doesn\'t cancel the subscription: it will renew and you\'ll keep being charged. Cancel it in Google Play.'**
+  String get delete_account_subscription_warning;
+
+  /// No description provided for @delete_account_subscription_open_store.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Google Play'**
+  String get delete_account_subscription_open_store;
+
+  /// No description provided for @delete_account_subscription_continue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue deleting'**
+  String get delete_account_subscription_continue;
+
+  /// No description provided for @plan_limit_reached.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the limit on your plan'**
+  String get plan_limit_reached;
 }
 
 class _AppLocalizationsDelegate

@@ -231,6 +231,8 @@ void main() {
       authController = StreamController<bool>.broadcast();
       when(() => api.authStream).thenAnswer((_) => authController.stream);
       when(() => api.isAuthenticated).thenReturn(true);
+      when(() => api.subscription).thenReturn(SubscriptionApiService(
+          dio: Dio(), authOptions: ([String? token]) => Options()));
       when(() => connectivity.checkConnectivity())
           .thenAnswer((_) async => [ConnectivityResult.wifi]);
       stubBackend();
@@ -243,7 +245,12 @@ void main() {
     }
 
     InsightsCubit buildCubit() {
-      final cubit = InsightsCubit(api: api, connectivity: connectivity);
+      // Pro: текущий месяц строится сам
+      final cubit = InsightsCubit(
+        api: api,
+        connectivity: connectivity,
+        entitlements: EntitlementService(isPro: () => true),
+      );
       addTearDown(cubit.close);
       return cubit;
     }

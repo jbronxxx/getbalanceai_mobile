@@ -1,21 +1,31 @@
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
 import '../../theme/app_colors.dart';
+import '../whole_words_text.dart';
 
 /// Карточка «отчёт за месяц ещё не сформирован» с кнопкой генерации.
 ///
-/// Генерация — платный запрос к AI, поэтому для нетекущих месяцев она
-/// запускается только по явному нажатию.
+/// Генерация — платный запрос к AI, поэтому для нетекущих месяцев (а на
+/// Free — для любого) она запускается только по явному нажатию. На Free —
+/// «Получить отчёт» с подписью о лимите ([freeReportsPerMonth]).
 class InsightsGenerateCard extends StatelessWidget {
   final VoidCallback onGenerate;
 
-  const InsightsGenerateCard({super.key, required this.onGenerate});
+  /// Отчётов в месяц на бесплатном тарифе; `null` — Pro.
+  final int? freeReportsPerMonth;
+
+  const InsightsGenerateCard({
+    super.key,
+    required this.onGenerate,
+    this.freeReportsPerMonth,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final freeReports = freeReportsPerMonth;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -65,9 +75,24 @@ class InsightsGenerateCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: Text(context.l10n.insights_generate_btn),
+              child: Text(freeReports != null
+                  ? context.l10n.insights_get_report_btn
+                  : context.l10n.insights_generate_btn),
             ),
           ),
+          if (freeReports != null) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: WholeWordsText(
+                context.l10n.insights_free_limit_caption(freeReports),
+                key: const ValueKey('insights_free_limit_caption'),
+                textAlign: TextAlign.center,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.outline,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

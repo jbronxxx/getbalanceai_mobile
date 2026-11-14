@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/insights/insights_cubit.dart';
-import '../models/month_period.dart';
+import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
 import '../widgets/insights/expense_structure_section.dart';
@@ -13,6 +15,7 @@ import '../widgets/insights/report_export_action.dart';
 import '../widgets/period/period.dart';
 import '../widgets/widgets.dart';
 import '../theme/theme.dart';
+import 'paywall_screen.dart';
 
 /// Экран AI-инсайтов и выгрузки отчёта за месяц в CSV/PDF (кнопка в шапке).
 class InsightsScreen extends StatefulWidget {
@@ -32,6 +35,7 @@ class InsightsScreen extends StatefulWidget {
 class _InsightsScreenState extends State<InsightsScreen> {
   late InsightsCubit _cubit;
   bool _isLocalCubit = false;
+  StreamSubscription<PlanLimitReached>? _limitSub;
 
   @override
   void initState() {
@@ -47,9 +51,20 @@ class _InsightsScreenState extends State<InsightsScreen> {
       _isLocalCubit = true;
     }
     SelectedPeriodService.instance.periodNotifier.addListener(_onPeriodChanged);
+    _limitSub = _cubit.limitReached.listen(_onLimitReached);
 
     _cubit.setActive(widget.isActive);
     if (widget.isActive) _activate();
+  }
+
+  /// Лимит ИИ-отчёта исчерпан: Free — пейволл, Pro — новый отчёт завтра.
+  void _onLimitReached(PlanLimitReached reached) {
+    if (!mounted) return;
+    if (reached.plan == PlanCode.free) {
+      PaywallScreen.showForLimit(context, reached);
+    } else {
+      AppAlerts.info(context, context.l10n.insights_outdated_tomorrow);
+    }
   }
 
   /// Период меняется на любой вкладке, но запрос к AI уходит только при
@@ -79,6 +94,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
         _isLocalCubit = false;
       }
       _cubit = widget.cubit!;
+      unawaited(_limitSub?.cancel());
+      _limitSub = _cubit.limitReached.listen(_onLimitReached);
     }
     _cubit.setActive(widget.isActive);
     if (widget.isActive && !oldWidget.isActive) {
@@ -90,6 +107,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
   void dispose() {
     SelectedPeriodService.instance.periodNotifier
         .removeListener(_onPeriodChanged);
+    unawaited(_limitSub?.cancel());
     if (_isLocalCubit) {
       _cubit.close();
     }
@@ -187,7 +205,8 @@ class _InsightsBody extends StatelessWidget {
     }
     if (state is InsightsAwaitingRequest) {
       return InsightsGenerateCard(
-        onGenerate: () => context.read<InsightsCubit>().loadInsights(),
+        freeReportsPerMonth: state.freeReportsPerMonth,
+        onGenerate: () => context.read<InsightsCubit>().requestReport(),
       );
     }
     if (state is InsightsNetworkError) {
@@ -210,8 +229,11 @@ class _InsightsBody extends StatelessWidget {
         children: [
           if (state.isOutdated)
             InsightsOutdatedNote(
-              onRefresh: state.canRefresh
-                  ? () => cubit.loadInsights(force: true)
+              onRefresh: state.refresh == InsightsRefresh.available
+                  ? cubit.requestReport
+                  : null,
+              onUpgrade: state.refresh == InsightsRefresh.proOnly
+                  ? () => PaywallScreen.show(context)
                   : null,
             ),
           for (final insight in state.insights) InsightCard(text: insight),

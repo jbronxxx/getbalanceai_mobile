@@ -652,9 +652,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get report_empty_period => 'Нет операций за выбранный период';
 
   @override
-  String get report_feature_locked => 'Выгрузка отчётов доступна по подписке';
-
-  @override
   String get report_title => 'Финансовый отчёт';
 
   @override
@@ -1245,4 +1242,228 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get dashboard_empty_hint_voice =>
       'Нажмите + для ручного ввода или зажмите для голосового создания';
+
+  @override
+  String get paywall_not_now => 'Не сейчас';
+
+  @override
+  String get paywall_title => 'GetBalance Pro';
+
+  @override
+  String get paywall_subtitle => 'Больше ИИ-аналитики и голосового ввода';
+
+  @override
+  String paywall_reason_ai_report(String date) {
+    return 'Бесплатный ИИ-отчёт в этом месяце уже получен. Следующий — $date.';
+  }
+
+  @override
+  String get paywall_reason_voice =>
+      'Бесплатные голосовые записи на сегодня закончились. Новые — завтра.';
+
+  @override
+  String get paywall_reason_export =>
+      'Выгрузка отчётов в CSV и PDF доступна в Pro.';
+
+  @override
+  String get plan_name_free => 'Бесплатный';
+
+  @override
+  String get plan_name_pro => 'Pro';
+
+  @override
+  String plan_feature_ai_report_daily(int count) {
+    return 'ИИ-отчёт — $count в сутки, обновляется после изменения данных';
+  }
+
+  @override
+  String plan_feature_ai_report_monthly(int count) {
+    return 'ИИ-отчёт — $count в месяц';
+  }
+
+  @override
+  String plan_feature_voice_daily(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count записей',
+      few: '$count записи',
+      one: '$count запись',
+    );
+    return 'Голосовой ввод — $_temp0 в сутки';
+  }
+
+  @override
+  String get plan_feature_export => 'Выгрузка отчётов в CSV и PDF';
+
+  @override
+  String get plan_feature_basics => 'Учёт, бюджеты и синхронизация';
+
+  @override
+  String get paywall_period_month => 'Месяц';
+
+  @override
+  String get paywall_period_year => 'Год';
+
+  @override
+  String paywall_price_month(String price) {
+    return '$price в месяц';
+  }
+
+  @override
+  String paywall_price_year(String price) {
+    return '$price в год';
+  }
+
+  @override
+  String paywall_year_discount(int percent) {
+    return '−$percent%';
+  }
+
+  @override
+  String paywall_start_trial(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return '$_temp0 бесплатно';
+  }
+
+  @override
+  String get paywall_subscribe => 'Оформить';
+
+  @override
+  String paywall_terms_trial(int days, String price) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return 'Бесплатно $_temp0, затем $price. Подписка продлевается автоматически, отменить её можно в Google Play в любой момент.';
+  }
+
+  @override
+  String paywall_terms(String price) {
+    return '$price. Подписка продлевается автоматически, отменить её можно в Google Play в любой момент.';
+  }
+
+  @override
+  String get paywall_sign_in => 'Войдите, чтобы оформить Pro';
+
+  @override
+  String get paywall_prices_unavailable =>
+      'Не удалось загрузить цены. Проверьте интернет и попробуйте ещё раз.';
+
+  @override
+  String get paywall_retry => 'Повторить';
+
+  @override
+  String get restore_purchases => 'Восстановить покупки';
+
+  @override
+  String get subscription_checking => 'Проверяем покупку…';
+
+  @override
+  String get subscription_activated => 'Pro оформлен. Спасибо!';
+
+  @override
+  String get subscription_pending_sync =>
+      'Покупка прошла. Pro включится в течение нескольких минут.';
+
+  @override
+  String get subscription_payment_pending =>
+      'Платёж ожидает подтверждения. Pro включится, когда Google Play его подтвердит.';
+
+  @override
+  String get subscription_other_account =>
+      'Подписка этого аккаунта Google Play оформлена в другом аккаунте GetBalance. Войдите в тот аккаунт, чтобы пользоваться Pro.';
+
+  @override
+  String get subscription_purchase_failed =>
+      'Не удалось оформить подписку. Попробуйте ещё раз.';
+
+  @override
+  String get subscription_restored => 'Покупки восстановлены: Pro активен.';
+
+  @override
+  String get subscription_restore_none =>
+      'Активной подписки для этого аккаунта не найдено. Если Pro оформлен под другим аккаунтом GetBalance, войдите в него.';
+
+  @override
+  String get subscription_restore_failed =>
+      'Не удалось восстановить покупки. Попробуйте ещё раз.';
+
+  @override
+  String get profile_subscription_section => 'Подписка';
+
+  @override
+  String get subscription_plan => 'Тариф';
+
+  @override
+  String subscription_renews_on(String date) {
+    return 'Продлится $date';
+  }
+
+  @override
+  String subscription_ends_on(String date) {
+    return 'Действует до $date';
+  }
+
+  @override
+  String subscription_trial_until(String date) {
+    return 'Пробный период до $date';
+  }
+
+  @override
+  String subscription_limit_ai_report_month(int remaining, int limit) {
+    return 'ИИ-отчёт: осталось $remaining из $limit в этом месяце';
+  }
+
+  @override
+  String subscription_limit_ai_report_day(int remaining, int limit) {
+    return 'ИИ-отчёт: осталось $remaining из $limit сегодня';
+  }
+
+  @override
+  String subscription_limit_voice_day(int remaining, int limit) {
+    return 'Голосовой ввод: осталось $remaining из $limit сегодня';
+  }
+
+  @override
+  String get subscription_get_pro => 'Оформить Pro';
+
+  @override
+  String get subscription_manage => 'Управлять в Google Play';
+
+  @override
+  String get insights_get_report_btn => 'Получить отчёт';
+
+  @override
+  String insights_free_limit_caption(int count) {
+    return '$count в месяц на бесплатном тарифе';
+  }
+
+  @override
+  String get insights_outdated_upgrade => 'Обновлять отчёт — в Pro';
+
+  @override
+  String get delete_account_subscription_title => 'Подписка Pro активна';
+
+  @override
+  String get delete_account_subscription_warning =>
+      'Удаление аккаунта не отменяет подписку: она продлится, и оплата будет списываться дальше. Отмените её в Google Play.';
+
+  @override
+  String get delete_account_subscription_open_store => 'Открыть Google Play';
+
+  @override
+  String get delete_account_subscription_continue => 'Продолжить удаление';
+
+  @override
+  String get plan_limit_reached => 'Лимит на вашем тарифе исчерпан';
 }

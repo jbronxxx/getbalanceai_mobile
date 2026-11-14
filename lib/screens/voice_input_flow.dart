@@ -10,6 +10,7 @@ import '../widgets/dashboard/day_group_widget.dart';
 import '../widgets/voice_listening_sheet.dart';
 import '../widgets/widgets.dart';
 import 'add_transaction_sheet.dart';
+import 'paywall_screen.dart';
 
 /// Голосовой ввод (долгое нажатие на «+»): шторка «Говорите» → одна
 /// запись — обычная форма «Новая запись», уже заполненная; несколько —
@@ -25,15 +26,37 @@ abstract final class VoiceInputFlow {
       AppAlerts.info(context, context.l10n.voice_sign_in_required);
       return;
     }
-    if (!EntitlementService.instance.isEnabled(AppFeature.voiceInput)) return;
+    // Остатка нет до сброса окна — запись не начинаем, разбор получил бы 403
+    final subscription = ApiService.instance.subscription;
+    if (subscription.isExhausted(PlanFeature.voice)) {
+      return onLimitReached(context, isPro: subscription.isPro);
+    }
 
-    final result = await VoiceListeningSheet.show(context, parse: parse);
+    final result = await VoiceListeningSheet.show(
+      context,
+      parse: parse,
+      onFreeLimitReached: (navigator) =>
+          PaywallScreen.open(navigator, trigger: PaywallTrigger.voice),
+    );
     if (result == null || !context.mounted) return;
     if (result.drafts.length == 1) {
       await AddTransactionSheet.show(context, draft: result.drafts.single);
     } else {
       await VoiceDraftsSheet.show(context, result);
     }
+  }
+
+  /// Суточный лимит голоса исчерпан: Free — пейволл, Pro — когда снова
+  /// можно.
+  static Future<void> onLimitReached(
+    BuildContext context, {
+    required bool isPro,
+  }) async {
+    if (isPro) {
+      AppAlerts.info(context, context.l10n.voice_error_quota);
+      return;
+    }
+    await PaywallScreen.show(context, trigger: PaywallTrigger.voice);
   }
 }
 

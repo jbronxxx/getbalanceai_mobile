@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 void unfocusOnTapOutside(PointerDownEvent event) =>
     FocusManager.instance.primaryFocus?.unfocus();
 
+/// Строка, которая не переносится посередине: обычные пробелы заменены
+/// неразрывными (суммы с разрядами, «1 декабря»).
+String nonBreaking(String text) => text.replaceAll(' ', '\u00A0');
+
 extension ShowSnackBar on BuildContext {
   void showMessage(String message, {bool isError = false}) {
     if (isError) {

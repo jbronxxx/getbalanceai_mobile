@@ -219,11 +219,14 @@ void main() {
       await auth.loginWithApple('apple-token');
 
       final bodies = requests
-          .where((r) => r.path.startsWith('/auth/'))
+          .where((r) => r.method == 'POST')
           .map((r) => r.data as Map)
           .toList();
       expect(bodies.map((b) => b['accept_legal']), [true, true]);
       expect(reported?.termsAccepted, isTrue);
+      // Тариф — только в полном профиле: после входа он дочитывается в фоне
+      await pumpEventQueue();
+      expect(requests.where((r) => r.path == '/auth/me'), hasLength(2));
     });
 
     test('refreshProfile передаёт статус из GET /auth/me', () async {

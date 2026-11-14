@@ -41,10 +41,6 @@ class BudgetItemCard extends StatelessWidget {
     return colors.accentText;
   }
 
-  /// Сумма, которая не переносится посередине: пробелы между разрядами и
-  /// перед символом валюты — неразрывные.
-  static String _unbreakable(String amount) => amount.replaceAll(' ', '\u00A0');
-
   /// Суммы карточки — в валюте лимита.
   String _display(double amount, {bool showSymbol = true}) =>
       CurrencyFormatter.format(
@@ -186,8 +182,8 @@ class BudgetItemCard extends StatelessWidget {
                     // — и на третью, без «…».
                     child: WholeWordsText(
                       context.l10n.budget_spent_of(
-                        _unbreakable(_display(currentSpent, showSymbol: false)),
-                        _unbreakable(_display(budget.limitAmount)),
+                        nonBreaking(_display(currentSpent, showSymbol: false)),
+                        nonBreaking(_display(budget.limitAmount)),
                       ),
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.outline,
